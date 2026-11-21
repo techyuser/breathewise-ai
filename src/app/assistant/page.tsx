@@ -20,8 +20,8 @@ import {
   Plus,
   Clock,
   ArrowUpRight,
-  MessageSquare,
   Languages,
+  Lock,
 } from "lucide-react";
 import { AssistantMessage, UserProfileContext } from "@/lib/gemini";
 import { motion, AnimatePresence } from "motion/react";
@@ -59,63 +59,63 @@ const INITIAL_MESSAGES_HI: AssistantMessage[] = [
   },
 ];
 
-interface ChatHistoryItem {
+interface ChatTopicItem {
   id: string;
   title: string;
-  category: "Today" | "Recent Consultations";
+  category: "Priority Topics" | "Clinical Guidance";
   prompt: string;
 }
 
-const HISTORY_ITEMS_EN: ChatHistoryItem[] = [
+const TOPIC_ITEMS_EN: ChatTopicItem[] = [
   {
     id: "h-1",
-    title: "Morning commute N95 pediatric seal check",
-    category: "Today",
-    prompt: "How to protect my child during morning smog?",
+    title: "Commute mask seal: N95 vs pediatric fit",
+    category: "Priority Topics",
+    prompt: "How to ensure proper respiratory protection during morning smog commutes?",
   },
   {
     id: "h-2",
-    title: "400 sq ft bedroom HEPA CADR sizing",
-    category: "Today",
+    title: "Bedroom HEPA CADR airflow sizing",
+    category: "Priority Topics",
     prompt: "What CADR air purifier do I need for a 400 sq ft room?",
   },
   {
     id: "h-3",
-    title: "Morning cardio vs evening inversion window",
-    category: "Recent Consultations",
-    prompt: "Is it safe to jog outside today?",
+    title: "Outdoor cardio vs temperature inversion window",
+    category: "Clinical Guidance",
+    prompt: "Is it safe to jog outside today during temperature inversion?",
   },
   {
     id: "h-4",
     title: "Certified N95 vs KN95 filtration differences",
-    category: "Recent Consultations",
+    category: "Clinical Guidance",
     prompt: "Differences between N95, KN95, and surgical masks?",
   },
 ];
 
-const HISTORY_ITEMS_HI: ChatHistoryItem[] = [
+const TOPIC_ITEMS_HI: ChatTopicItem[] = [
   {
     id: "h-1-hi",
-    title: "बच्चों के लिए N95 मास्क की सही फिटिंग",
-    category: "Today",
-    prompt: "सुबह के स्मॉग में बच्चों की सुरक्षा कैसे करें?",
+    title: "मास्क की सही फिटिंग व सील परीक्षण",
+    category: "Priority Topics",
+    prompt: "सुबह के स्मॉग में सुरक्षित श्वसन सुरक्षा कैसे सुनिश्चित करें?",
   },
   {
     id: "h-2-hi",
     title: "कमरे के लिए HEPA CADR का सही चुनाव",
-    category: "Today",
+    category: "Priority Topics",
     prompt: "कमरे के लिए सही एयर प्यूरीफायर कैसे चुनें?",
   },
   {
     id: "h-3-hi",
-    title: "सुबह की दौड़ बनाम शाम का सुरक्षित समय",
-    category: "Recent Consultations",
-    prompt: "क्या आज बाहर दौड़ना सुरक्षित है?",
+    title: "बाहरी व्यायाम बनाम तापमान व्युत्क्रमण",
+    category: "Clinical Guidance",
+    prompt: "क्या आज इनवर्जन के दौरान बाहर दौड़ना सुरक्षित है?",
   },
   {
     id: "h-4-hi",
-    title: "PM2.5 से बचाव के लिए सबसे अच्छा मास्क",
-    category: "Recent Consultations",
+    title: "PM2.5 से बचाव के लिए प्रमाणित मास्क",
+    category: "Clinical Guidance",
     prompt: "N95 और सामान्य सर्जिकल मास्क में क्या अंतर है?",
   },
 ];
@@ -255,7 +255,7 @@ export default function AssistantPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const historyItems = lang === "hi" ? HISTORY_ITEMS_HI : HISTORY_ITEMS_EN;
+  const topicItems = lang === "hi" ? TOPIC_ITEMS_HI : TOPIC_ITEMS_EN;
 
   return (
     <PageTransition className="space-y-5 pb-12">
@@ -370,9 +370,15 @@ export default function AssistantPage() {
                 {lang === "hi" ? "ब्रीथवाइज़ एआई रीज़निंग स्टूडियो" : "BreatheWise AI Reasoning Studio"}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-[#98A9A1]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00D69A] animate-pulse" />
-              <span>{lang === "hi" ? "वास्तविक टेलीमेट्री सक्रिय" : "Verified Telemetry Feed Active"}</span>
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(0,214,154,0.08)] border border-[rgba(0,214,154,0.22)] text-[11px] text-[#00D69A] font-medium">
+                <Lock className="w-3 h-3" />
+                <span>{lang === "hi" ? "गोपनीय सत्र" : "Confidential Session"}</span>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-[#98A9A1]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00D69A] animate-pulse" />
+                <span>{lang === "hi" ? "वास्तविक टेलीमेट्री सक्रिय" : "Verified Telemetry Active"}</span>
+              </div>
             </div>
           </div>
 
@@ -597,14 +603,15 @@ export default function AssistantPage() {
           </div>
         </div>
 
-        {/* Right History & Telemetry Insights Panel (4 cols) */}
-        <div className="lg:col-span-4 flex flex-col h-[660px] rounded-3xl vision-glass p-5 overflow-hidden relative">
+        {/* Right Reference Templates Panel (Desktop Only — hidden on mobile to protect focus & screen real estate) */}
+        <div className="hidden lg:flex lg:col-span-4 flex-col h-[660px] rounded-3xl vision-glass p-5 overflow-hidden relative">
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.16)] to-transparent pointer-events-none z-20" />
-          <div className="flex items-center justify-between pb-4 border-b border-[rgba(255,255,255,0.06)]">
+          
+          <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(255,255,255,0.06)]">
             <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-[#00D69A]" />
+              <Sparkles className="w-4 h-4 text-[#00D69A]" />
               <h3 className="text-sm font-bold text-[#F5F8F6]">
-                {lang === "hi" ? "परामर्श इतिहास" : "Consultation History"}
+                {lang === "hi" ? "सुझाए गए परामर्श विषय" : "Clinical Guidance Topics"}
               </h3>
             </div>
             <button
@@ -616,13 +623,27 @@ export default function AssistantPage() {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4 pt-3">
-            {["Today", "Recent Consultations"].map((category) => {
-              const items = historyItems.filter((h) => h.category === category);
+          {/* Device Privacy Notice */}
+          <div className="my-3 p-2.5 rounded-2xl bg-[rgba(0,214,154,0.05)] border border-[rgba(0,214,154,0.18)] flex items-start gap-2 text-[11px] text-[#A7F3D0]">
+            <Lock className="w-3.5 h-3.5 text-[#00D69A] shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              {lang === "hi"
+                ? "सत्र गोपनीयता: आपके प्रश्न सर्वर पर कभी सहेजे नहीं जाते। यह संवाद 100% गोपनीय और आपके डिवाइस पर स्थानीय रहता है।"
+                : "Strict Session Privacy: Inquiries are processed transiently in memory. No consultation data is ever stored on shared servers or exposed to other users."}
+            </p>
+          </div>
+
+          <div className="flex-1 overflow-y-auto space-y-4 pt-1">
+            {(["Priority Topics", "Clinical Guidance"] as const).map((category) => {
+              const items = topicItems.filter((h) => h.category === category);
               return (
                 <div key={category} className="space-y-2">
                   <div className="text-[10px] uppercase font-bold tracking-wider text-[#64786E] px-1">
-                    {lang === "hi" ? (category === "Today" ? "आज" : "हालिया परामर्श") : category}
+                    {lang === "hi"
+                      ? category === "Priority Topics"
+                        ? "प्राथमिक विषय"
+                        : "नैदानिक मार्गदर्शन"
+                      : category}
                   </div>
                   <div className="space-y-1.5">
                     {items.map((item) => (

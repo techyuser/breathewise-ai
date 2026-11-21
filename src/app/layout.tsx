@@ -17,6 +17,14 @@ export const metadata: Metadata = {
   title: "BreatheWise AI | Urban Air Quality & Winter Smog Assistant",
   description:
     "A premium GenAI-powered application designed for families and communities to navigate urban air pollution, smog inversion, and respiratory hazards.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/apple-icon" },
+    ],
+  },
 };
 
 export default function RootLayout({

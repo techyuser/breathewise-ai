@@ -1,69 +1,103 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+import React from "react";
+import { useAirQuality } from "@/context/AirQualityContext";
+import { HeroAqiCard } from "@/components/overview/HeroAqiCard";
+import { OverviewMetricsGrid } from "@/components/overview/OverviewMetricsGrid";
+import { HealthDirectiveBanner } from "@/components/overview/HealthDirectiveBanner";
+import { TrendChart } from "@/components/overview/TrendChart";
+import { QuickInsights } from "@/components/overview/QuickInsights";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { PageTransition } from "@/components/ui/PageTransition";
+import { Badge } from "@/components/ui/Badge";
+import { MapPin, Sparkles } from "lucide-react";
+
+export default function OverviewPage() {
+  const { airData, loading, error, refreshData, activeStandard } = useAirQuality();
+
+  if (loading && !airData) {
+    return (
+      <PageTransition className="py-12">
+        <LoadingState
+          label="Interrogating atmospheric model grid..."
+          sublabel="Retrieving Copernicus CAMS assimilation & meteorological layers from Open-Meteo"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+      </PageTransition>
+    );
+  }
+
+  if (error && !airData) {
+    return (
+      <PageTransition className="py-12">
+        <ErrorState message={error} onRetry={refreshData} />
+      </PageTransition>
+    );
+  }
+
+  if (!airData) {
+    return null;
+  }
+
+  // Greeting based on time of day
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const isCpcb = activeStandard === "INDIA_CPCB";
+
+  return (
+    <PageTransition className="space-y-3 md:space-y-3.5 pb-10">
+      {/* 1. Welcome and Location */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-medium text-[#00D69A] mb-0.5">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{greeting}</span>
+            <span className="text-[#64786E]">•</span>
+            <span className="text-[#98A9A1] flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-[#00D69A]" />
+              {airData.city.name}{airData.city.country ? `, ${airData.city.country}` : ""}
+            </span>
+          </div>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-[#F5F8F6]">
+            Urban Air Intelligence
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xs text-[#98A9A1] mt-0.5">
+            Atmospheric inversion modeling, particulate matrix, and clinical directives.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant={isCpcb ? "accent" : "subtle"} size="sm">
+            Calculation: {isCpcb ? "India CPCB NAQI" : "US EPA NowCast"}
+          </Badge>
+          <Badge variant="outline" size="sm">
+            Source: Copernicus CAMS Grid
+          </Badge>
+          {airData.cacheStatus && (
+            <Badge variant="subtle" size="sm" className="text-[10px] hidden sm:inline-flex">
+              Cache: {airData.cacheStatus}
+            </Badge>
+          )}
         </div>
-      </main>
-    </div>
+      </div>
+
+      {/* 2. One Prominent AQI Hero Card */}
+      <HeroAqiCard data={airData} />
+
+      {/* 3. AI Health Recommendation Directive — Right after AQI Hero Card */}
+      <HealthDirectiveBanner data={airData} />
+
+      {/* 4. PM2.5, PM10 & Weather Grid (Temp, Humidity, Wind) — Completely visible above fold */}
+      <OverviewMetricsGrid data={airData} />
+
+      {/* 5. 24-Hour Trend Chart — Available on Scroll with Historical & Forecast Tabs */}
+      <TrendChart
+        historicalData={airData.hourlyHistorical}
+        forecastData={airData.hourlyForecast}
+      />
+
+      {/* 6. Compact Daily Actions — Available on Scroll */}
+      <QuickInsights data={airData} />
+    </PageTransition>
   );
 }

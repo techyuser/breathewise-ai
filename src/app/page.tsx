@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/Badge";
 import { MapPin, Sparkles } from "lucide-react";
 
 export default function OverviewPage() {
-  const { airData, loading, error, refreshData, activeStandard } = useAirQuality();
+  const { airData, loading, error, refreshData, activeStandard, setAqiStandard } = useAirQuality();
 
   if (loading && !airData) {
     return (
@@ -67,9 +67,15 @@ export default function OverviewPage() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant={isCpcb ? "accent" : "subtle"} size="sm">
-            Calculation: {isCpcb ? "India CPCB NAQI" : "US EPA NowCast"}
-          </Badge>
+          <button
+            onClick={() => setAqiStandard(isCpcb ? "US_EPA" : "INDIA_CPCB")}
+            className="cursor-pointer transition-transform active:scale-95"
+            title="Click to toggle AQI calculation standard"
+          >
+            <Badge variant={isCpcb ? "accent" : "subtle"} size="sm">
+              Calculation: {isCpcb ? "India CPCB NAQI" : "US EPA NowCast"} ⇄
+            </Badge>
+          </button>
           <Badge variant="outline" size="sm">
             Source: Copernicus CAMS Grid
           </Badge>

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Menu,
   MapPin,
   RefreshCw,
   ShieldCheck,
@@ -24,13 +23,9 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { createPortal } from "react-dom";
 
-interface TopNavProps {
-  onToggleSidebar: () => void;
-}
-
 type LocationTab = "presets" | "search" | "coords";
 
-export function TopNav({ onToggleSidebar }: TopNavProps) {
+export function TopNav() {
   const pathname = usePathname();
   const {
     selectedCity,
@@ -185,21 +180,12 @@ export function TopNav({ onToggleSidebar }: TopNavProps) {
 
   return (
     <>
-      <header className="h-16 border-b border-[rgba(255,255,255,0.09)] bg-[rgba(8,18,14,0.52)] backdrop-blur-3xl sticky top-0 z-30 px-4 md:px-6 flex items-center justify-between smooth-144hz shadow-[0_4px_24px_-4px_rgba(0,0,0,0.4)]">
-        {/* Left: Brand Wordmark + Location Selector */}
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            onClick={onToggleSidebar}
-            className="lg:hidden p-2 rounded-xl text-[#98A9A1] hover:text-[#F5F8F6] bg-[rgba(12,24,19,0.5)] border border-[rgba(255,255,255,0.06)] backdrop-blur-md cursor-pointer shrink-0"
-            aria-label="Toggle navigation"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-
-          {/* Brand Wordmark Title */}
-          <Link href="/" className="flex items-center gap-2 group shrink-0 select-none">
+      <header className="h-14 sm:h-16 border-b border-[rgba(255,255,255,0.09)] bg-[rgba(8,18,14,0.85)] sm:bg-[rgba(8,18,14,0.52)] sm:backdrop-blur-3xl sticky top-0 z-30 px-3.5 sm:px-4 md:px-6 flex items-center justify-between smooth-144hz shadow-[0_4px_24px_-4px_rgba(0,0,0,0.4)]">
+        {/* Left: Brand Wordmark (Clean & Uncrowded) */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Link href="/" className="flex items-center gap-2 group select-none">
             <div className="flex items-center gap-1.5 whitespace-nowrap">
-              <span className="font-bold text-sm md:text-base tracking-tight text-[#F5F8F6] group-hover:text-[#00D69A] transition-colors">
+              <span className="font-bold text-sm sm:text-base tracking-tight text-[#F5F8F6] group-hover:text-[#00D69A] transition-colors">
                 BreatheWise
               </span>
               <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-[rgba(0,214,154,0.15)] text-[#00D69A] border border-[rgba(0,214,154,0.3)] shadow-[0_0_10px_rgba(0,214,154,0.25)]">
@@ -207,24 +193,56 @@ export function TopNav({ onToggleSidebar }: TopNavProps) {
               </span>
             </div>
           </Link>
+        </div>
 
-          <div className="h-4 w-px bg-[rgba(255,255,255,0.12)] mx-1" />
+        {/* Center: VisionOS Navigation Capsule Pills */}
+        <div className="hidden xl:flex items-center gap-1.5 p-1 rounded-full bg-[rgba(6,14,11,0.5)] border border-[rgba(255,255,255,0.06)] backdrop-blur-2xl">
+          {quickPills.map((pill) => {
+            const isActive =
+              pill.href === "/"
+                ? pathname === "/"
+                : pathname.startsWith(pill.href);
 
+            return (
+              <Link
+                key={pill.href}
+                href={pill.href}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer relative",
+                  isActive
+                    ? "text-[#07100D] font-semibold"
+                    : "text-[#98A9A1] hover:text-[#F5F8F6]"
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="topNavPillHighlight"
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 30,
+                    }}
+                    className="absolute inset-0 bg-[#00D69A] rounded-full shadow-[0_0_12px_rgba(0,214,154,0.3)] pointer-events-none"
+                  />
+                )}
+                <span className="relative z-10">{pill.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Right: City Location Dropdown + AQI Standard Switcher + Controls */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           {/* City / Location Dropdown Selector */}
           <div className="relative shrink-0">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-[rgba(12,24,19,0.5)] hover:bg-[rgba(16,32,25,0.7)] border border-[rgba(255,255,255,0.08)] text-xs font-medium text-[#F5F8F6] transition-all backdrop-blur-md cursor-pointer shadow-[0_2px_12px_rgba(0,0,0,0.3)]"
+              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-2xl bg-[rgba(12,24,19,0.7)] hover:bg-[rgba(16,32,25,0.9)] border border-[rgba(255,255,255,0.1)] text-xs font-medium text-[#F5F8F6] transition-all cursor-pointer shadow-sm"
             >
               <MapPin className="w-3.5 h-3.5 text-[#00D69A] shrink-0" />
-              <span className="font-semibold truncate max-w-[85px] sm:max-w-[150px] md:max-w-[200px]">
+              <span className="font-semibold truncate max-w-[85px] sm:max-w-[130px] md:max-w-[180px]">
                 {selectedCity.name}
               </span>
-              {selectedCity.country && (
-                <span className="text-[11px] text-[#98A9A1] hidden md:inline">
-                  ({selectedCity.country})
-                </span>
-              )}
               <ChevronDown className="w-3.5 h-3.5 text-[#98A9A1] shrink-0" />
             </button>
 
@@ -240,9 +258,9 @@ export function TopNav({ onToggleSidebar }: TopNavProps) {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96, y: -4 }}
                     transition={{ duration: 0.16, ease: "easeOut" }}
-                    className="fixed inset-x-3 top-20 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full mt-2 w-auto sm:w-96 max-w-sm rounded-3xl bg-[rgba(9,18,14,0.98)] border border-[rgba(255,255,255,0.12)] shadow-[0_16px_40px_rgba(0,0,0,0.85)] z-50 p-3 backdrop-blur-2xl space-y-3"
+                    className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full mt-2 w-auto sm:w-96 max-w-sm rounded-3xl bg-[rgba(9,18,14,0.98)] border border-[rgba(255,255,255,0.12)] shadow-[0_16px_40px_rgba(0,0,0,0.85)] z-50 p-3 backdrop-blur-2xl space-y-3"
                   >
-                    {/* Navigation Tabs inside Modal */}
+{/* Navigation Tabs inside Modal */}
                     <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-[rgba(6,14,11,0.6)] border border-[rgba(255,255,255,0.06)]">
                       <button
                         onClick={() => setActiveTab("presets")}
@@ -500,46 +518,7 @@ export function TopNav({ onToggleSidebar }: TopNavProps) {
               )}
             </AnimatePresence>
           </div>
-        </div>
 
-        {/* Center: VisionOS Navigation Capsule Pills */}
-        <div className="hidden xl:flex items-center gap-1.5 p-1 rounded-full bg-[rgba(6,14,11,0.5)] border border-[rgba(255,255,255,0.06)] backdrop-blur-2xl">
-          {quickPills.map((pill) => {
-            const isActive =
-              pill.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(pill.href);
-
-            return (
-              <Link
-                key={pill.href}
-                href={pill.href}
-                className={cn(
-                  "px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer relative",
-                  isActive
-                    ? "text-[#07100D] font-semibold"
-                    : "text-[#98A9A1] hover:text-[#F5F8F6]"
-                )}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="topNavPillHighlight"
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 30,
-                    }}
-                    className="absolute inset-0 bg-[#00D69A] rounded-full shadow-[0_0_12px_rgba(0,214,154,0.3)] pointer-events-none"
-                  />
-                )}
-                <span className="relative z-10">{pill.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Right: AQI Standard Switcher + Offline Badge + Controls */}
-        <div className="flex items-center gap-2 md:gap-3 shrink-0">
           {/* Offline Status Badge */}
           {isOffline && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(250,204,21,0.12)] border border-[rgba(250,204,21,0.3)] text-[#FACC15] text-[11px] font-semibold">
@@ -550,7 +529,7 @@ export function TopNav({ onToggleSidebar }: TopNavProps) {
           )}
 
           {/* AQI Standard Switcher Capsule */}
-          <div className="flex items-center p-0.5 rounded-full bg-[rgba(7,14,11,0.55)] border border-[rgba(255,255,255,0.08)] text-[10px] sm:text-[11px]">
+          <div className="hidden sm:flex items-center p-0.5 rounded-full bg-[rgba(7,14,11,0.55)] border border-[rgba(255,255,255,0.08)] text-[11px]">
             <button
               onClick={() => setAqiStandard("INDIA_CPCB")}
               className={cn(
@@ -609,7 +588,7 @@ export function TopNav({ onToggleSidebar }: TopNavProps) {
           {/* Emergency Smog Shield Indicator Pill */}
           <button
             onClick={() => setProtectionModalOpen(true)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer shadow-sm ${
+            className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all cursor-pointer shadow-sm ${
               isHighSmog
                 ? "bg-[rgba(248,113,113,0.12)] border-[rgba(248,113,113,0.3)] text-[#F87171] hover:bg-[rgba(248,113,113,0.2)]"
                 : "bg-[rgba(0,214,154,0.12)] border-[rgba(0,214,154,0.3)] text-[#00D69A] hover:bg-[rgba(0,214,154,0.2)]"

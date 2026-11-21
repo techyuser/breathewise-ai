@@ -131,8 +131,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-50 lg:absolute lg:top-0 lg:bottom-0 lg:left-0 lg:z-40 bg-[rgba(8,18,14,0.94)] lg:bg-[rgba(7,16,12,0.75)] backdrop-blur-3xl border-r border-[rgba(255,255,255,0.12)] flex flex-col shrink-0 smooth-144hz overflow-hidden",
-          isOpen ? "translate-x-0 w-[295px]" : "-translate-x-full lg:translate-x-0",
+          "hidden lg:flex lg:absolute lg:top-0 lg:bottom-0 lg:left-0 lg:z-40 bg-[rgba(7,16,12,0.75)] backdrop-blur-3xl border-r border-[rgba(255,255,255,0.12)] flex-col shrink-0 smooth-144hz overflow-hidden",
           isExpanded ? "shadow-[0_24px_80px_rgba(0,0,0,0.95)] border-r-[rgba(0,214,154,0.3)]" : ""
         )}
       >

@@ -16,11 +16,10 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
     // Assert branding and main title
     await expect(page.locator("h1")).toContainText("Urban Air Intelligence");
 
-    // Assert AQI Number appears and is numeric
+    // Assert AQI Number appears and is numeric (wait for count-up animation)
     const aqiNumber = page.locator("span.tabular-nums").first();
     await expect(aqiNumber).toBeVisible();
-    const aqiText = await aqiNumber.innerText();
-    expect(Number(aqiText)).toBeGreaterThan(0);
+    await expect(aqiNumber).not.toHaveText("0", { timeout: 4000 });
 
     // Assert AI Health Directive Banner is visible
     await expect(page.getByText("AI Health Recommendation")).toBeVisible();

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Sidebar } from "./Sidebar";
 import { TopNav } from "./TopNav";
 import { MobileBottomNav } from "./MobileBottomNav";
@@ -12,8 +12,6 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
     <AirQualityProvider>
       <div className="relative min-h-screen bg-[#050E0A] text-[#F5F8F6] flex flex-col justify-center p-0 md:p-3 lg:p-4 selection:bg-[#00D69A]/30 selection:text-[#00D69A] overflow-x-hidden">
@@ -25,23 +23,23 @@ export function AppShell({ children }: AppShellProps) {
           {/* Desktop Left Rail Spacer — Keeps main dashboard width rock-solid on hover */}
           <div className="hidden lg:block w-[76px] shrink-0 pointer-events-none" />
 
-          {/* Sidebar */}
+          {/* Desktop Sidebar (Only active on desktop screen widths) */}
           <Sidebar
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
+            isOpen={false}
+            onClose={() => {}}
           />
 
           {/* Main Workspace Area — 100% Stable Width with Mobile Bottom Nav Padding */}
           <div className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-20 lg:pb-0">
-            <TopNav onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
+            <TopNav />
             <main className="flex-1 px-3 py-3 sm:px-4 md:px-6 md:py-4 max-w-[1560px] w-full mx-auto">
               {children}
             </main>
           </div>
         </div>
 
-        {/* Modern Mobile Bottom Navigation Capsule */}
-        <MobileBottomNav onOpenSidebar={() => setSidebarOpen(true)} />
+        {/* Modern Mobile Bottom Navigation Capsule with More Bottom Sheet */}
+        <MobileBottomNav />
       </div>
     </AirQualityProvider>
   );

@@ -69,12 +69,38 @@ export function getAQIColor(aqi: number): {
  * Mathematically calculates US EPA NowCast PM2.5 AQI from up to 12 hours of preceding concentrations.
  * If data is insufficient, returns demo fallback metadata.
  */
+export interface NowCastCalculationResult {
+  aqi: number;
+  nowCastConcentration: number;
+  isLiveCalculated: boolean;
+  isDataSufficient: boolean;
+  hoursUsed: number;
+  methodology: "EPA-style PM2.5 NowCast estimate (CAMS model input)";
+}
+
+/**
+ * Calculates US EPA-style PM2.5 NowCast AQI from hourly concentrations.
+ *
+ * EPA Standard Rules:
+ * - Requires at least 2 consecutive hours of valid hourly PM2.5 data (up to 12 hours max).
+ * - Applies 12-hour decaying weight function sensitive to rapid wildfire and smog spikes.
+ * - Input source: Copernicus Atmosphere Monitoring Service (CAMS) modelled atmospheric grid.
+ *
+ * If hourly history < 2 hours, flags isDataSufficient: false.
+ */
 export function calculateNowCastAqi(
   hourlyPm25: number[],
   currentTimeIndex?: number
-): { aqi: number; nowCastConcentration: number; isLiveCalculated: boolean } {
+): NowCastCalculationResult {
   if (!hourlyPm25 || hourlyPm25.length === 0) {
-    return { aqi: 125, nowCastConcentration: 45.2, isLiveCalculated: false };
+    return {
+      aqi: 125,
+      nowCastConcentration: 45.2,
+      isLiveCalculated: false,
+      isDataSufficient: false,
+      hoursUsed: 0,
+      methodology: "EPA-style PM2.5 NowCast estimate (CAMS model input)",
+    };
   }
 
   const endIndex =
@@ -82,10 +108,20 @@ export function calculateNowCastAqi(
       ? currentTimeIndex + 1
       : hourlyPm25.length;
   const startIndex = Math.max(0, endIndex - 12);
-  const slice = hourlyPm25.slice(startIndex, endIndex);
+  const slice = hourlyPm25
+    .slice(startIndex, endIndex)
+    .filter((v) => v !== null && v !== undefined && !isNaN(v));
 
-  if (slice.length === 0) {
-    return { aqi: 125, nowCastConcentration: 45.2, isLiveCalculated: false };
+  if (slice.length < 2) {
+    const singleVal = slice[0] ?? 45.2;
+    return {
+      aqi: Math.min(500, Math.round(singleVal * 2.5)),
+      nowCastConcentration: Number(singleVal.toFixed(1)),
+      isLiveCalculated: false,
+      isDataSufficient: false,
+      hoursUsed: slice.length,
+      methodology: "EPA-style PM2.5 NowCast estimate (CAMS model input)",
+    };
   }
 
   // Reverse so index 0 is the most recent hour (t), index 1 is t-1, etc.
@@ -122,11 +158,25 @@ export function calculateNowCastAqi(
       const aqi = Math.round(
         ((bp.iHigh - bp.iLow) / (bp.cHigh - bp.cLow)) * (nowCastC - bp.cLow) + bp.iLow
       );
-      return { aqi, nowCastConcentration: Number(nowCastC.toFixed(1)), isLiveCalculated: true };
+      return {
+        aqi,
+        nowCastConcentration: Number(nowCastC.toFixed(1)),
+        isLiveCalculated: true,
+        isDataSufficient: true,
+        hoursUsed: slice.length,
+        methodology: "EPA-style PM2.5 NowCast estimate (CAMS model input)",
+      };
     }
   }
 
-  return { aqi: 500, nowCastConcentration: Number(nowCastC.toFixed(1)), isLiveCalculated: true };
+  return {
+    aqi: 500,
+    nowCastConcentration: Number(nowCastC.toFixed(1)),
+    isLiveCalculated: true,
+    isDataSufficient: true,
+    hoursUsed: slice.length,
+    methodology: "EPA-style PM2.5 NowCast estimate (CAMS model input)",
+  };
 }
 
 export function getHealthAdvisory(category: AQICategory) {

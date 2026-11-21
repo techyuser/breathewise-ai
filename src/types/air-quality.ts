@@ -86,12 +86,15 @@ export interface AirQualityData {
   sourceType: "MODELLED_CAMS_GRID" | "CPCB_STATION_GROUND";
   isCpcbGroundStation: boolean;
   cpcbDisclaimer: string;
-  dataNature: "Live Modelled Forecast (CAMS Grid)" | "CPCB Ground Monitoring Station" | "Demo Data";
+  dataNature: "Latest Modelled Air-Quality Data (CAMS Grid)" | "Live Modelled Forecast (CAMS Grid)" | "CPCB Ground Monitoring Station" | "Demo Data";
   calculationStandard: string;
   activeStandard: AqiStandard;
   referenceBenchmark: "WHO 2021 24-Hour Guideline Limit (AQG)";
   usAqi: number;
   indiaAqi: number;
+  isCpcbDataSufficient?: boolean;
+  cpcbInsufficiencyReason?: string;
+  isNowCastDataSufficient?: boolean;
   displayAqi: number;
   category: AQICategory;
   indiaCategory: CpcbCategory;

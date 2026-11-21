@@ -617,7 +617,7 @@ export function TopNav() {
             className="fixed top-20 right-6 z-50 bg-[rgba(10,22,17,0.95)] border border-[rgba(0,214,154,0.35)] text-[#00D69A] text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl flex items-center gap-2"
           >
             <span className="w-2 h-2 rounded-full bg-[#00D69A] animate-ping" />
-            <span>Atmospheric telemetry synchronized with CAMS model grid.</span>
+            <span>Atmospheric data synchronized with CAMS model grid (~45km).</span>
           </motion.div>
         )}
       </AnimatePresence>

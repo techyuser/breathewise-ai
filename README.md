@@ -64,10 +64,10 @@ flowchart TD
 ### 1. Urban Air Intelligence Dashboard (`/` & `/air-quality`)
 - **Single-Screen Above-The-Fold Architecture**: AQI Radial Meter, AI Health Directive Banner, and 5 Core Particulate & Meteorological Metrics (PM2.5, PM10, Surface Temperature, Humidity, Wind Stagnation) render synchronously without requiring an initial scroll.
 - **Dual Regulatory Standard Switcher**: Seamlessly toggle between:
-  - **India National AQI (CPCB 2014 Standard)**: 6 clinical sub-indices with 24-hour concentration thresholds.
-  - **US EPA NowCast Algorithm**: Dynamic 12-hour decaying weight function sensitive to rapid wildfire and smog spikes.
-- **Historical & Forecast Trends**: 24-hour hourly particulate trend and forward 24-hour forecast tabs.
-- **Source Transparency**: Unambiguous data attribution disclosing Copernicus CAMS assimilation vs. hardware stations.
+  - **CPCB-Style NAQI Estimate (CAMS Grid Input)**: Indian National AQI (CPCB 2014 standard) calculated across 6 criteria pollutants (PM2.5, PM10, NO2, SO2, CO, O3) enforcing official data sufficiency (≥3 pollutants, ≥1 core particulate, and ≥16h valid monitoring observations for 24h metrics; ≥6h for 8h metrics). Never fabricates missing concentrations.
+  - **EPA-Style PM2.5 NowCast (CAMS Grid Input)**: US EPA 12-hour decaying weight algorithm applied to hourly particulate concentrations, requiring at least 2 consecutive hours.
+- **Historical & Forecast Trends**: 24-hour hourly particulate trend and forward 24-hour numerical model forecast tabs.
+- **Scientific Provenance Transparency**: Clear distinction between modelled atmospheric grid data (~45km ECMWF Copernicus CAMS assimilation) and physical ground monitoring hardware. Transparently discloses that CAMS data represents regional atmospheric composition rather than hyper-local micro-sensors.
 
 ### 2. AI Daily Air Hygiene Planner (`/planner`)
 - **Household Vulnerability Cohorts**: Customizable family profiles (Infants, Asthmatic, Elderly 65+, Working Commuter, School Children).
@@ -100,16 +100,16 @@ flowchart TD
 - **Scientific Disclosure Card**: Complete transparency of IPCC 2023 and CEA India carbon coefficients.
 
 ### 5. Community Smoke Watch & Clean Refuges (`/community`)
-- **Citizen Mesh Incident Reporting**: Geo-tagged reporting modal with one-click **Detect GPS** coordinates, category picker (Biomass burning, Construction dust, Industrial emissions, Traffic gridlock), severity tiers, description, and photo attachment simulation.
-- **Live Verification Feed**: Citizen upvoting system with instant counter increments and storage persistence.
+- **Citizen Mesh Incident Reporting**: Geo-tagged reporting modal with one-click **Detect GPS** coordinates, category picker (Biomass burning, Construction dust, Industrial emissions, Traffic gridlock), severity tiers, description, and client-side photo attachment preview simulation (ready for S3/Supabase Storage cloud buckets).
+- **Consensus-Driven Verification Feed**: Citizen upvoting system with consensus threshold badges (demonstrating crowd-based validation rather than physical municipal inspection).
 - **Micro-Climate Radar Hotspot Canvas**: Spatial radar view displaying concentric range rings, crosshairs, sector coordinates, and clickable incident pins with popups.
-- **Community Challenges**: Collective citizen goals (Zero-Idling School Zones, 5-Day Metro Commuters, Smoke Sentinels) with milestone tracking.
-- **Verified Clean Air Refuges**: Municipal safe indoor public refuges (Libraries, Underground Metro Concourses, Health Wellness Centres) with indoor AQI telemetry and one-click address copying.
+- **Community Challenges**: Collective citizen awareness goals (Zero-Idling School Zones, 5-Day Metro Commuters, Smoke Sentinels) with milestone tracking.
+- **Curated Clean Air Refuges**: Directory of municipal public refuges (Libraries, Underground Metro Concourses, Health Centres) with modelled room-level filtration estimates and one-click address copying.
 
 ### 6. AI Atmospheric Conversational Studio (`/assistant`)
 - **Official `@google/genai` Integration**: Powered by `gemini-3.5-flash-lite` running server-side with sub-second streaming.
-- **Strict Data Grounding**: AI is grounded in real atmospheric data and strictly instructed never to hallucinate unobserved sensor values.
-- **Token Capping & 20-Min Cache**: Efficient resource footprint with responses capped at $\le 350$ tokens.
+- **Strict Data Grounding**: AI is grounded in Open-Meteo & Copernicus CAMS atmospheric grid data and strictly instructed never to hallucinate unobserved sensor values.
+- **Confidential & Ephemeral**: Conversations run transiently in browser session memory with zero server-side conversation logging.
 
 ---
 
@@ -189,16 +189,17 @@ All 10 test suites have been verified with Playwright automated tests.
 
 - **Server-Side API Key Isolation**: The `GEMINI_API_KEY` is read strictly within Next.js Node.js serverless runtimes. No `NEXT_PUBLIC_` prefix is ever used.
 - **Prompt Injection Defense**: User queries in `/api/assistant` are sanitized and bounded within clinical system instructions.
-- **In-Memory Rate Limiting**: The assistant endpoint enforces IP-based rate limiting (40 queries/window) with HTTP 429 backoff headers.
-- **Strict Privacy**: Citizen smoke observations do not collect personal identifiers; user settings are persisted in local browser storage (`localStorage`).
+- **Process-Local Rate Limiting & Caching**: The assistant endpoint enforces IP-based rate limiting (40 queries/window) with HTTP 429 backoff headers, and environmental data uses a 5-minute memory cache. As a serverless prototype, this uses process-local memory Maps; for distributed enterprise deployments, this easily swaps for Upstash / Redis.
+- **Strict Device Privacy**: Citizen smoke observations do not collect personal identifiers; user settings and consultation history are strictly local to the user's browser storage (`localStorage`).
 
 ---
 
-## ⚠️ Known Limitations & Future Roadmap
+## ⚠️ Scientific Considerations & Known Limitations
 
-1. **Physical Station Latency in Rural India**: While Open-Meteo Copernicus CAMS assimilation covers every square kilometer globally via satellite reanalysis, ground-level physical CPCB station hardware coverage is concentrated in tier-1 metropolitan cities. Future releases will integrate hyper-local low-cost IoT sensor meshes (e.g., PurpleAir / AirGradient).
-2. **Offline Mode**: The application caches the last known atmospheric state in memory and browser storage; however, active chat with Gemini requires internet connectivity.
-3. **Automated Municipal Dispatch**: Currently, community reports are verified through citizen consensus; future versions can interface with municipal CPCB grievance portals via webhooks.
+1. **CAMS Atmospheric Grid Resolution (~45 km)**: Atmospheric air-quality data is sourced via Open-Meteo from the ECMWF Copernicus Atmosphere Monitoring Service (CAMS) global numerical assimilation model. While it provides continuous spatial coverage across the subcontinent, a ~45 km grid cell models regional atmospheric composition rather than hyper-local micro-climate differences between adjacent streets or immediate curbside vehicular plumes.
+2. **Model-Derived CPCB-Style Estimates**: The Indian National AQI displayed is a mathematical implementation of the official CPCB 2014 breakpoint algorithm fed by CAMS atmospheric model outputs. It enforces official data completeness rules (≥3 pollutants, ≥1 particulate, ≥16h monitored values), but should be interpreted as a regional model estimate rather than an official physical CPCB hardware monitoring station reading.
+3. **Citizen Consensus vs. Official Inspections**: Community hazard reporting relies on peer upvoting and crowdsourced consensus to surface anomalies, rather than certified physical environmental compliance inspections.
+4. **Offline Mode**: The application caches the last known atmospheric state in memory and browser storage; active real-time AI reasoning with Gemini requires an active network connection.
 
 ---
 
@@ -220,10 +221,11 @@ cp .env.example .env.local
 # 4. Run development server
 pnpm dev
 
-# 5. Run Playwright E2E Test Suite
-npx playwright test
+# 5. Run Automated E2E Test Suite (Playwright)
+pnpm test          # or: npm test
+pnpm run test:ui   # interactive UI mode
 
-# 6. Build for production
+# 6. Build and start for production
 pnpm build
 pnpm start
 ```

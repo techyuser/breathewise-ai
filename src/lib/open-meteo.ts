@@ -10,11 +10,23 @@ import { getAQICategory, getHealthAdvisory, calculateNowCastAqi } from "./aqi-ut
 import { calculateCpcbNaqi, getCpcbCategory, getCpcbHealthDirective } from "./cpcb-utils";
 import { parseWmoWeatherCode } from "./weather-codes";
 
-function computeRollingAverage(arr: number[] | undefined, endIdx: number, hours: number): number | undefined {
+/**
+ * Computes rolling average adhering to CPCB 2014 data sufficiency guidelines:
+ * - 24-hour average requires at least 16 valid hourly observations (>= 67% data capture).
+ * - 8-hour average requires at least 6 valid hourly observations (>= 75% data capture).
+ * Returns undefined if valid hours < minimum required, never inventing concentrations.
+ */
+function computeRollingAverage(
+  arr: number[] | undefined,
+  endIdx: number,
+  hours: number,
+  minRequiredHours?: number
+): number | undefined {
   if (!arr || arr.length === 0 || endIdx < 0) return undefined;
+  const minHours = minRequiredHours ?? (hours >= 24 ? 16 : Math.ceil(hours * 0.75));
   const startIdx = Math.max(0, endIdx - hours + 1);
   const slice = arr.slice(startIdx, endIdx + 1).filter((v) => v !== null && v !== undefined && !isNaN(v));
-  if (slice.length === 0) return undefined;
+  if (slice.length < minHours) return undefined;
   const sum = slice.reduce((a, b) => a + b, 0);
   return Number((sum / slice.length).toFixed(1));
 }
@@ -187,12 +199,13 @@ export async function fetchLiveAirQuality(
     const advisory = getHealthAdvisory(usCategory);
 
     // Calculate India CPCB NAQI using true 24-hour and 8-hour averaging periods (CPCB 2014 mandate)
-    const pm25_24h = computeRollingAverage(hourlyPm25, currentIndex, 24) ?? current.pm2_5 ?? 45;
-    const pm10_24h = computeRollingAverage(hourlyPm10, currentIndex, 24) ?? current.pm10 ?? 75;
-    const no2_24h = computeRollingAverage(hourlyNo2, currentIndex, 24) ?? current.nitrogen_dioxide;
-    const so2_24h = computeRollingAverage(hourlySo2, currentIndex, 24) ?? current.sulphur_dioxide;
-    const ozone_8h = computeRollingAverage(hourlyOzone, currentIndex, 8) ?? current.ozone;
-    const co_8h = computeRollingAverage(hourlyCo, currentIndex, 8) ?? current.carbon_monoxide;
+    // Enforcing strict >= 16h requirement for 24h metrics and >= 6h for 8h metrics without fabricating concentrations
+    const pm25_24h = computeRollingAverage(hourlyPm25, currentIndex, 24, 16) ?? current.pm2_5;
+    const pm10_24h = computeRollingAverage(hourlyPm10, currentIndex, 24, 16) ?? current.pm10;
+    const no2_24h = computeRollingAverage(hourlyNo2, currentIndex, 24, 16) ?? current.nitrogen_dioxide;
+    const so2_24h = computeRollingAverage(hourlySo2, currentIndex, 24, 16) ?? current.sulphur_dioxide;
+    const ozone_8h = computeRollingAverage(hourlyOzone, currentIndex, 8, 6) ?? current.ozone;
+    const co_8h = computeRollingAverage(hourlyCo, currentIndex, 8, 6) ?? current.carbon_monoxide;
 
     const cpcbResult = calculateCpcbNaqi({
       pm2_5: pm25_24h,
@@ -434,22 +447,25 @@ export async function fetchLiveAirQuality(
       lastUpdated: clientFetchTimestamp,
       clientFetchTimestamp,
       modelRunTimestamp: modelRunTimeFormatted,
-      camsSource: "Copernicus Atmosphere Monitoring Service (ECMWF CAMS)",
-      source: "Open-Meteo Copernicus CAMS Model Grid (Numerical Atmospheric Assimilation)",
+      camsSource: "Copernicus Atmosphere Monitoring Service (ECMWF CAMS ~45km Grid)",
+      source: "Open-Meteo Copernicus CAMS Model Grid (~45km Spatial Resolution)",
       sourceType: "MODELLED_CAMS_GRID",
       isCpcbGroundStation: false,
       cpcbDisclaimer: inIndia
-        ? "Assimilated via European Centre for Medium-Range Weather Forecasts (ECMWF) Copernicus CAMS ~10km grid. This is numerical atmospheric assimilation, NOT direct physical CPCB ground station hardware."
-        : "Copernicus CAMS atmospheric numerical grid simulation (~10km resolution).",
-      dataNature: isLive ? "Live Modelled Forecast (CAMS Grid)" : "Demo Data",
+        ? "Model-derived CPCB-style estimate based on ECMWF Copernicus CAMS numerical atmospheric grid (~45km spatial resolution). Not an official physical CPCB ground monitoring station reading."
+        : "Copernicus CAMS atmospheric numerical grid simulation (~45km resolution).",
+      dataNature: isLive ? "Latest Modelled Air-Quality Data (CAMS Grid)" : "Demo Data",
       calculationStandard:
         activeStandard === "INDIA_CPCB"
-          ? "India National AQI (CPCB 6-Pollutant Sub-Index Algorithm)"
-          : "US EPA Air Quality Index (NowCast Concentration)",
+          ? "CPCB-Style NAQI Estimate (CAMS Grid Input)"
+          : "EPA-Style PM2.5 NowCast Estimate (CAMS Grid Input)",
       activeStandard,
       referenceBenchmark: "WHO 2021 24-Hour Guideline Limit (AQG)",
       usAqi: finalUsAqi,
       indiaAqi: finalIndiaAqi,
+      isCpcbDataSufficient: cpcbResult.isDataSufficient,
+      cpcbInsufficiencyReason: cpcbResult.insufficiencyReason,
+      isNowCastDataSufficient: nowCastResult.isDataSufficient,
       displayAqi,
       category: usCategory,
       indiaCategory,

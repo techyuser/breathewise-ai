@@ -73,11 +73,11 @@ export default function OverviewPage() {
             title="Click to toggle AQI calculation standard"
           >
             <Badge variant={isCpcb ? "accent" : "subtle"} size="sm">
-              Calculation: {isCpcb ? "India CPCB NAQI" : "US EPA NowCast"} ⇄
+              Standard: {isCpcb ? "CPCB-Style NAQI Estimate (CAMS Grid)" : "EPA-Style PM2.5 NowCast (CAMS Grid)"} ⇄
             </Badge>
           </button>
           <Badge variant="outline" size="sm">
-            Source: Copernicus CAMS Grid
+            Source: Copernicus CAMS ~45km Grid
           </Badge>
           {airData.cacheStatus && (
             <Badge variant="subtle" size="sm" className="text-[10px] hidden sm:inline-flex">

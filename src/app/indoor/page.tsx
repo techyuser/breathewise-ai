@@ -584,12 +584,12 @@ export default function IndoorAirPage() {
           <div className="flex items-center gap-2">
             <Droplets className="w-4 h-4 text-[#38BDF8]" />
             <h2 className="text-base font-bold text-[#F5F8F6]">
-              Interactive Room Telemetry & Purifier Control
+              Interactive Room Model & Purifier Simulation
             </h2>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="subtle" size="sm" className="border-[rgba(56,189,248,0.3)] text-[#38BDF8] bg-[rgba(56,189,248,0.08)]">
-              Simulated Room Sensor Telemetry
+              Estimated Indoor AQI (Room Model)
             </Badge>
           </div>
         </div>
@@ -608,7 +608,7 @@ export default function IndoorAirPage() {
                   </span>
                   <div className="text-[10px] text-[#64786E] flex items-center gap-1.5 mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8]" />
-                    <span>Modeled Infiltration Telemetry</span>
+                    <span>Estimated Infiltration Model</span>
                   </div>
                 </div>
                 <button

@@ -153,19 +153,34 @@ function calculateLinearSubIndex(
   return 500;
 }
 
+export interface CpcbCalculationResult {
+  naqi: number;
+  dominantPollutant: string;
+  subIndices: Record<string, number>;
+  pollutantsCount: number;
+  hasCoreParticulates: boolean;
+  isDataSufficient: boolean;
+  insufficiencyReason?: string;
+  isModelDerivedEstimate: boolean;
+  standardDisclaimer: string;
+}
+
 /**
  * Full CPCB 6-Pollutant NAQI Calculator
  *
  * Implements official breakpoints for:
- * 1. PM2.5 (24-hour average in µg/m³)
- * 2. PM10 (24-hour average in µg/m³)
- * 3. NO2 (24-hour average in µg/m³)
- * 4. SO2 (24-hour average in µg/m³)
- * 5. O3 (8-hour average in µg/m³)
- * 6. CO (8-hour average in mg/m³; converted from µg/m³ if needed)
+ * 1. PM2.5 (24-hour average in µg/m³, requires >=16h valid data)
+ * 2. PM10 (24-hour average in µg/m³, requires >=16h valid data)
+ * 3. NO2 (24-hour average in µg/m³, requires >=16h valid data)
+ * 4. SO2 (24-hour average in µg/m³, requires >=16h valid data)
+ * 5. O3 (8-hour average in µg/m³, requires >=6h valid data)
+ * 6. CO (8-hour average in mg/m³, requires >=6h valid data)
  *
- * Validation Rule (CPCB Standard):
- * NAQI requires at least 3 pollutants to be monitored, of which at least one MUST be PM2.5 or PM10.
+ * Official CPCB Validation Rules (CPCB 2014 Standard):
+ * - NAQI requires at least 3 pollutants to be monitored with valid averaging periods.
+ * - At least one monitored pollutant MUST be PM2.5 or PM10 (core particulates).
+ * - A pollutant 24h sub-index requires at least 16 hourly observations; otherwise it cannot be computed.
+ * - Missing concentrations must NEVER be fabricated or assumed.
  */
 export function calculateCpcbNaqi(pollutantValues: {
   pm2_5?: number; // 24h average in µg/m³
@@ -174,13 +189,7 @@ export function calculateCpcbNaqi(pollutantValues: {
   sulphur_dioxide?: number; // 24h average in µg/m³
   carbon_monoxide?: number; // 8h average in µg/m³ (will be converted to mg/m³)
   ozone?: number; // 8h average in µg/m³
-}): {
-  naqi: number;
-  dominantPollutant: string;
-  subIndices: Record<string, number>;
-  pollutantsCount: number;
-  hasCoreParticulates: boolean;
-} {
+}): CpcbCalculationResult {
   // 1. PM2.5 Breakpoints (24h µg/m³)
   const pm25Breakpoints = [
     { cLow: 0, cHigh: 30, iLow: 0, iHigh: 50 },
@@ -232,7 +241,6 @@ export function calculateCpcbNaqi(pollutantValues: {
   ];
 
   // 6. Carbon Monoxide CO Breakpoints (8h in mg/m³)
-  // CPCB defines CO in mg/m³: 0-1 (Good), 1.1-2 (Satisfactory), 2.1-10 (Moderate), 10.1-17 (Poor), 17.1-34 (Very Poor), >34 (Severe)
   const coBreakpointsMg = [
     { cLow: 0.0, cHigh: 1.0, iLow: 0, iHigh: 50 },
     { cLow: 1.1, cHigh: 2.0, iLow: 51, iHigh: 100 },
@@ -268,6 +276,17 @@ export function calculateCpcbNaqi(pollutantValues: {
   const pollutantsCount = Object.keys(subIndices).length;
   const hasCoreParticulates = Boolean(subIndices["PM2.5"] !== undefined || subIndices["PM10"] !== undefined);
 
+  let isDataSufficient = true;
+  let insufficiencyReason: string | undefined;
+
+  if (pollutantsCount < 3) {
+    isDataSufficient = false;
+    insufficiencyReason = "CPCB NAQI requires at least 3 monitored pollutants with valid averaging periods.";
+  } else if (!hasCoreParticulates) {
+    isDataSufficient = false;
+    insufficiencyReason = "CPCB NAQI requires at least one particulate indicator (PM2.5 or PM10).";
+  }
+
   let maxAqi = 0;
   let dominant = "PM2.5";
 
@@ -284,5 +303,10 @@ export function calculateCpcbNaqi(pollutantValues: {
     subIndices,
     pollutantsCount,
     hasCoreParticulates,
+    isDataSufficient,
+    insufficiencyReason,
+    isModelDerivedEstimate: true,
+    standardDisclaimer:
+      "Model-derived CPCB-style estimate calculated from Copernicus CAMS European atmospheric grid (~45km resolution). Not an official physical ground monitoring station reading.",
   };
 }

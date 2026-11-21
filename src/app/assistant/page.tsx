@@ -568,7 +568,7 @@ export default function AssistantPage() {
                     )}
                   >
                     <Globe2 className="w-3 h-3" />
-                    <span>CAMS Telemetry</span>
+                    <span>CAMS Model Estimate</span>
                   </button>
 
                   <button

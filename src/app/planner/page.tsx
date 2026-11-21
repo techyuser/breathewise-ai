@@ -155,7 +155,8 @@ export default function PlannerPage() {
       )
       .join("\n\n");
 
-    const header = `🌿 BreatheWise AI Daily Air Hygiene Routine\nCity: ${airData?.city.name} | AQI: ${airData?.usAqi}\nCohort: ${profile.cohort.toUpperCase()}\n\n`;
+    const aqiStr = activeStandard === "INDIA_CPCB" ? `${airData?.indiaAqi} (IN NAQI)` : `${airData?.usAqi} (US AQI)`;
+    const header = `🌿 BreatheWise AI Daily Air Hygiene Routine\nCity: ${airData?.city.name} | AQI: ${aqiStr}\nCohort: ${profile.cohort.toUpperCase()}\n\n`;
     navigator.clipboard.writeText(header + text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2200);

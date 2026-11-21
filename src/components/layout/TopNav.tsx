@@ -168,8 +168,9 @@ export function TopNav() {
     setTimeout(() => setRefreshToast(false), 2400);
   };
 
-  const isHighSmog = (airData?.usAqi ?? 0) > 150;
   const isCpcb = activeStandard === "INDIA_CPCB";
+  const currentAqi = isCpcb ? (airData?.indiaAqi ?? 0) : (airData?.usAqi ?? 0);
+  const isHighSmog = isCpcb ? currentAqi > 200 : currentAqi > 150;
 
   const quickPills = [
     { label: "Dashboard", href: "/" },

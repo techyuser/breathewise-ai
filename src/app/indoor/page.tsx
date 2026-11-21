@@ -38,8 +38,9 @@ interface RoomSensor {
 }
 
 export default function IndoorAirPage() {
-  const { airData } = useAirQuality();
-  const outdoorAqi = airData?.usAqi ?? 160;
+  const { airData, activeStandard } = useAirQuality();
+  const isCpcb = activeStandard === "INDIA_CPCB";
+  const outdoorAqi = isCpcb ? (airData?.indiaAqi ?? 220) : (airData?.usAqi ?? 160);
   const outdoorPm25 = airData?.pollutants.pm2_5?.value ?? 68;
 
   // Household assessment config state with localStorage persistence

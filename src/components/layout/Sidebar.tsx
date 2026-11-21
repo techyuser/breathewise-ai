@@ -80,7 +80,7 @@ const NAV_ITEMS = [
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { airData } = useAirQuality();
+  const { airData, activeStandard } = useAirQuality();
   const [isHovered, setIsHovered] = useState(false);
   const [isPinned, setIsPinned] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -89,7 +89,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const leaveTimer = useRef<NodeJS.Timeout | null>(null);
 
   const isExpanded = isHovered || isPinned || isOpen;
-  const isSmogCritical = (airData?.usAqi ?? 0) > 150;
+  const isCpcb = activeStandard === "INDIA_CPCB";
+  const displayAqi = isCpcb ? (airData?.indiaAqi ?? 0) : (airData?.usAqi ?? 0);
+  const isSmogCritical = isCpcb ? displayAqi > 200 : displayAqi > 150;
 
   const handleMouseEnter = () => {
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
@@ -241,7 +243,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     : "bg-[rgba(0,214,154,0.15)] text-[#00D69A] border-[rgba(0,214,154,0.3)]"
                 )}
               >
-                AQI {airData?.usAqi ?? "--"}
+                {isCpcb ? `NAQI ${airData?.indiaAqi ?? "--"}` : `AQI ${airData?.usAqi ?? "--"}`}
               </motion.span>
             )}
           </Link>

@@ -5,13 +5,17 @@ import Link from "next/link";
 import { AirQualityData } from "@/types/air-quality";
 import { Card } from "@/components/ui/Card";
 import { Sparkles, Clock, DoorClosed, Dumbbell, ShieldCheck, ArrowRight } from "lucide-react";
+import { useAirQuality } from "@/context/AirQualityContext";
 
 interface QuickInsightsProps {
   data: AirQualityData;
 }
 
 export function QuickInsights({ data }: QuickInsightsProps) {
-  const isHighSmog = data.usAqi > 150;
+  const { activeStandard } = useAirQuality();
+  const isCpcb = activeStandard === "INDIA_CPCB";
+  const aqiValue = isCpcb ? data.indiaAqi : data.usAqi;
+  const isHighSmog = isCpcb ? aqiValue > 200 : aqiValue > 150;
 
   const actions = [
     {

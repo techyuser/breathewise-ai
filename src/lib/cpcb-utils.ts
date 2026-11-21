@@ -32,57 +32,63 @@ export function getCpcbColor(naqi: number | null): {
 } {
   if (naqi === null || !Number.isFinite(naqi) || naqi < 0) {
     return {
-      color: "#98A9A1",
-      bgColor: "rgba(152, 169, 161, 0.08)",
-      borderColor: "rgba(152, 169, 161, 0.25)",
-      badgeBg: "rgba(152, 169, 161, 0.14)",
+      color: "#8496A8",
+      bgColor: "rgba(132, 150, 168, 0.08)",
+      borderColor: "rgba(132, 150, 168, 0.25)",
+      badgeBg: "rgba(132, 150, 168, 0.14)",
     };
   }
   if (naqi <= 50) {
+    // Good: #3DDC84
     return {
-      color: "#00D69A",
-      bgColor: "rgba(0, 214, 154, 0.08)",
-      borderColor: "rgba(0, 214, 154, 0.25)",
-      badgeBg: "rgba(0, 214, 154, 0.14)",
+      color: "#3DDC84",
+      bgColor: "rgba(61, 220, 132, 0.10)",
+      borderColor: "rgba(61, 220, 132, 0.30)",
+      badgeBg: "rgba(61, 220, 132, 0.16)",
     };
   }
   if (naqi <= 100) {
+    // Satisfactory: #A8E05F
     return {
-      color: "#84CC16",
-      bgColor: "rgba(132, 204, 22, 0.08)",
-      borderColor: "rgba(132, 204, 22, 0.25)",
-      badgeBg: "rgba(132, 204, 22, 0.14)",
+      color: "#A8E05F",
+      bgColor: "rgba(168, 224, 95, 0.10)",
+      borderColor: "rgba(168, 224, 95, 0.30)",
+      badgeBg: "rgba(168, 224, 95, 0.16)",
     };
   }
   if (naqi <= 200) {
+    // Moderate: #FFD23F
     return {
-      color: "#FACC15",
-      bgColor: "rgba(250, 204, 21, 0.08)",
-      borderColor: "rgba(250, 204, 21, 0.25)",
-      badgeBg: "rgba(250, 204, 21, 0.14)",
+      color: "#FFD23F",
+      bgColor: "rgba(255, 210, 63, 0.10)",
+      borderColor: "rgba(255, 210, 63, 0.30)",
+      badgeBg: "rgba(255, 210, 63, 0.16)",
     };
   }
   if (naqi <= 300) {
+    // Poor: #FF9F45
     return {
-      color: "#FB923C",
-      bgColor: "rgba(251, 146, 60, 0.08)",
-      borderColor: "rgba(251, 146, 60, 0.25)",
-      badgeBg: "rgba(251, 146, 60, 0.14)",
+      color: "#FF9F45",
+      bgColor: "rgba(255, 159, 69, 0.10)",
+      borderColor: "rgba(255, 159, 69, 0.30)",
+      badgeBg: "rgba(255, 159, 69, 0.16)",
     };
   }
   if (naqi <= 400) {
+    // Very Poor: #FF5C5C
     return {
-      color: "#F87171",
-      bgColor: "rgba(248, 113, 113, 0.08)",
-      borderColor: "rgba(248, 113, 113, 0.25)",
-      badgeBg: "rgba(248, 113, 113, 0.14)",
+      color: "#FF5C5C",
+      bgColor: "rgba(255, 92, 92, 0.10)",
+      borderColor: "rgba(255, 92, 92, 0.30)",
+      badgeBg: "rgba(255, 92, 92, 0.16)",
     };
   }
+  // Severe (>400): #C77DFF
   return {
-    color: "#E11D48",
-    bgColor: "rgba(225, 29, 72, 0.08)",
-    borderColor: "rgba(225, 29, 72, 0.3)",
-    badgeBg: "rgba(225, 29, 72, 0.16)",
+    color: "#C77DFF",
+    bgColor: "rgba(199, 125, 255, 0.14)",
+    borderColor: "rgba(199, 125, 255, 0.40)",
+    badgeBg: "rgba(199, 125, 255, 0.20)",
   };
 }
 

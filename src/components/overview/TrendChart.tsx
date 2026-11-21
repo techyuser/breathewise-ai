@@ -81,15 +81,15 @@ export function TrendChart({
   const getMetricColor = () => {
     switch (metric) {
       case "aqi":
-        return "#00D69A";
+        return "#4DB8FF";
       case "pm2_5":
-        return "#F87171";
+        return "#FF5C5C";
       case "pm10":
-        return "#FACC15";
+        return "#FFD23F";
       case "temperature":
-        return "#38BDF8";
+        return "#4DB8FF";
       case "humidity":
-        return "#818CF8";
+        return "#A855F7";
     }
   };
 
@@ -99,11 +99,11 @@ export function TrendChart({
     <Card elevated className="p-5 md:p-6 space-y-4 rounded-3xl w-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#F5F8F6] flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5 text-[#00D69A]" />
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#F2F6FA] flex items-center gap-2">
+            <Activity className="w-3.5 h-3.5 text-[#4DB8FF]" />
             Atmospheric Dispersion & Trend Trajectory
           </h3>
-          <p className="text-xs text-[#98A9A1] mt-0.5">
+          <p className="text-xs text-[#A3B3C2] mt-0.5">
             {horizon === "historical"
               ? "Past 24-Hour Actual Assimilated Observations"
               : horizon === "forecast"
@@ -113,14 +113,14 @@ export function TrendChart({
         </div>
 
         {/* Time Horizon Selector (Historical vs Forecast vs Combined) */}
-        <div className="flex items-center gap-1 bg-[rgba(7,14,11,0.6)] p-1 rounded-full border border-[rgba(255,255,255,0.07)] backdrop-blur-md self-start sm:self-auto">
+        <div className="flex items-center gap-1 bg-[rgba(14,23,34,0.7)] p-1 rounded-full border border-[rgba(255,255,255,0.08)] backdrop-blur-md self-start sm:self-auto">
           <button
             onClick={() => setHorizon("historical")}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer",
+              "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]",
               horizon === "historical"
-                ? "bg-[rgba(56,189,248,0.18)] text-[#38BDF8] border border-[rgba(56,189,248,0.35)] shadow-sm"
-                : "text-[#98A9A1] hover:text-[#F5F8F6]"
+                ? "bg-[rgba(77,184,255,0.18)] text-[#4DB8FF] border border-[rgba(77,184,255,0.35)] shadow-sm"
+                : "text-[#A3B3C2] hover:text-[#F2F6FA]"
             )}
           >
             <History className="w-3 h-3" />
@@ -129,10 +129,10 @@ export function TrendChart({
           <button
             onClick={() => setHorizon("forecast")}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer",
+              "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]",
               horizon === "forecast"
-                ? "bg-[rgba(0,214,154,0.18)] text-[#00D69A] border border-[rgba(0,214,154,0.35)] shadow-sm"
-                : "text-[#98A9A1] hover:text-[#F5F8F6]"
+                ? "bg-[rgba(77,184,255,0.18)] text-[#4DB8FF] border border-[rgba(77,184,255,0.35)] shadow-sm"
+                : "text-[#A3B3C2] hover:text-[#F2F6FA]"
             )}
           >
             <TrendingUp className="w-3 h-3" />
@@ -141,10 +141,10 @@ export function TrendChart({
           <button
             onClick={() => setHorizon("combined")}
             className={cn(
-              "px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer hidden md:inline-block",
+              "px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer hidden md:inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]",
               horizon === "combined"
-                ? "bg-[rgba(168,85,247,0.18)] text-[#C084FC] border border-[rgba(168,85,247,0.35)] shadow-sm"
-                : "text-[#98A9A1] hover:text-[#F5F8F6]"
+                ? "bg-[rgba(199,125,255,0.18)] text-[#C77DFF] border border-[rgba(199,125,255,0.35)] shadow-sm"
+                : "text-[#A3B3C2] hover:text-[#F2F6FA]"
             )}
           >
             Full 48h
@@ -167,10 +167,10 @@ export function TrendChart({
             key={tab.id}
             onClick={() => setMetric(tab.id)}
             className={cn(
-              "px-2.5 py-1 rounded-xl text-xs font-medium transition-all cursor-pointer",
+              "px-2.5 py-1 rounded-xl text-xs font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]",
               metric === tab.id
-                ? "bg-[rgba(255,255,255,0.1)] text-[#F5F8F6] border border-[rgba(255,255,255,0.2)] shadow-sm"
-                : "text-[#98A9A1] hover:text-[#F5F8F6] hover:bg-[rgba(255,255,255,0.04)]"
+                ? "bg-[rgba(255,255,255,0.1)] text-[#F2F6FA] border border-[rgba(255,255,255,0.2)] shadow-sm"
+                : "text-[#A3B3C2] hover:text-[#F2F6FA] hover:bg-[rgba(255,255,255,0.04)]"
             )}
           >
             {tab.label}
@@ -193,14 +193,14 @@ export function TrendChart({
             </defs>
             <XAxis
               dataKey="displayTime"
-              stroke="#64786E"
-              fontSize={11}
+              stroke="#8496A8"
+              fontSize={12}
               tickLine={false}
               axisLine={{ stroke: "rgba(255, 255, 255, 0.06)" }}
             />
             <YAxis
-              stroke="#64786E"
-              fontSize={11}
+              stroke="#8496A8"
+              fontSize={12}
               tickLine={false}
               axisLine={{ stroke: "rgba(255, 255, 255, 0.06)" }}
             />
@@ -209,18 +209,18 @@ export function TrendChart({
                 if (active && payload && payload.length) {
                   const item = payload[0].payload;
                   return (
-                    <div className="bg-[rgba(10,20,16,0.95)] border border-[rgba(255,255,255,0.12)] p-2.5 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl space-y-1">
-                      <div className="text-[11px] font-medium text-[#98A9A1] flex items-center justify-between gap-3">
+                    <div className="bg-[rgba(18,29,42,0.96)] border border-[rgba(255,255,255,0.12)] p-2.5 rounded-2xl shadow-[0_12px_32px_rgba(0,0,0,0.6)] backdrop-blur-2xl space-y-1">
+                      <div className="text-xs font-medium text-[#A3B3C2] flex items-center justify-between gap-3">
                         <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-[#00D69A]" />
+                          <Clock className="w-3.5 h-3.5 text-[#4DB8FF]" />
                           <span>{item.displayTime}</span>
                         </div>
                         <span
                           className={cn(
-                            "text-[9px] px-1.5 py-0.5 rounded font-semibold",
+                            "text-xs px-1.5 py-0.5 rounded font-semibold",
                             item.isHistorical
-                              ? "bg-[rgba(56,189,248,0.15)] text-[#38BDF8] border border-[rgba(56,189,248,0.3)]"
-                              : "bg-[rgba(0,214,154,0.15)] text-[#00D69A] border border-[rgba(0,214,154,0.3)]"
+                              ? "bg-[rgba(77,184,255,0.15)] text-[#4DB8FF] border border-[rgba(77,184,255,0.3)]"
+                              : "bg-[rgba(61,220,132,0.15)] text-[#3DDC84] border border-[rgba(61,220,132,0.3)]"
                           )}
                         >
                           {item.isHistorical ? "Station Historical" : "CAMS Model Forecast"}
@@ -232,7 +232,7 @@ export function TrendChart({
                       >
                         {getMetricLabel()}: {item[metric]}
                       </div>
-                      <div className="text-[10px] text-[#64786E] flex items-center gap-2">
+                      <div className="text-xs text-[#8496A8] flex items-center gap-2">
                         <span>PM2.5: {item.pm2_5}</span>
                         <span>•</span>
                         <span>Temp: {item.temperature}°C</span>

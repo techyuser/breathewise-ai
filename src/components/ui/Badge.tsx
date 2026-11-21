@@ -16,16 +16,16 @@ export function Badge({
   ...props
 }: BadgeProps) {
   const variantStyles = {
-    default: "bg-[#183329] text-[#98A9A1] border-[#224436]",
-    accent: "bg-[rgba(0,214,154,0.12)] text-[#00D69A] border-[rgba(0,214,154,0.25)]",
-    warning: "bg-[rgba(245,158,11,0.12)] text-[#F59E0B] border-[rgba(245,158,11,0.25)]",
-    danger: "bg-[rgba(255,90,95,0.12)] text-[#FF5A5F] border-[rgba(255,90,95,0.25)]",
-    outline: "bg-transparent text-[#98A9A1] border-[rgba(255,255,255,0.12)]",
-    subtle: "bg-[rgba(255,255,255,0.04)] text-[#F5F8F6] border-transparent",
+    default: "bg-[#182638] text-[#A3B3C2] border-[#22354A]",
+    accent: "bg-[rgba(77,184,255,0.14)] text-[#4DB8FF] border-[rgba(77,184,255,0.3)]",
+    warning: "bg-[rgba(255,210,63,0.14)] text-[#FFD23F] border-[rgba(255,210,63,0.3)]",
+    danger: "bg-[rgba(255,92,92,0.14)] text-[#FF5C5C] border-[rgba(255,92,92,0.3)]",
+    outline: "bg-transparent text-[#A3B3C2] border-[rgba(255,255,255,0.12)]",
+    subtle: "bg-[rgba(255,255,255,0.06)] text-[#F2F6FA] border-transparent",
   };
 
   const sizeStyles = {
-    sm: "text-[11px] px-2 py-0.5 font-medium",
+    sm: "text-xs px-2 py-0.5 font-medium",
     md: "text-xs px-2.5 py-1 font-medium",
   };
 
@@ -44,12 +44,12 @@ export function Badge({
           className={cn(
             "w-1.5 h-1.5 rounded-full animate-pulse",
             variant === "accent"
-              ? "bg-[#00D69A]"
+              ? "bg-[#4DB8FF]"
               : variant === "danger"
-              ? "bg-[#FF5A5F]"
+              ? "bg-[#FF5C5C]"
               : variant === "warning"
-              ? "bg-[#F59E0B]"
-              : "bg-[#98A9A1]"
+              ? "bg-[#FFD23F]"
+              : "bg-[#A3B3C2]"
           )}
         />
       )}

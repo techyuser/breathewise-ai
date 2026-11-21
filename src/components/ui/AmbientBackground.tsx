@@ -1,27 +1,64 @@
+"use client";
+
 import React from "react";
+import { useAirQuality } from "@/context/AirQualityContext";
+import { getAQIColor } from "@/lib/aqi-utils";
+import { getCpcbColor } from "@/lib/cpcb-utils";
 
 export function AmbientBackground() {
+  const { airData, activeStandard } = useAirQuality();
+
+  const isCpcb = activeStandard === "INDIA_CPCB";
+  const targetAqi = airData ? (isCpcb ? airData.indiaAqi : airData.usAqi) : null;
+  const colorScheme = isCpcb ? getCpcbColor(targetAqi) : getAQIColor(targetAqi);
+  const aqiColor = colorScheme.color; // AQI Severity color
+
+  // Atmospheric smog shift: 0 when AQI <= 50 (Good), scaling gently up to ~0.18 at high AQI
+  const aqiVal = targetAqi ?? 35;
+  const isGood = aqiVal <= 50;
+  const smogProgress = isGood ? 0 : Math.min(1, Math.max(0, (aqiVal - 50) / 350));
+  const smogOpacity = smogProgress * 0.18;
+
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
-      {/* Base Deep Forest Charcoal Foundation */}
-      <div className="absolute inset-0 bg-[#050E0A]" />
+      {/* Base Neutral Night-Slate Foundation */}
+      <div className="absolute inset-0 bg-[#0A1118]" />
 
-      {/* Lightweight, zero-lag CSS gradient on mobile */}
-      <div className="absolute inset-0 md:hidden bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(0,214,154,0.18)_0%,transparent_70%)]" />
+      {/* Subtle Mobile Ambient Glow */}
+      <div
+        className="absolute inset-0 md:hidden transition-colors duration-700"
+        style={{
+          background: `radial-gradient(ellipse 70% 50% at 50% -10%, ${aqiColor}15 0%, transparent 65%)`,
+        }}
+      />
 
-      {/* Atmospheric Vertical 3D Light Columns (Desktop only to guarantee 120FPS on mobile) */}
-      <div className="hidden md:block absolute top-[-100px] left-[12%] w-[480px] h-[135%] bg-gradient-to-b from-[rgba(0,214,154,0.20)] via-[rgba(0,214,154,0.06)] to-transparent blur-[85px] transform -rotate-12 pointer-events-none" />
-      <div className="hidden md:block absolute top-[-80px] right-[15%] w-[520px] h-[135%] bg-gradient-to-b from-[rgba(0,214,154,0.16)] via-[rgba(56,189,248,0.09)] to-transparent blur-[95px] transform rotate-12 pointer-events-none" />
+      {/* Refined Atmospheric Depth Halos (Desktop) */}
+      <div
+        className="hidden md:block absolute top-[-60px] left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full blur-[100px] pointer-events-none transition-all duration-700"
+        style={{
+          background: `radial-gradient(ellipse at center, ${aqiColor}18 0%, rgba(77, 184, 255, 0.05) 45%, transparent 70%)`,
+        }}
+      />
 
-      {/* Primary Center Luminous Halo behind the top dashboard */}
-      <div className="hidden md:block absolute top-[-70px] left-1/2 -translate-x-1/2 w-[920px] h-[520px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(0,214,154,0.22)_0%,rgba(56,189,248,0.08)_42%,transparent_72%)] blur-[85px] pointer-events-none" />
+      {/* Subtle Lower Ambient Depth */}
+      <div
+        className="hidden md:block absolute bottom-[-80px] right-[10%] w-[500px] h-[500px] rounded-full blur-[110px] pointer-events-none transition-all duration-700"
+        style={{
+          background: `radial-gradient(circle, ${aqiColor}0E 0%, transparent 70%)`,
+        }}
+      />
 
-      {/* Mid & Lower Volumetric Depth Orbs */}
-      <div className="hidden md:block absolute top-[38%] left-[6%] w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgba(0,214,154,0.12)_0%,transparent_70%)] blur-[100px] pointer-events-none" />
-      <div className="hidden md:block absolute bottom-[-100px] right-[10%] w-[700px] h-[700px] rounded-full bg-[radial-gradient(circle,rgba(0,214,154,0.14)_0%,rgba(56,189,248,0.06)_50%,transparent_70%)] blur-[105px] pointer-events-none" />
+      {/* Rule 4: Clean slate when AQI is Good, shifting toward a subtle hazy warm-grey/brown overlay as AQI rises */}
+      <div
+        className="absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-out"
+        style={{
+          opacity: smogOpacity,
+          background: "radial-gradient(ellipse 90% 70% at 50% 15%, rgba(120, 95, 70, 0.35) 0%, rgba(70, 55, 42, 0.15) 50%, transparent 80%)",
+        }}
+      />
 
-      {/* Dynamic 3D Vignette Edge */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(3,7,5,0.78)_100%)] pointer-events-none" />
+      {/* Clean Edge Vignette */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(10,17,24,0.75)_100%)] pointer-events-none" />
     </div>
   );
 }

@@ -11,7 +11,8 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { Badge } from "@/components/ui/Badge";
-import { MapPin, Sparkles } from "lucide-react";
+import { LocationPermissionBanner } from "@/components/ui/LocationPermissionBanner";
+import { MapPin } from "lucide-react";
 
 export default function OverviewPage() {
   const { airData, loading, error, refreshData, activeStandard, setAqiStandard } = useAirQuality();
@@ -46,22 +47,24 @@ export default function OverviewPage() {
 
   return (
     <PageTransition className="space-y-3 md:space-y-3.5 pb-10">
+      <LocationPermissionBanner />
+
       {/* 1. Welcome and Location */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <div className="flex items-center gap-2 text-xs font-medium text-[#00D69A] mb-0.5">
-            <Sparkles className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-2 text-xs font-medium text-[#4DB8FF] mb-0.5">
+            <span className="w-2 h-2 rounded-full bg-[#4DB8FF]" />
             <span>{greeting}</span>
-            <span className="text-[#64786E]">•</span>
-            <span className="text-[#98A9A1] flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-[#00D69A]" />
+            <span className="text-[#8496A8]">•</span>
+            <span className="text-[#A3B3C2] flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-[#4DB8FF]" />
               {airData.city.name}{airData.city.country ? `, ${airData.city.country}` : ""}
             </span>
           </div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-[#F5F8F6]">
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-[#F2F6FA]">
             Urban Air Intelligence
           </h1>
-          <p className="text-xs text-[#98A9A1] mt-0.5">
+          <p className="text-xs text-[#A3B3C2] mt-0.5">
             Atmospheric inversion modeling, particulate matrix, and clinical directives.
           </p>
         </div>
@@ -69,7 +72,9 @@ export default function OverviewPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setAqiStandard(isCpcb ? "US_EPA" : "INDIA_CPCB")}
-            className="cursor-pointer transition-transform active:scale-95"
+            aria-pressed={isCpcb}
+            aria-label={`Toggle AQI calculation standard between India CPCB and US EPA. Currently using ${isCpcb ? "CPCB-Style NAQI" : "EPA-Style PM2.5 NowCast"}`}
+            className="cursor-pointer transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF] rounded-full"
             title="Click to toggle AQI calculation standard"
           >
             <Badge variant={isCpcb ? "accent" : "subtle"} size="sm">
@@ -80,7 +85,7 @@ export default function OverviewPage() {
             Source: Copernicus CAMS ~45km Grid
           </Badge>
           {airData.cacheStatus && (
-            <Badge variant="subtle" size="sm" className="text-[10px] hidden sm:inline-flex">
+            <Badge variant="subtle" size="sm" className="text-xs hidden sm:inline-flex">
               Cache: {airData.cacheStatus}
             </Badge>
           )}

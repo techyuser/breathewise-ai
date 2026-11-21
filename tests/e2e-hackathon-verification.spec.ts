@@ -21,8 +21,8 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
     await expect(aqiNumber).toBeVisible();
     await expect(aqiNumber).not.toHaveText("0", { timeout: 4000 });
 
-    // Assert AI Health Directive Banner is visible
-    await expect(page.getByText("AI Health Recommendation")).toBeVisible();
+    // Assert Health Directive Banner is visible
+    await expect(page.getByText("Health Directives")).toBeVisible();
 
     // Assert particulate & weather metrics grid (PM2.5, PM10, Surface Temp, Humidity, Wind Speed)
     await expect(page.getByText("PM2.5").first()).toBeVisible();
@@ -56,7 +56,7 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
 
     // Navigate to Daily Planner
     await page.goto(`${BASE_URL}/planner`, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("h1")).toContainText("AI Daily Air Hygiene Planner");
+    await expect(page.locator("h1")).toContainText("Daily Planner");
 
     // Navigate to Indoor Air
     await page.goto(`${BASE_URL}/indoor`, { waitUntil: "domcontentloaded" });
@@ -70,9 +70,9 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
     await page.goto(`${BASE_URL}/community`, { waitUntil: "domcontentloaded" });
     await expect(page.locator("h1")).toContainText("Community Smoke Watch & Clean Refuges");
 
-    // Navigate to AI Assistant
+    // Navigate to Assistant
     await page.goto(`${BASE_URL}/assistant`, { waitUntil: "domcontentloaded" });
-    await expect(page.locator("h1")).toContainText("BreatheWise AI Conversational Studio");
+    await expect(page.locator("h1")).toContainText("Assistant");
   });
 
   // Test 4: AI Daily Planner Functionality
@@ -101,6 +101,8 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
 
     // Open Household Assessment Form
     const assessmentBtn = page.getByRole("button", { name: /Household Assessment/i });
+    await expect(assessmentBtn).toBeVisible();
+    await page.waitForTimeout(600);
     await assessmentBtn.click();
     await expect(page.getByText("Household Assessment Form")).toBeVisible();
 
@@ -147,10 +149,10 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
     // Verify upvoting works
     const upvoteButtons = page.locator("button:has(svg.lucide-thumbs-up)");
     const firstUpvote = upvoteButtons.first();
-    const countBefore = await firstUpvote.innerText();
+    await expect(firstUpvote).toBeVisible();
+    const countBefore = (await firstUpvote.innerText()).trim();
     await firstUpvote.click();
-    const countAfter = await firstUpvote.innerText();
-    expect(Number(countAfter)).not.toEqual(Number(countBefore));
+    await expect(firstUpvote).not.toHaveText(countBefore);
 
     // Open Report Incident Modal
     await page.getByRole("button", { name: /Report Pollution/i }).click();

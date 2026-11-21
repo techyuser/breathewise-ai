@@ -25,7 +25,7 @@ export function QuickInsights({ data }: QuickInsightsProps) {
         ? "Midday solar warmth temporarily lifts ground smog pool."
         : "Low ground pollution with steady wind clearing emissions.",
       icon: Clock,
-      color: "#00D69A",
+      color: "#4DB8FF",
       href: "/planner",
     },
     {
@@ -33,7 +33,7 @@ export function QuickInsights({ data }: QuickInsightsProps) {
       status: isHighSmog ? "Windows Sealed" : "Natural Airing Permitted",
       desc: data.recommendations.ventilation,
       icon: DoorClosed,
-      color: isHighSmog ? "#F87171" : "#00D69A",
+      color: isHighSmog ? "#FF5C5C" : "#3DDC84",
       href: "/indoor",
     },
     {
@@ -41,7 +41,7 @@ export function QuickInsights({ data }: QuickInsightsProps) {
       status: isHighSmog ? "Indoor Cardio Only" : "Safe Outdoors",
       desc: data.recommendations.outdoorActivity,
       icon: Dumbbell,
-      color: isHighSmog ? "#FB923C" : "#00D69A",
+      color: isHighSmog ? "#FF9F45" : "#3DDC84",
       href: "/planner",
     },
     {
@@ -49,7 +49,7 @@ export function QuickInsights({ data }: QuickInsightsProps) {
       status: "Asthma & Pediatric Guard",
       desc: data.recommendations.vulnerable,
       icon: ShieldCheck,
-      color: "#38BDF8",
+      color: "#4DB8FF",
       href: "/assistant",
     },
   ];
@@ -57,11 +57,11 @@ export function QuickInsights({ data }: QuickInsightsProps) {
   return (
     <div className="space-y-3 w-full">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold tracking-wider text-[#F5F8F6] uppercase flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-[#00D69A]" />
+        <h3 className="text-xs font-semibold tracking-wider text-[#F2F6FA] uppercase flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-[#4DB8FF]" />
           Compact Daily Actions
         </h3>
-        <span className="text-xs text-[#98A9A1]">
+        <span className="text-xs text-[#A3B3C2]">
           Diurnal guidance for today
         </span>
       </div>
@@ -80,11 +80,11 @@ export function QuickInsights({ data }: QuickInsightsProps) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Icon className="w-4 h-4 shrink-0" style={{ color: item.color }} />
-                      <span className="text-xs font-semibold text-[#F5F8F6]">
+                      <span className="text-xs font-semibold text-[#F2F6FA]">
                         {item.title}
                       </span>
                     </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-[#64786E] group-hover:text-[#00D69A] group-hover:translate-x-0.5 transition-all" />
+                    <ArrowRight className="w-3.5 h-3.5 text-[#8496A8] group-hover:text-[#4DB8FF] group-hover:translate-x-0.5 transition-all" />
                   </div>
                   <div
                     className="text-xs font-bold tracking-tight"
@@ -93,7 +93,7 @@ export function QuickInsights({ data }: QuickInsightsProps) {
                     {item.status}
                   </div>
                 </div>
-                <p className="text-[11px] text-[#98A9A1] leading-relaxed line-clamp-2">
+                <p className="text-xs text-[#A3B3C2] leading-relaxed line-clamp-2">
                   {item.desc}
                 </p>
               </Card>

@@ -20,7 +20,7 @@ export function SmogInversionAlert({ inversion }: SmogInversionAlertProps) {
       elevated
       className={`p-5 rounded-3xl relative ${
         isExtreme || isHigh
-          ? "bg-[rgba(248,113,113,0.06)] border-[rgba(248,113,113,0.25)]"
+          ? "bg-[rgba(255,92,92,0.06)] border-[rgba(255,92,92,0.25)]"
           : ""
       }`}
     >
@@ -29,8 +29,8 @@ export function SmogInversionAlert({ inversion }: SmogInversionAlertProps) {
           <div
             className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-md ${
               isExtreme || isHigh
-                ? "bg-[rgba(248,113,113,0.15)] text-[#F87171] border border-[rgba(248,113,113,0.3)]"
-                : "bg-[rgba(0,214,154,0.12)] text-[#00D69A] border border-[rgba(0,214,154,0.25)]"
+                ? "bg-[rgba(255,92,92,0.15)] text-[#FF5C5C] border border-[rgba(255,92,92,0.3)]"
+                : "bg-[rgba(61,220,132,0.12)] text-[#3DDC84] border border-[rgba(61,220,132,0.25)]"
             }`}
           >
             <CloudFog className="w-5 h-5" />
@@ -38,7 +38,7 @@ export function SmogInversionAlert({ inversion }: SmogInversionAlertProps) {
 
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-semibold text-[#F5F8F6]">
+              <h4 className="text-sm font-semibold text-[#F2F6FA]">
                 Winter Atmospheric Inversion Risk
               </h4>
               <Badge
@@ -49,23 +49,23 @@ export function SmogInversionAlert({ inversion }: SmogInversionAlertProps) {
                 {inversion.level} Alert
               </Badge>
             </div>
-            <p className="text-xs text-[#98A9A1] leading-relaxed max-w-2xl">
+            <p className="text-xs text-[#A3B3C2] leading-relaxed max-w-2xl">
               {inversion.description}
             </p>
           </div>
         </div>
 
         {/* Inversion probability gauge */}
-        <div className="shrink-0 flex items-center gap-4 bg-[rgba(6,16,12,0.55)] p-3 rounded-2xl border border-[rgba(255,255,255,0.08)] backdrop-blur-2xl">
+        <div className="shrink-0 flex items-center gap-4 bg-[rgba(14,23,34,0.7)] p-3 rounded-2xl border border-[rgba(255,255,255,0.08)] backdrop-blur-2xl">
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase tracking-wider text-[#98A9A1] block font-semibold">
+            <span className="text-xs uppercase tracking-wider text-[#A3B3C2] block font-semibold">
               Smog Trap Index
             </span>
-            <div className="text-xl font-bold text-[#F5F8F6] tabular-nums">
+            <div className="text-xl font-bold text-[#F2F6FA] tabular-nums">
               {inversion.trappedSmogProbability}%
             </div>
           </div>
-          <div className="w-24 bg-[rgba(14,34,26,0.6)] rounded-full h-2 overflow-hidden border border-[rgba(255,255,255,0.06)]">
+          <div className="w-24 bg-[rgba(18,29,42,0.8)] rounded-full h-2 overflow-hidden border border-[rgba(255,255,255,0.06)]">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${inversion.trappedSmogProbability}%` }}
@@ -76,10 +76,10 @@ export function SmogInversionAlert({ inversion }: SmogInversionAlertProps) {
               }}
               className={`h-full rounded-full ${
                 isExtreme
-                  ? "bg-[#F87171]"
+                  ? "bg-[#FF5C5C]"
                   : isHigh
-                  ? "bg-[#FACC15]"
-                  : "bg-[#00D69A]"
+                  ? "bg-[#FFD23F]"
+                  : "bg-[#3DDC84]"
               }`}
             />
           </div>

@@ -18,59 +18,63 @@ export function getAQIColor(aqi: number | null): {
 } {
   if (aqi === null || !Number.isFinite(aqi) || aqi < 0) {
     return {
-      color: "#98A9A1",
-      bgColor: "rgba(152, 169, 161, 0.08)",
-      borderColor: "rgba(152, 169, 161, 0.25)",
-      badgeBg: "rgba(152, 169, 161, 0.14)",
+      color: "#8496A8",
+      bgColor: "rgba(132, 150, 168, 0.08)",
+      borderColor: "rgba(132, 150, 168, 0.25)",
+      badgeBg: "rgba(132, 150, 168, 0.14)",
     };
   }
   if (aqi <= 50) {
+    // Good: #3DDC84
     return {
-      color: "#00D69A", // Emerald
-      bgColor: "rgba(0, 214, 154, 0.08)",
-      borderColor: "rgba(0, 214, 154, 0.25)",
-      badgeBg: "rgba(0, 214, 154, 0.12)",
+      color: "#3DDC84",
+      bgColor: "rgba(61, 220, 132, 0.10)",
+      borderColor: "rgba(61, 220, 132, 0.30)",
+      badgeBg: "rgba(61, 220, 132, 0.16)",
     };
   }
   if (aqi <= 100) {
+    // Moderate: #FFD23F
     return {
-      color: "#FACC15", // Warm Gold
-      bgColor: "rgba(250, 204, 21, 0.08)",
-      borderColor: "rgba(250, 204, 21, 0.25)",
-      badgeBg: "rgba(250, 204, 21, 0.12)",
+      color: "#FFD23F",
+      bgColor: "rgba(255, 210, 63, 0.10)",
+      borderColor: "rgba(255, 210, 63, 0.30)",
+      badgeBg: "rgba(255, 210, 63, 0.16)",
     };
   }
   if (aqi <= 150) {
+    // Unhealthy for Sensitive Groups (Poor): #FF9F45
     return {
-      color: "#FB923C", // Tangerine / Warm Amber
-      bgColor: "rgba(251, 146, 60, 0.08)",
-      borderColor: "rgba(251, 146, 60, 0.25)",
-      badgeBg: "rgba(251, 146, 60, 0.12)",
+      color: "#FF9F45",
+      bgColor: "rgba(255, 159, 69, 0.10)",
+      borderColor: "rgba(255, 159, 69, 0.30)",
+      badgeBg: "rgba(255, 159, 69, 0.16)",
     };
   }
   if (aqi <= 200) {
+    // Unhealthy (Very Poor): #FF5C5C
     return {
-      color: "#F87171", // Coral Red
-      bgColor: "rgba(248, 113, 113, 0.08)",
-      borderColor: "rgba(248, 113, 113, 0.25)",
-      badgeBg: "rgba(248, 113, 113, 0.12)",
+      color: "#FF5C5C",
+      bgColor: "rgba(255, 92, 92, 0.10)",
+      borderColor: "rgba(255, 92, 92, 0.30)",
+      badgeBg: "rgba(255, 92, 92, 0.16)",
     };
   }
   if (aqi <= 300) {
-    // Very Unhealthy: Atmospheric muted amethyst, consistent with dark forest green
+    // Very Unhealthy (Severe): #C77DFF
     return {
-      color: "#D8B4FE",
-      bgColor: "rgba(216, 180, 254, 0.08)",
-      borderColor: "rgba(216, 180, 254, 0.22)",
-      badgeBg: "rgba(216, 180, 254, 0.12)",
+      color: "#C77DFF",
+      bgColor: "rgba(199, 125, 255, 0.10)",
+      borderColor: "rgba(199, 125, 255, 0.30)",
+      badgeBg: "rgba(199, 125, 255, 0.16)",
     };
   }
-  // Hazardous (>300): Refined Rose Carmine
+  // Hazardous (>300): #C77DFF
   return {
-    color: "#FB7185",
-    bgColor: "rgba(251, 113, 133, 0.08)",
-    borderColor: "rgba(251, 113, 133, 0.25)",
-    badgeBg: "rgba(251, 113, 133, 0.12)",
+    color: "#C77DFF",
+    bgColor: "rgba(199, 125, 255, 0.14)",
+    borderColor: "rgba(199, 125, 255, 0.40)",
+    badgeBg: "rgba(199, 125, 255, 0.20)",
   };
 }
 

@@ -18,10 +18,10 @@ export function PollutantGrid({ pollutants }: PollutantGridProps) {
   return (
     <div className="space-y-3">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-        <h3 className="text-xs font-semibold tracking-wider text-[#F5F8F6] uppercase">
+        <h3 className="text-xs font-semibold tracking-wider text-[#F2F6FA] uppercase">
           Key Atmospheric Pollutant Concentrations
         </h3>
-        <span className="text-xs text-[#98A9A1]">
+        <span className="text-xs text-[#A3B3C2]">
           Modelled estimates compared against WHO 24-hr Air Quality Guideline Limits (AQG)
         </span>
       </div>
@@ -44,10 +44,10 @@ export function PollutantGrid({ pollutants }: PollutantGridProps) {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-bold text-[#F5F8F6] tracking-tight group-hover:text-[#00D69A] transition-colors">
+                    <span className="text-sm font-bold text-[#F2F6FA] tracking-tight group-hover:text-[#4DB8FF] transition-colors">
                       {item.chemicalFormula}
                     </span>
-                    <ArrowUpRight className="w-3 h-3 text-[#64786E] group-hover:text-[#00D69A] transition-colors opacity-0 group-hover:opacity-100" />
+                    <ArrowUpRight className="w-3.5 h-3.5 text-[#8496A8] group-hover:text-[#4DB8FF] transition-colors opacity-0 group-hover:opacity-100" />
                   </div>
                   <Badge
                     size="sm"
@@ -59,32 +59,32 @@ export function PollutantGrid({ pollutants }: PollutantGridProps) {
 
                 <div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-bold tracking-tight text-[#F5F8F6] tabular-nums">
+                    <span className="text-2xl font-bold tracking-tight text-[#F2F6FA] tabular-nums">
                       {item.value}
                     </span>
-                    <span className="text-[10px] text-[#98A9A1]">{item.unit}</span>
+                    <span className="text-xs text-[#A3B3C2]">{item.unit}</span>
                   </div>
-                  <div className="text-[11px] text-[#98A9A1] mt-0.5 truncate" title={item.name}>
+                  <div className="text-xs text-[#A3B3C2] mt-0.5 truncate" title={item.name}>
                     {item.name}
                   </div>
                 </div>
 
                 <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] space-y-1">
-                  <div className="flex justify-between text-[10px] text-[#64786E]">
+                  <div className="flex justify-between text-xs text-[#8496A8]">
                     <span>WHO 24h Cap</span>
-                    <span className="font-medium text-[#98A9A1]">
+                    <span className="font-medium text-[#A3B3C2]">
                       {item.whoLimit} {item.unit}
                     </span>
                   </div>
                   {/* Visual bar against WHO limit */}
-                  <div className="w-full bg-[rgba(7,20,16,0.8)] rounded-full h-1.5 overflow-hidden border border-[rgba(255,255,255,0.05)]">
+                  <div className="w-full bg-[rgba(14,23,34,0.8)] rounded-full h-1.5 overflow-hidden border border-[rgba(255,255,255,0.05)]">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(100, item.percentageOfLimit)}%` }}
                       transition={{ duration: 0.8, delay: idx * 0.08, ease: "easeOut" }}
                       className="h-full rounded-full"
                       style={{
-                        backgroundColor: isHigh ? "#F87171" : isElevated ? "#FB923C" : "#00D69A",
+                        backgroundColor: isHigh ? "#FF5C5C" : isElevated ? "#FF9F45" : "#3DDC84",
                       }}
                     />
                   </div>

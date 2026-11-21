@@ -147,14 +147,14 @@ export default function IndoorAirPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(0,214,154,0.08)] border border-[rgba(0,214,154,0.2)] text-[11px] font-semibold text-[#00D69A] mb-1.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(77,184,255,0.08)] border border-[rgba(77,184,255,0.2)] text-xs font-semibold text-[#4DB8FF] mb-1.5">
             <Home className="w-3 h-3" />
             Indoor Micro-Climate & Filtration Engine
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#F5F8F6]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#F2F6FA]">
             Indoor Air & Household Assessment
           </h1>
-          <p className="text-xs text-[#98A9A1] mt-0.5">
+          <p className="text-xs text-[#A3B3C2] mt-0.5">
             Evaluate internal emissions, simulate room HEPA CADR, and deploy budget-based mitigations.
           </p>
         </div>
@@ -163,7 +163,7 @@ export default function IndoorAirPage() {
           <Button
             variant="outline"
             size="sm"
-            icon={<Sliders className="w-3.5 h-3.5 text-[#00D69A]" />}
+            icon={<Sliders className="w-3.5 h-3.5 text-[#4DB8FF]" />}
             onClick={() => setAssessmentOpen(!assessmentOpen)}
           >
             {assessmentOpen ? "Close Assessment" : "Household Assessment"}
@@ -183,15 +183,15 @@ export default function IndoorAirPage() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <Card elevated className="p-5 md:p-6 rounded-3xl border-[rgba(0,214,154,0.25)] bg-[rgba(10,22,17,0.85)] space-y-5">
+            <Card elevated className="p-5 md:p-6 rounded-3xl border-[rgba(77,184,255,0.25)] bg-[rgba(10,22,17,0.85)] space-y-5">
               <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] pb-3">
                 <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-[#00D69A]" />
-                  <h3 className="text-sm font-bold text-[#F5F8F6]">
+                  <Sliders className="w-4 h-4 text-[#4DB8FF]" />
+                  <h3 className="text-sm font-bold text-[#F2F6FA]">
                     Household Assessment Form
                   </h3>
                 </div>
-                <span className="text-[11px] text-[#98A9A1]">
+                <span className="text-xs text-[#A3B3C2]">
                   Personalizes indoor source mitigation
                 </span>
               </div>
@@ -199,7 +199,7 @@ export default function IndoorAirPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {/* 1. Home Size & Air Purifier */}
                 <div className="space-y-3">
-                  <label className="text-xs font-semibold text-[#98A9A1]">
+                  <label className="text-xs font-semibold text-[#A3B3C2]">
                     Apartment / Home Size ({homeConfig.homeSizeSqFt} sq.ft)
                   </label>
                   <input
@@ -214,15 +214,15 @@ export default function IndoorAirPage() {
                         homeSizeSqFt: Number(e.target.value),
                       })
                     }
-                    className="w-full accent-[#00D69A] cursor-pointer"
+                    className="w-full accent-[#4DB8FF] cursor-pointer"
                   />
-                  <div className="flex items-center justify-between text-[11px] text-[#64786E]">
+                  <div className="flex items-center justify-between text-xs text-[#8496A8]">
                     <span>300 sq.ft (Studio)</span>
                     <span>3000 sq.ft (Bungalow)</span>
                   </div>
 
                   <div className="pt-2 flex items-center justify-between">
-                    <span className="text-xs text-[#F5F8F6]">HEPA Air Purifier</span>
+                    <span className="text-xs text-[#F2F6FA]">HEPA Air Purifier</span>
                     <button
                       onClick={() =>
                         saveConfig({
@@ -232,8 +232,8 @@ export default function IndoorAirPage() {
                       }
                       className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                         homeConfig.hasAirPurifier
-                          ? "bg-[#00D69A] text-[#07100D]"
-                          : "bg-[rgba(255,255,255,0.08)] text-[#98A9A1]"
+                          ? "bg-[#4DB8FF] text-[#0A1118]"
+                          : "bg-[rgba(255,255,255,0.08)] text-[#A3B3C2]"
                       }`}
                     >
                       {homeConfig.hasAirPurifier ? "Active / Owned" : "None"}
@@ -243,7 +243,7 @@ export default function IndoorAirPage() {
 
                 {/* 2. Window Drafts & Infiltration */}
                 <div className="space-y-3">
-                  <label className="text-xs font-semibold text-[#98A9A1]">
+                  <label className="text-xs font-semibold text-[#A3B3C2]">
                     Window & Door Draft Seal
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -263,8 +263,8 @@ export default function IndoorAirPage() {
                         }
                         className={`py-2 px-2 rounded-xl text-xs font-medium text-center transition-all cursor-pointer border ${
                           homeConfig.windowDrafts === opt.key
-                            ? "bg-[rgba(0,214,154,0.18)] border-[#00D69A] text-[#00D69A] font-semibold"
-                            : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.06)] text-[#98A9A1] hover:text-[#F5F8F6]"
+                            ? "bg-[rgba(77,184,255,0.18)] border-[#4DB8FF] text-[#4DB8FF] font-semibold shadow-[0_0_12px_rgba(77,184,255,0.2)]"
+                            : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.08)] text-[#A3B3C2] hover:text-[#F2F6FA] hover:bg-[rgba(24,38,56,0.85)] hover:border-[rgba(77,184,255,0.4)] hover:shadow-[0_4px_16px_rgba(77,184,255,0.15)] hover:-translate-y-0.5"
                         }`}
                       >
                         {opt.label}
@@ -273,7 +273,7 @@ export default function IndoorAirPage() {
                   </div>
 
                   <div className="pt-2">
-                    <label className="text-xs font-semibold text-[#98A9A1] block mb-1.5">
+                    <label className="text-xs font-semibold text-[#A3B3C2] block mb-1.5">
                       Daily Floor Dusting Method
                     </label>
                     <select
@@ -284,7 +284,7 @@ export default function IndoorAirPage() {
                           dustingMethod: e.target.value as HomeConfig["dustingMethod"],
                         })
                       }
-                      className="w-full bg-[rgba(14,28,22,0.9)] border border-[rgba(255,255,255,0.1)] rounded-xl px-3 py-2 text-xs text-[#F5F8F6] outline-none focus:border-[#00D69A]"
+                      className="w-full bg-[rgba(18,29,42,0.9)] hover:bg-[rgba(24,38,56,0.95)] border border-[rgba(255,255,255,0.1)] hover:border-[rgba(77,184,255,0.4)] hover:shadow-[0_4px_20px_rgba(77,184,255,0.15)] rounded-xl px-3 py-2 text-xs text-[#F2F6FA] outline-none focus:border-[#4DB8FF] transition-all duration-200 cursor-pointer"
                     >
                       <option value="wet_mop">Wet Microfiber Mopping (Optimal)</option>
                       <option value="dry_broom">Dry Broom Sweeping (High Resuspension)</option>
@@ -295,7 +295,7 @@ export default function IndoorAirPage() {
 
                 {/* 3. Cooking Fuel & Incense */}
                 <div className="space-y-3">
-                  <label className="text-xs font-semibold text-[#98A9A1] block mb-1.5">
+                  <label className="text-xs font-semibold text-[#A3B3C2] block mb-1.5">
                     Kitchen Cooking Setup
                   </label>
                   <select
@@ -306,7 +306,7 @@ export default function IndoorAirPage() {
                         cookingType: e.target.value as HomeConfig["cookingType"],
                       })
                     }
-                    className="w-full bg-[rgba(14,28,22,0.9)] border border-[rgba(255,255,255,0.1)] rounded-xl px-3 py-2 text-xs text-[#F5F8F6] outline-none focus:border-[#00D69A]"
+                    className="w-full bg-[rgba(18,29,42,0.9)] hover:bg-[rgba(24,38,56,0.95)] border border-[rgba(255,255,255,0.1)] hover:border-[rgba(77,184,255,0.4)] hover:shadow-[0_4px_20px_rgba(77,184,255,0.15)] rounded-xl px-3 py-2 text-xs text-[#F2F6FA] outline-none focus:border-[#4DB8FF] transition-all duration-200 cursor-pointer"
                   >
                     <option value="lpg_exhaust">LPG / Piped Gas with Exhaust Chimney</option>
                     <option value="lpg_no_exhaust">LPG / Gas without Exhaust Hood</option>
@@ -315,7 +315,7 @@ export default function IndoorAirPage() {
                   </select>
 
                   <div className="pt-2">
-                    <label className="text-xs font-semibold text-[#98A9A1] block mb-1.5">
+                    <label className="text-xs font-semibold text-[#A3B3C2] block mb-1.5">
                       Agarbatti / Incense / Dhoop
                     </label>
                     <div className="grid grid-cols-3 gap-2">
@@ -335,8 +335,8 @@ export default function IndoorAirPage() {
                           }
                           className={`py-2 px-2 rounded-xl text-xs font-medium text-center transition-all cursor-pointer border ${
                             homeConfig.incenseUsage === opt.key
-                              ? "bg-[rgba(0,214,154,0.18)] border-[#00D69A] text-[#00D69A] font-semibold"
-                              : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.06)] text-[#98A9A1] hover:text-[#F5F8F6]"
+                              ? "bg-[rgba(77,184,255,0.18)] border-[#4DB8FF] text-[#4DB8FF] font-semibold shadow-[0_0_12px_rgba(77,184,255,0.2)]"
+                              : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.08)] text-[#A3B3C2] hover:text-[#F2F6FA] hover:bg-[rgba(24,38,56,0.85)] hover:border-[rgba(77,184,255,0.4)] hover:shadow-[0_4px_16px_rgba(77,184,255,0.15)] hover:-translate-y-0.5"
                           }`}
                         >
                           {opt.label}
@@ -354,10 +354,11 @@ export default function IndoorAirPage() {
       {/* Ventilation & Atmospheric Verdict Banner */}
       <Card
         elevated
+        hoverEffect
         className={`p-4 md:p-5 rounded-3xl border transition-all ${
           canOpenWindows
-            ? "border-[rgba(0,214,154,0.3)] bg-gradient-to-r from-[rgba(0,214,154,0.1)] to-[rgba(10,22,17,0.7)]"
-            : "border-[rgba(248,113,113,0.3)] bg-gradient-to-r from-[rgba(248,113,113,0.1)] to-[rgba(10,22,17,0.7)]"
+            ? "border-[rgba(77,184,255,0.3)] bg-gradient-to-r from-[rgba(77,184,255,0.1)] to-[rgba(18,29,42,0.85)]"
+            : "border-[rgba(248,113,113,0.3)] bg-gradient-to-r from-[rgba(248,113,113,0.1)] to-[rgba(18,29,42,0.85)]"
         }`}
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -365,19 +366,19 @@ export default function IndoorAirPage() {
             <div
               className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border ${
                 canOpenWindows
-                  ? "bg-[rgba(0,214,154,0.15)] border-[rgba(0,214,154,0.35)] text-[#00D69A]"
+                  ? "bg-[rgba(77,184,255,0.15)] border-[rgba(77,184,255,0.35)] text-[#4DB8FF]"
                   : "bg-[rgba(248,113,113,0.15)] border-[rgba(248,113,113,0.35)] text-[#F87171]"
               }`}
             >
               {canOpenWindows ? (
-                <Wind className="w-5 h-5 text-[#00D69A]" />
+                <Wind className="w-5 h-5 text-[#4DB8FF]" />
               ) : (
                 <ShieldAlert className="w-5 h-5 text-[#F87171]" />
               )}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[#F5F8F6]">
+                <span className="text-sm font-bold text-[#F2F6FA]">
                   {canOpenWindows
                     ? "Safe for Natural Cross-Ventilation"
                     : "Smog Infiltration Hazard — Keep Windows Latched"}
@@ -385,12 +386,12 @@ export default function IndoorAirPage() {
                 <Badge
                   variant={canOpenWindows ? "accent" : "danger"}
                   size="sm"
-                  className="text-[10px]"
+                  className="text-xs"
                 >
                   Outdoor AQI {outdoorAqi}
                 </Badge>
               </div>
-              <p className="text-xs text-[#98A9A1] mt-0.5">
+              <p className="text-xs text-[#A3B3C2] mt-0.5">
                 {canOpenWindows
                   ? "Outdoor PM2.5 levels are below 35 µg/m³. Flush stale indoor CO2 with a 15-minute cross-breeze."
                   : "Outdoor particulates exceed safe respiratory thresholds. Active indoor recirculation recommended."}
@@ -398,20 +399,20 @@ export default function IndoorAirPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-medium text-[#98A9A1] shrink-0 border-t sm:border-t-0 sm:border-l border-[rgba(255,255,255,0.08)] pt-2 sm:pt-0 sm:pl-4">
+          <div className="flex items-center gap-4 text-xs font-medium text-[#A3B3C2] shrink-0 border-t sm:border-t-0 sm:border-l border-[rgba(255,255,255,0.08)] pt-2 sm:pt-0 sm:pl-4">
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-[#64786E]">
+              <div className="text-xs uppercase tracking-wider text-[#8496A8]">
                 Bedroom CADR
               </div>
-              <div className="text-sm font-bold text-[#F5F8F6]">
+              <div className="text-sm font-bold text-[#F2F6FA]">
                 {cadr} m³/h
               </div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-[#64786E]">
+              <div className="text-xs uppercase tracking-wider text-[#8496A8]">
                 Air Changes / Hr
               </div>
-              <div className="text-sm font-bold text-[#00D69A]">
+              <div className="text-sm font-bold text-[#4DB8FF]">
                 {airChangesPerHour} ACH
               </div>
             </div>
@@ -424,11 +425,11 @@ export default function IndoorAirPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flame className="w-4 h-4 text-[#FACC15]" />
-            <h2 className="text-base font-bold text-[#F5F8F6]">
+            <h2 className="text-base font-bold text-[#F2F6FA]">
               Identified Household Pollution Sources
             </h2>
           </div>
-          <span className="text-xs text-[#98A9A1]">
+          <span className="text-xs text-[#A3B3C2]">
             Modeled estimates based on assessment
           </span>
         </div>
@@ -438,12 +439,13 @@ export default function IndoorAirPage() {
             <Card
               key={source.id}
               elevated
-              className="p-4 rounded-2xl border border-[rgba(255,255,255,0.07)] bg-[rgba(9,18,14,0.7)] space-y-2.5"
+              hoverEffect
+              className="p-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(18,29,42,0.65)] space-y-2.5"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[#F5F8F6]">
+                    <span className="text-xs font-bold text-[#F2F6FA]">
                       {source.name}
                     </span>
                     <Badge
@@ -455,12 +457,12 @@ export default function IndoorAirPage() {
                           : "subtle"
                       }
                       size="sm"
-                      className="text-[10px]"
+                      className="text-xs"
                     >
                       {source.severity}
                     </Badge>
                   </div>
-                  <span className="text-[11px] text-[#00D69A] font-semibold">
+                  <span className="text-xs text-[#4DB8FF] font-semibold">
                     Pollutant: {source.pollutantType}
                   </span>
                 </div>
@@ -468,18 +470,18 @@ export default function IndoorAirPage() {
                   <div className="text-xs font-bold text-[#F87171]">
                     {source.estimatedContribution}
                   </div>
-                  <div className="text-[9px] uppercase tracking-wider text-[#64786E]">
+                  <div className="text-xs uppercase tracking-wider text-[#8496A8]">
                     Est. Load
                   </div>
                 </div>
               </div>
 
-              <p className="text-xs text-[#98A9A1] leading-relaxed">
+              <p className="text-xs text-[#A3B3C2] leading-relaxed">
                 {source.description}
               </p>
 
-              <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] flex items-center gap-2 text-[11px] text-[#F5F8F6]">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#00D69A] shrink-0" />
+              <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] flex items-center gap-2 text-xs text-[#F2F6FA]">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#4DB8FF] shrink-0" />
                 <span className="leading-tight">{source.mitigation}</span>
               </div>
             </Card>
@@ -492,12 +494,12 @@ export default function IndoorAirPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-[#00D69A]" />
-              <h2 className="text-base font-bold text-[#F5F8F6]">
+              <DollarSign className="w-4 h-4 text-[#4DB8FF]" />
+              <h2 className="text-base font-bold text-[#F2F6FA]">
                 Budget-Based Recommendations & DIY Guides
               </h2>
             </div>
-            <p className="text-xs text-[#98A9A1] mt-0.5">
+            <p className="text-xs text-[#A3B3C2] mt-0.5">
               Affordable, proven steps to clean indoor air from zero-cost habitchanges to certified purifiers.
             </p>
           </div>
@@ -516,8 +518,8 @@ export default function IndoorAirPage() {
                 onClick={() => setSelectedBudgetTier(tier.id as typeof selectedBudgetTier)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
                   selectedBudgetTier === tier.id
-                    ? "bg-[#00D69A] text-[#07100D] font-bold shadow-sm"
-                    : "bg-[rgba(10,20,16,0.6)] text-[#98A9A1] hover:text-[#F5F8F6] border border-[rgba(255,255,255,0.06)]"
+                    ? "bg-[#4DB8FF] text-[#0A1118] font-bold shadow-sm"
+                    : "bg-[rgba(14,23,34,0.6)] text-[#A3B3C2] hover:text-[#F2F6FA] border border-[rgba(255,255,255,0.06)]"
                 }`}
               >
                 {tier.label}
@@ -531,7 +533,8 @@ export default function IndoorAirPage() {
             <Card
               key={rec.id}
               elevated
-              className="p-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(9,18,14,0.7)] flex flex-col justify-between space-y-3"
+              hoverEffect
+              className="p-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(18,29,42,0.65)] flex flex-col justify-between space-y-3"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
@@ -546,19 +549,19 @@ export default function IndoorAirPage() {
                         : "outline"
                     }
                     size="sm"
-                    className="text-[10px] font-bold"
+                    className="text-xs font-bold"
                   >
                     {rec.costLabel}
                   </Badge>
-                  <span className="text-[11px] font-semibold text-[#00D69A]">
+                  <span className="text-xs font-semibold text-[#4DB8FF]">
                     {rec.impactReduction}
                   </span>
                 </div>
 
-                <h3 className="text-sm font-bold text-[#F5F8F6] leading-snug">
+                <h3 className="text-sm font-bold text-[#F2F6FA] leading-snug">
                   {rec.title}
                 </h3>
-                <p className="text-xs text-[#98A9A1] leading-relaxed">
+                <p className="text-xs text-[#A3B3C2] leading-relaxed">
                   {rec.description}
                 </p>
               </div>
@@ -567,7 +570,7 @@ export default function IndoorAirPage() {
                 <div className="pt-2 border-t border-[rgba(255,255,255,0.06)]">
                   <button
                     onClick={() => setActiveDiyModal(rec)}
-                    className="text-xs font-semibold text-[#00D69A] hover:text-[#05E5A6] flex items-center gap-1.5 cursor-pointer"
+                    className="text-xs font-semibold text-[#4DB8FF] hover:text-[#7CCBFF] flex items-center gap-1.5 cursor-pointer"
                   >
                     <span>Read Step-by-Step DIY Guide</span>
                     <Sparkles className="w-3 h-3" />
@@ -584,7 +587,7 @@ export default function IndoorAirPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Droplets className="w-4 h-4 text-[#38BDF8]" />
-            <h2 className="text-base font-bold text-[#F5F8F6]">
+            <h2 className="text-base font-bold text-[#F2F6FA]">
               Interactive Room Model & Purifier Simulation
             </h2>
           </div>
@@ -600,14 +603,15 @@ export default function IndoorAirPage() {
             <Card
               key={room.id}
               elevated
-              className="p-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(9,18,14,0.7)] space-y-3"
+              hoverEffect
+              className="p-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(18,29,42,0.65)] space-y-3"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold text-[#F5F8F6]">
+                  <span className="text-xs font-bold text-[#F2F6FA]">
                     {room.name}
                   </span>
-                  <div className="text-[10px] text-[#64786E] flex items-center gap-1.5 mt-0.5">
+                  <div className="text-xs text-[#8496A8] flex items-center gap-1.5 mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8]" />
                     <span>Estimated Infiltration Model</span>
                   </div>
@@ -616,8 +620,8 @@ export default function IndoorAirPage() {
                   onClick={() => togglePurifier(room.id)}
                   className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
                     room.purifierActive
-                      ? "bg-[rgba(0,214,154,0.2)] border-[#00D69A] text-[#00D69A]"
-                      : "bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)] text-[#64786E]"
+                      ? "bg-[rgba(77,184,255,0.2)] border-[#4DB8FF] text-[#4DB8FF]"
+                      : "bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)] text-[#8496A8]"
                   }`}
                   title={room.purifierActive ? "Turn Purifier OFF" : "Turn Purifier ON"}
                 >
@@ -627,31 +631,31 @@ export default function IndoorAirPage() {
 
               <div className="flex items-baseline justify-between pt-1">
                 <div>
-                  <div className="text-3xl font-extrabold text-[#F5F8F6] tracking-tight">
+                  <div className="text-3xl font-extrabold text-[#F2F6FA] tracking-tight">
                     {room.estimatedAqi}
                   </div>
-                  <div className="text-[10px] uppercase tracking-wider text-[#98A9A1]">
+                  <div className="text-xs uppercase tracking-wider text-[#A3B3C2]">
                     Indoor Est. AQI
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-bold text-[#00D69A]">
+                  <div className="text-sm font-bold text-[#4DB8FF]">
                     {room.pm2_5} µg/m³
                   </div>
-                  <div className="text-[10px] uppercase tracking-wider text-[#64786E]">
+                  <div className="text-xs uppercase tracking-wider text-[#8496A8]">
                     PM2.5 Conc.
                   </div>
                 </div>
               </div>
 
               <div className="space-y-1 pt-1">
-                <div className="flex items-center justify-between text-[11px] text-[#98A9A1]">
+                <div className="flex items-center justify-between text-xs text-[#A3B3C2]">
                   <span>HEPA Filter Life</span>
-                  <span className="font-semibold text-[#F5F8F6]">{room.filterLife}%</span>
+                  <span className="font-semibold text-[#F2F6FA]">{room.filterLife}%</span>
                 </div>
                 <div className="w-full h-1.5 bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#00D69A] rounded-full"
+                    className="h-full bg-[#4DB8FF] rounded-full"
                     style={{ width: `${room.filterLife}%` }}
                   />
                 </div>
@@ -661,7 +665,7 @@ export default function IndoorAirPage() {
         </div>
 
         {/* Indoor Engineering Model Assumptions Disclosure */}
-        <div className="p-3.5 rounded-2xl bg-[rgba(10,22,17,0.5)] border border-[rgba(255,255,255,0.06)] flex items-start gap-2.5 text-[11px] text-[#98A9A1] leading-relaxed">
+        <div className="p-3.5 rounded-2xl bg-[rgba(10,22,17,0.5)] border border-[rgba(255,255,255,0.06)] flex items-start gap-2.5 text-xs text-[#A3B3C2] leading-relaxed">
           <Info className="w-4 h-4 text-[#38BDF8] shrink-0 mt-0.5" />
           <span>
             <strong>Indoor Engineering Model Assumptions:</strong> Room particulate concentrations and purifier reductions are illustrative mass-balance estimates based on door sealing ratios, simulated infiltration factors, and rated CADR delivery curves. They provide comparative behavioral planning guidance and do not replace physical in-situ calibrated laser particle counters.
@@ -685,26 +689,26 @@ export default function IndoorAirPage() {
             >
               <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-3">
                 <div>
-                  <Badge variant="accent" size="sm" className="mb-1 text-[10px]">
+                  <Badge variant="accent" size="sm" className="mb-1 text-xs">
                     {activeDiyModal.costLabel}
                   </Badge>
-                  <h3 className="text-base font-bold text-[#F5F8F6]">
+                  <h3 className="text-base font-bold text-[#F2F6FA]">
                     {activeDiyModal.title}
                   </h3>
                 </div>
                 <button
                   onClick={() => setActiveDiyModal(null)}
-                  className="p-1 rounded-lg text-[#98A9A1] hover:text-[#F5F8F6] cursor-pointer"
+                  className="p-1 rounded-lg text-[#A3B3C2] hover:text-[#F2F6FA] cursor-pointer"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[rgba(0,214,154,0.08)] border border-[rgba(0,214,154,0.2)] text-xs text-[#00D69A] font-semibold">
+              <div className="p-3.5 rounded-2xl bg-[rgba(77,184,255,0.08)] border border-[rgba(77,184,255,0.2)] text-xs text-[#4DB8FF] font-semibold">
                 Expected Clean Air Impact: {activeDiyModal.impactReduction}
               </div>
 
-              <div className="text-xs text-[#98A9A1] space-y-2 whitespace-pre-line leading-relaxed">
+              <div className="text-xs text-[#A3B3C2] space-y-2 whitespace-pre-line leading-relaxed">
                 {activeDiyModal.diyGuide}
               </div>
 

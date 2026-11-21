@@ -18,6 +18,7 @@ export interface CardProps extends Omit<HTMLMotionProps<"div">, "children"> {
   interactive?: boolean;
   elevated?: boolean;
   tilt3d?: boolean;
+  hoverEffect?: boolean;
   variant?: "default" | "elevated" | "subtle";
 }
 
@@ -27,7 +28,8 @@ export function Card({
   glow = false,
   interactive = false,
   elevated = false,
-  tilt3d = true,
+  tilt3d = false,
+  hoverEffect = false,
   variant = "default",
   style,
   ...props
@@ -55,15 +57,16 @@ export function Card({
   const mouseXSpring = useSpring(x, { stiffness: 300, damping: 26 });
   const mouseYSpring = useSpring(y, { stiffness: 300, damping: 26 });
 
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [6, -6]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-6, 6]);
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], [2.5, -2.5]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [-2.5, 2.5]);
 
-  // Dynamic 3D Cursor-Tracking Specular Light Sheen
-  const glareX = useTransform(mouseXSpring, [-0.5, 0.5], ["10%", "90%"]);
-  const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["10%", "90%"]);
-  const glareBackground = useMotionTemplate`radial-gradient(circle 340px at ${glareX} ${glareY}, rgba(255, 255, 255, 0.18), transparent 75%)`;
+  // Dynamic 3D Cursor-Tracking Specular Light Sheen (refined, subtle)
+  const glareX = useTransform(mouseXSpring, [-0.5, 0.5], ["15%", "85%"]);
+  const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["15%", "85%"]);
+  const glareBackground = useMotionTemplate`radial-gradient(circle 320px at ${glareX} ${glareY}, rgba(255, 255, 255, 0.08), transparent 70%)`;
 
-  const is3DActive = !isMobile && (interactive || tilt3d) && !shouldReduceMotion;
+  // Tilt and glare effect is strictly for hero-card only (Rule 7)
+  const is3DActive = !isMobile && Boolean(tilt3d) && !shouldReduceMotion;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!is3DActive || !cardRef.current) return;
@@ -104,8 +107,8 @@ export function Card({
         whileHover={
           is3DActive
             ? {
-                y: -5,
-                scale: 1.012,
+                y: -2,
+                scale: 1.005,
                 transition: { type: "spring", stiffness: 380, damping: 24 },
               }
             : undefined
@@ -125,20 +128,15 @@ export function Card({
           ...style,
         }}
         className={cn(
-          "rounded-3xl p-5 md:p-6 relative overflow-hidden smooth-144hz group cursor-default select-none",
+          "rounded-2xl p-5 md:p-6 relative overflow-hidden smooth-144hz group cursor-default select-none",
           variantClass,
+          (interactive || hoverEffect) && "card-hover cursor-pointer",
           glow && "ambient-glow-emerald",
           className
         )}
         {...props}
       >
-        {/* Top 3D Specular Light Edge — Apple visionOS signature physical glass refraction */}
-        <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.36)] to-transparent pointer-events-none z-10" />
-
-        {/* Bottom Internal Refraction Shade */}
-        <div className="absolute bottom-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-[rgba(0,0,0,0.55)] to-transparent pointer-events-none z-10" />
-
-        {/* Dynamic 3D Cursor-Following Specular Glass Sheen */}
+        {/* Dynamic Specular Sheen (Subtle, Hero only) */}
         {is3DActive && (
           <motion.div
             className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20"
@@ -151,7 +149,7 @@ export function Card({
         {/* Card Content with True 3D Depth Isolation & Parallax */}
         <div
           className="relative z-10 h-full"
-          style={{ transform: "translateZ(18px)", transformStyle: "preserve-3d" }}
+          style={{ transform: "translateZ(4px)", transformStyle: "preserve-3d" }}
         >
           {children}
         </div>
@@ -186,7 +184,7 @@ export function CardTitle({
   return (
     <h3
       className={cn(
-        "text-xs font-semibold tracking-wider text-[#F5F8F6] uppercase flex items-center gap-2",
+        "text-xs font-semibold tracking-wider text-[#F2F6FA] uppercase flex items-center gap-2",
         className
       )}
       {...props}

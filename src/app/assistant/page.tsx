@@ -264,25 +264,25 @@ export default function AssistantPage() {
       {/* Workspace Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-[#F5F8F6] flex items-center gap-2.5">
-            <Sparkles className="w-5 h-5 text-[#00D69A]" />
-            BreatheWise AI Conversational Studio
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-[#F2F6FA] flex items-center gap-2.5">
+            <Bot className="w-5 h-5 text-[#4DB8FF]" />
+            Assistant
           </h1>
-          <p className="text-xs text-[#98A9A1] mt-0.5">
+          <p className="text-xs text-[#A3B3C2] mt-0.5">
             Powered by Google Gemini & Open-Meteo Copernicus CAMS models for {airData?.city.name}.
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           {/* Language Switcher Toggle */}
-          <div className="flex items-center p-0.5 rounded-full bg-[rgba(7,14,11,0.6)] border border-[rgba(255,255,255,0.08)] text-[11px]">
+          <div className="flex items-center p-0.5 rounded-full bg-[rgba(10,17,24,0.6)] border border-[rgba(255,255,255,0.08)] text-xs">
             <button
               onClick={() => handleLanguageToggle("en")}
               className={cn(
                 "px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer flex items-center gap-1",
                 lang === "en"
-                  ? "bg-[rgba(0,214,154,0.18)] text-[#00D69A] border border-[rgba(0,214,154,0.3)] shadow-sm"
-                  : "text-[#98A9A1] hover:text-[#F5F8F6]"
+                  ? "bg-[rgba(77,184,255,0.18)] text-[#4DB8FF] border border-[rgba(77,184,255,0.3)] shadow-sm"
+                  : "text-[#A3B3C2] hover:text-[#F2F6FA]"
               )}
             >
               <span>EN</span>
@@ -293,8 +293,8 @@ export default function AssistantPage() {
               className={cn(
                 "px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer flex items-center gap-1",
                 lang === "hi"
-                  ? "bg-[rgba(0,214,154,0.18)] text-[#00D69A] border border-[rgba(0,214,154,0.3)] shadow-sm"
-                  : "text-[#98A9A1] hover:text-[#F5F8F6]"
+                  ? "bg-[rgba(77,184,255,0.18)] text-[#4DB8FF] border border-[rgba(77,184,255,0.3)] shadow-sm"
+                  : "text-[#A3B3C2] hover:text-[#F2F6FA]"
               )}
             >
               <span>HI</span>
@@ -306,7 +306,7 @@ export default function AssistantPage() {
             variant="secondary"
             size="sm"
             onClick={handleCopyChat}
-            icon={copied ? <Check className="w-3.5 h-3.5 text-[#00D69A]" /> : <Copy className="w-3.5 h-3.5" />}
+            icon={copied ? <Check className="w-3.5 h-3.5 text-[#4DB8FF]" /> : <Copy className="w-3.5 h-3.5" />}
           >
             {copied ? (lang === "hi" ? "कॉपी हुआ" : "Copied") : (lang === "hi" ? "कॉपी" : "Export")}
           </Button>
@@ -328,8 +328,8 @@ export default function AssistantPage() {
 
       {/* Cohort Sensitivity Pills */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
-        <span className="text-[#64786E] text-[11px] font-semibold uppercase tracking-wider shrink-0 flex items-center gap-1">
-          <Languages className="w-3 h-3 text-[#00D69A]" />
+        <span className="text-[#8496A8] text-xs font-semibold uppercase tracking-wider shrink-0 flex items-center gap-1">
+          <Languages className="w-3 h-3 text-[#4DB8FF]" />
           {lang === "hi" ? "सेंसिटिविटी प्रोफाइल:" : "Cohort Profile:"}
         </span>
         {(
@@ -347,8 +347,8 @@ export default function AssistantPage() {
             className={cn(
               "px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer",
               selectedCohort === item.id
-                ? "bg-[rgba(0,214,154,0.18)] text-[#00D69A] border border-[rgba(0,214,154,0.35)] shadow-sm"
-                : "bg-[rgba(10,20,16,0.4)] text-[#98A9A1] hover:text-[#F5F8F6] border border-[rgba(255,255,255,0.06)]"
+                ? "bg-[rgba(77,184,255,0.18)] text-[#4DB8FF] border border-[rgba(77,184,255,0.35)] shadow-sm"
+                : "bg-[rgba(14,23,34,0.4)] text-[#A3B3C2] hover:text-[#F2F6FA] border border-[rgba(255,255,255,0.06)]"
             )}
           >
             {lang === "hi" ? item.hi : item.en}
@@ -363,22 +363,22 @@ export default function AssistantPage() {
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[rgba(255,255,255,0.18)] to-transparent pointer-events-none z-20" />
 
           {/* Top Canvas Bar */}
-          <div className="h-14 px-6 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(6,14,11,0.45)] flex items-center justify-between z-10 shrink-0">
+          <div className="h-14 px-6 border-b border-[rgba(255,255,255,0.06)] bg-[rgba(10,17,24,0.45)] flex items-center justify-between z-10 shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-[rgba(0,214,154,0.12)] border border-[rgba(0,214,154,0.25)] flex items-center justify-center">
-                <Sparkles className="w-3.5 h-3.5 text-[#00D69A]" />
+              <div className="w-7 h-7 rounded-xl bg-[rgba(77,184,255,0.12)] border border-[rgba(77,184,255,0.25)] flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5 text-[#4DB8FF]" />
               </div>
-              <span className="text-xs font-semibold text-[#F5F8F6]">
+              <span className="text-xs font-semibold text-[#F2F6FA]">
                 {lang === "hi" ? "ब्रीथवाइज़ एआई रीज़निंग स्टूडियो" : "BreatheWise AI Reasoning Studio"}
               </span>
             </div>
             <div className="flex items-center gap-2.5">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(0,214,154,0.08)] border border-[rgba(0,214,154,0.22)] text-[11px] text-[#00D69A] font-medium">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[rgba(77,184,255,0.08)] border border-[rgba(77,184,255,0.22)] text-xs text-[#4DB8FF] font-medium">
                 <Lock className="w-3 h-3" />
                 <span>{lang === "hi" ? "गोपनीय सत्र" : "Confidential Session"}</span>
               </div>
-              <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-[#98A9A1]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00D69A] animate-pulse" />
+              <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#A3B3C2]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#4DB8FF] animate-pulse" />
                 <span>{lang === "hi" ? "वास्तविक टेलीमेट्री सक्रिय" : "Verified Telemetry Active"}</span>
               </div>
             </div>
@@ -393,17 +393,17 @@ export default function AssistantPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="py-4 flex flex-col items-center text-center space-y-2.5"
               >
-                <div className="w-12 h-12 rounded-2xl bg-[rgba(10,22,17,0.7)] border border-[rgba(0,214,154,0.3)] flex items-center justify-center shadow-sm">
-                  <Sparkles className="w-5 h-5 text-[#00D69A]" />
+                <div className="w-12 h-12 rounded-2xl bg-[rgba(10,22,17,0.7)] border border-[rgba(77,184,255,0.3)] flex items-center justify-center shadow-sm">
+                  <Sparkles className="w-5 h-5 text-[#4DB8FF]" />
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="text-base md:text-lg font-bold text-[#F5F8F6] tracking-tight">
+                  <h3 className="text-base md:text-lg font-bold text-[#F2F6FA] tracking-tight">
                     {lang === "hi"
                       ? "नमस्कार! आज ब्रीथवाइज़ आपकी क्या सहायता कर सकता है?"
                       : "Welcome to BreatheWise AI Intelligence"}
                   </h3>
-                  <p className="text-xs text-[#98A9A1] max-w-md leading-relaxed">
+                  <p className="text-xs text-[#A3B3C2] max-w-md leading-relaxed">
                     {lang === "hi"
                       ? "स्मॉग से बचाव, सुबह के तापमान व्युत्क्रमण, या HEPA फिल्टर साइजिंग के बारे में पूछें।"
                       : "Real-time atmospheric chemistry explanations, personalized routines, and clinical smog guidance."}
@@ -431,8 +431,8 @@ export default function AssistantPage() {
                       className={cn(
                         "w-8 h-8 rounded-2xl flex items-center justify-center shrink-0 text-xs font-bold",
                         isBot
-                          ? "bg-[rgba(12,24,19,0.7)] border border-[rgba(0,214,154,0.3)] text-[#00D69A]"
-                          : "bg-[rgba(16,32,25,0.8)] border border-[rgba(255,255,255,0.1)] text-[#F5F8F6]"
+                          ? "bg-[rgba(18,29,42,0.7)] border border-[rgba(77,184,255,0.3)] text-[#4DB8FF]"
+                          : "bg-[rgba(24,38,56,0.8)] border border-[rgba(255,255,255,0.1)] text-[#F2F6FA]"
                       )}
                     >
                       {isBot ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
@@ -443,10 +443,10 @@ export default function AssistantPage() {
                         <div className="flex items-center gap-1.5 px-1">
                           <span
                             className={cn(
-                              "text-[9px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase",
+                              "text-xs font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase",
                               msg.engine === "deterministic-fallback"
                                 ? "bg-[rgba(250,204,21,0.12)] text-[#FACC15] border-[rgba(250,204,21,0.3)]"
-                                : "bg-[rgba(0,214,154,0.12)] text-[#00D69A] border-[rgba(0,214,154,0.3)]"
+                                : "bg-[rgba(77,184,255,0.12)] text-[#4DB8FF] border-[rgba(77,184,255,0.3)]"
                             )}
                           >
                             {msg.engine === "deterministic-fallback"
@@ -459,8 +459,8 @@ export default function AssistantPage() {
                         className={cn(
                           "p-4 rounded-3xl text-xs md:text-sm leading-relaxed border backdrop-blur-md",
                           isBot
-                            ? "bg-[rgba(10,20,16,0.65)] border-[rgba(255,255,255,0.08)] text-[#F5F8F6] rounded-tl-sm whitespace-pre-line"
-                            : "bg-[rgba(0,214,154,0.15)] border-[rgba(0,214,154,0.3)] text-[#F5F8F6] rounded-tr-sm"
+                            ? "bg-[rgba(14,23,34,0.65)] border-[rgba(255,255,255,0.08)] text-[#F2F6FA] rounded-tl-sm whitespace-pre-line"
+                            : "bg-[rgba(77,184,255,0.15)] border-[rgba(77,184,255,0.3)] text-[#F2F6FA] rounded-tr-sm"
                         )}
                       >
                         {msg.content}
@@ -468,7 +468,7 @@ export default function AssistantPage() {
 
                       <div
                         className={cn(
-                          "text-[10px] text-[#64786E] px-2",
+                          "text-xs text-[#8496A8] px-2",
                           isBot ? "text-left" : "text-right"
                         )}
                       >
@@ -484,10 +484,10 @@ export default function AssistantPage() {
                               whileTap={{ scale: 0.98 }}
                               key={i}
                               onClick={() => handleSend(action)}
-                              className="px-3 py-1.5 rounded-full bg-[rgba(10,20,16,0.5)] border border-[rgba(255,255,255,0.06)] text-[11px] text-[#98A9A1] hover:text-[#00D69A] hover:border-[rgba(0,214,154,0.3)] transition-all flex items-center gap-1.5 cursor-pointer"
+                              className="px-3 py-1.5 rounded-full bg-[rgba(14,23,34,0.5)] border border-[rgba(255,255,255,0.06)] text-xs text-[#A3B3C2] hover:text-[#4DB8FF] hover:border-[rgba(77,184,255,0.3)] transition-all flex items-center gap-1.5 cursor-pointer"
                             >
                               <span>{action}</span>
-                              <ArrowUpRight className="w-3 h-3 text-[#64786E]" />
+                              <ArrowUpRight className="w-3 h-3 text-[#8496A8]" />
                             </motion.button>
                           ))}
                         </div>
@@ -505,28 +505,28 @@ export default function AssistantPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex gap-3 max-w-md mr-auto items-center"
               >
-                <div className="w-8 h-8 rounded-2xl bg-[rgba(12,24,19,0.7)] border border-[rgba(0,214,154,0.35)] text-[#00D69A] flex items-center justify-center shadow-[0_0_15px_rgba(0,214,154,0.2)]">
+                <div className="w-8 h-8 rounded-2xl bg-[rgba(18,29,42,0.7)] border border-[rgba(77,184,255,0.35)] text-[#4DB8FF] flex items-center justify-center shadow-[0_0_15px_rgba(77,184,255,0.2)]">
                   <Bot className="w-4 h-4 animate-pulse" />
                 </div>
-                <div className="px-4 py-2.5 rounded-2xl bg-[rgba(10,20,16,0.7)] border border-[rgba(0,214,154,0.2)] flex items-center gap-2.5 backdrop-blur-md">
+                <div className="px-4 py-2.5 rounded-2xl bg-[rgba(14,23,34,0.7)] border border-[rgba(77,184,255,0.2)] flex items-center gap-2.5 backdrop-blur-md">
                   <div className="flex items-center gap-1">
                     <motion.span
                       animate={{ y: [0, -3, 0] }}
                       transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut" }}
-                      className="w-1.5 h-1.5 rounded-full bg-[#00D69A]"
+                      className="w-1.5 h-1.5 rounded-full bg-[#4DB8FF]"
                     />
                     <motion.span
                       animate={{ y: [0, -3, 0] }}
                       transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut", delay: 0.15 }}
-                      className="w-1.5 h-1.5 rounded-full bg-[#00D69A]"
+                      className="w-1.5 h-1.5 rounded-full bg-[#4DB8FF]"
                     />
                     <motion.span
                       animate={{ y: [0, -3, 0] }}
                       transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut", delay: 0.3 }}
-                      className="w-1.5 h-1.5 rounded-full bg-[#00D69A]"
+                      className="w-1.5 h-1.5 rounded-full bg-[#4DB8FF]"
                     />
                   </div>
-                  <span className="text-[11px] font-medium text-[#98A9A1]">
+                  <span className="text-xs font-medium text-[#A3B3C2]">
                     {lang === "hi"
                       ? "वायुमंडलीय टेलीमेट्री व क्लिनिकल दिशानिर्देशों का विश्लेषण..."
                       : "Analyzing telemetry & scientific guidelines..."}
@@ -538,13 +538,13 @@ export default function AssistantPage() {
           </div>
 
           {/* Floating Composer */}
-          <div className="p-3 md:p-4 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(6,14,11,0.5)] backdrop-blur-2xl z-20">
+          <div className="p-3 md:p-4 border-t border-[rgba(255,255,255,0.06)] bg-[rgba(10,17,24,0.5)] backdrop-blur-2xl z-20">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSend();
               }}
-              className="rounded-2xl md:rounded-3xl bg-[rgba(12,24,19,0.7)] border border-[rgba(255,255,255,0.08)] p-3 space-y-2.5"
+              className="rounded-2xl md:rounded-3xl bg-[rgba(18,29,42,0.7)] border border-[rgba(255,255,255,0.08)] p-3 space-y-2.5"
             >
               <input
                 type="text"
@@ -555,7 +555,7 @@ export default function AssistantPage() {
                     ? "स्मॉग से बचाव, HEPA साइजिंग या बाहर निकलने के सुरक्षित समय के बारे में पूछें..."
                     : "Ask BreatheWise AI about smog, HEPA purifier sizing, or child safety windows..."
                 }
-                className="w-full bg-transparent px-2 text-xs md:text-sm text-[#F5F8F6] placeholder:text-[#64786E] focus:outline-none"
+                className="w-full bg-transparent px-2 text-xs md:text-sm text-[#F2F6FA] placeholder:text-[#8496A8] focus:outline-none"
               />
 
               {/* Bottom Row Tools & Action Button */}
@@ -565,10 +565,10 @@ export default function AssistantPage() {
                     type="button"
                     onClick={() => setActiveTool("reasoning")}
                     className={cn(
-                      "px-2.5 py-1 rounded-full text-[11px] font-medium flex items-center gap-1 transition-all cursor-pointer",
+                      "px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all cursor-pointer",
                       activeTool === "reasoning"
-                        ? "bg-[rgba(0,214,154,0.12)] text-[#00D69A] border border-[rgba(0,214,154,0.3)]"
-                        : "bg-[rgba(6,14,11,0.4)] text-[#98A9A1] hover:text-[#F5F8F6] border border-[rgba(255,255,255,0.06)]"
+                        ? "bg-[rgba(77,184,255,0.12)] text-[#4DB8FF] border border-[rgba(77,184,255,0.3)]"
+                        : "bg-[rgba(10,17,24,0.4)] text-[#A3B3C2] hover:text-[#F2F6FA] border border-[rgba(255,255,255,0.06)]"
                     )}
                   >
                     <Cpu className="w-3 h-3" />
@@ -579,10 +579,10 @@ export default function AssistantPage() {
                     type="button"
                     onClick={() => setActiveTool("cams")}
                     className={cn(
-                      "px-2.5 py-1 rounded-full text-[11px] font-medium flex items-center gap-1 transition-all cursor-pointer",
+                      "px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-all cursor-pointer",
                       activeTool === "cams"
-                        ? "bg-[rgba(0,214,154,0.12)] text-[#00D69A] border border-[rgba(0,214,154,0.3)]"
-                        : "bg-[rgba(6,14,11,0.4)] text-[#98A9A1] hover:text-[#F5F8F6] border border-[rgba(255,255,255,0.06)]"
+                        ? "bg-[rgba(77,184,255,0.12)] text-[#4DB8FF] border border-[rgba(77,184,255,0.3)]"
+                        : "bg-[rgba(10,17,24,0.4)] text-[#A3B3C2] hover:text-[#F2F6FA] border border-[rgba(255,255,255,0.06)]"
                     )}
                   >
                     <Globe2 className="w-3 h-3" />
@@ -593,10 +593,10 @@ export default function AssistantPage() {
                     type="button"
                     onClick={() => setActiveTool("cadr")}
                     className={cn(
-                      "hidden sm:flex px-2.5 py-1 rounded-full text-[11px] font-medium items-center gap-1 transition-all cursor-pointer",
+                      "hidden sm:flex px-2.5 py-1 rounded-full text-xs font-medium items-center gap-1 transition-all cursor-pointer",
                       activeTool === "cadr"
-                        ? "bg-[rgba(0,214,154,0.12)] text-[#00D69A] border border-[rgba(0,214,154,0.3)]"
-                        : "bg-[rgba(6,14,11,0.4)] text-[#98A9A1] hover:text-[#F5F8F6] border border-[rgba(255,255,255,0.06)]"
+                        ? "bg-[rgba(77,184,255,0.12)] text-[#4DB8FF] border border-[rgba(77,184,255,0.3)]"
+                        : "bg-[rgba(10,17,24,0.4)] text-[#A3B3C2] hover:text-[#F2F6FA] border border-[rgba(255,255,255,0.06)]"
                     )}
                   >
                     <Wind className="w-3 h-3" />
@@ -610,7 +610,7 @@ export default function AssistantPage() {
                     whileTap={{ scale: 0.95 }}
                     type="submit"
                     disabled={!input.trim() || isTyping}
-                    className="w-8 h-8 rounded-full bg-[#00D69A] text-[#07100D] flex items-center justify-center hover:bg-[#05E5A6] disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+                    className="w-8 h-8 rounded-full bg-[#4DB8FF] text-[#0A1118] flex items-center justify-center hover:bg-[#7CCBFF] disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
                     aria-label="Send query"
                   >
                     <Send className="w-3.5 h-3.5 ml-0.5" />
@@ -627,14 +627,14 @@ export default function AssistantPage() {
           
           <div className="flex items-center justify-between pb-3.5 border-b border-[rgba(255,255,255,0.06)]">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#00D69A]" />
-              <h3 className="text-sm font-bold text-[#F5F8F6]">
+              <Sparkles className="w-4 h-4 text-[#4DB8FF]" />
+              <h3 className="text-sm font-bold text-[#F2F6FA]">
                 {lang === "hi" ? "सुझाए गए परामर्श विषय" : "Clinical Guidance Topics"}
               </h3>
             </div>
             <button
               onClick={handleClearChat}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(12,24,19,0.5)] hover:bg-[rgba(16,32,25,0.7)] border border-[rgba(255,255,255,0.06)] text-[11px] font-semibold text-[#00D69A] transition-colors cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[rgba(18,29,42,0.5)] hover:bg-[rgba(24,38,56,0.7)] border border-[rgba(255,255,255,0.06)] text-xs font-semibold text-[#4DB8FF] transition-colors cursor-pointer"
             >
               <Plus className="w-3 h-3" />
               <span>{lang === "hi" ? "नई चैट" : "New Chat"}</span>
@@ -642,8 +642,8 @@ export default function AssistantPage() {
           </div>
 
           {/* Device Privacy Notice */}
-          <div className="my-3 p-2.5 rounded-2xl bg-[rgba(0,214,154,0.05)] border border-[rgba(0,214,154,0.18)] flex items-start gap-2 text-[11px] text-[#A7F3D0]">
-            <Lock className="w-3.5 h-3.5 text-[#00D69A] shrink-0 mt-0.5" />
+          <div className="my-3 p-2.5 rounded-2xl bg-[rgba(77,184,255,0.05)] border border-[rgba(77,184,255,0.18)] flex items-start gap-2 text-xs text-[#BAE6FD]">
+            <Lock className="w-3.5 h-3.5 text-[#4DB8FF] shrink-0 mt-0.5" />
             <p className="leading-relaxed">
               {lang === "hi"
                 ? "सत्र गोपनीयता: आपके प्रश्न सर्वर पर कभी सहेजे नहीं जाते। यह संवाद 100% गोपनीय और आपके डिवाइस पर स्थानीय रहता है।"
@@ -656,7 +656,7 @@ export default function AssistantPage() {
               const items = topicItems.filter((h) => h.category === category);
               return (
                 <div key={category} className="space-y-2">
-                  <div className="text-[10px] uppercase font-bold tracking-wider text-[#64786E] px-1">
+                  <div className="text-xs uppercase font-bold tracking-wider text-[#8496A8] px-1">
                     {lang === "hi"
                       ? category === "Priority Topics"
                         ? "प्राथमिक विषय"
@@ -669,15 +669,15 @@ export default function AssistantPage() {
                         whileHover={{ x: 2 }}
                         key={item.id}
                         onClick={() => handleSend(item.prompt)}
-                        className="w-full text-left p-3 rounded-2xl bg-[rgba(10,20,16,0.4)] hover:bg-[rgba(14,28,22,0.6)] border border-[rgba(255,255,255,0.04)] hover:border-[rgba(0,214,154,0.2)] transition-all flex items-center justify-between group cursor-pointer"
+                        className="w-full text-left p-3 rounded-2xl bg-[rgba(14,23,34,0.4)] hover:bg-[rgba(18,29,42,0.6)] border border-[rgba(255,255,255,0.04)] hover:border-[rgba(77,184,255,0.2)] transition-all flex items-center justify-between group cursor-pointer"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <Clock className="w-3.5 h-3.5 text-[#64786E] group-hover:text-[#00D69A] shrink-0 transition-colors" />
-                          <span className="text-xs text-[#98A9A1] group-hover:text-[#F5F8F6] truncate font-medium">
+                          <Clock className="w-3.5 h-3.5 text-[#8496A8] group-hover:text-[#4DB8FF] shrink-0 transition-colors" />
+                          <span className="text-xs text-[#A3B3C2] group-hover:text-[#F2F6FA] truncate font-medium">
                             {item.title}
                           </span>
                         </div>
-                        <ArrowUpRight className="w-3 h-3 text-[#64786E] group-hover:text-[#00D69A] shrink-0 opacity-0 group-hover:opacity-100 transition-all" />
+                        <ArrowUpRight className="w-3 h-3 text-[#8496A8] group-hover:text-[#4DB8FF] shrink-0 opacity-0 group-hover:opacity-100 transition-all" />
                       </motion.button>
                     ))}
                   </div>
@@ -686,12 +686,12 @@ export default function AssistantPage() {
             })}
 
             <div className="pt-2">
-              <div className="p-3.5 rounded-2xl bg-[rgba(0,214,154,0.06)] border border-[rgba(0,214,154,0.2)] space-y-1.5">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#00D69A]">
+              <div className="p-3.5 rounded-2xl bg-[rgba(77,184,255,0.06)] border border-[rgba(77,184,255,0.2)] space-y-1.5">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#4DB8FF]">
                   <ShieldAlert className="w-3.5 h-3.5" />
                   <span>{lang === "hi" ? "सर्दियों का इनवर्जन अलर्ट" : "Winter Smog Advisory"}</span>
                 </div>
-                <p className="text-[11px] text-[#98A9A1] leading-relaxed">
+                <p className="text-xs text-[#A3B3C2] leading-relaxed">
                   {lang === "hi"
                     ? `सुबह 6 AM से 9:30 AM तक तापमान व्युत्क्रमण सक्रिय रहता है। एयर प्यूरीफायर को सील्ड मोड में चलाएं।`
                     : `Atmospheric boundary layer inversion traps surface particulates. Strenuous outdoor cardiovascular workouts should shift indoors.`}

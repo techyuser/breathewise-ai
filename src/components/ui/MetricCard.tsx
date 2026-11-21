@@ -24,25 +24,25 @@ export function MetricCard({
 }: MetricCardProps) {
   return (
     <Card className={cn("p-4 group", className)}>
-      <div className="flex items-center justify-between text-[#98A9A1] text-xs font-medium mb-2">
+      <div className="flex items-center justify-between text-[#A3B3C2] text-xs font-medium mb-2">
         <span>{label}</span>
         {icon && (
-          <div className="text-[#98A9A1] group-hover:text-[#00D69A] transition-colors">
+          <div className="text-[#A3B3C2] group-hover:text-[#4DB8FF] transition-colors">
             {icon}
           </div>
         )}
       </div>
       <div className="flex items-baseline gap-1.5">
         <span
-          className="text-2xl font-semibold tracking-tight text-[#F5F8F6]"
+          className="text-2xl font-semibold tracking-tight text-[#F2F6FA]"
           style={statusColor ? { color: statusColor } : undefined}
         >
           {value}
         </span>
-        {unit && <span className="text-xs text-[#98A9A1] font-normal">{unit}</span>}
+        {unit && <span className="text-xs text-[#A3B3C2] font-normal">{unit}</span>}
       </div>
       {subtext && (
-        <p className="mt-1.5 text-[11px] text-[#63786F] truncate">{subtext}</p>
+        <p className="mt-1.5 text-xs text-[#8496A8] truncate">{subtext}</p>
       )}
     </Card>
   );

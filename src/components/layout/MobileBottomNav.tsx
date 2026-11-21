@@ -62,7 +62,7 @@ export function MobileBottomNav() {
       description: "Commute mode & tailpipe carbon savings",
       href: "/impact",
       icon: Leaf,
-      color: "text-[#00D69A]",
+      color: "text-[#3DDC84]",
       badge: "Calculator",
     },
     {
@@ -70,7 +70,7 @@ export function MobileBottomNav() {
       description: "Report localized smoke & view radar heatmap",
       href: "/community",
       icon: Users,
-      color: "text-[#38BDF8]",
+      color: "text-[#4DB8FF]",
       badge: "Crowdsourced",
     },
   ];
@@ -78,7 +78,7 @@ export function MobileBottomNav() {
   return (
     <>
       {/* Mobile Bottom Navigation Bar (Hidden on desktop lg) */}
-      <nav className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-[rgba(7,16,12,0.96)] border-t border-[rgba(255,255,255,0.12)] px-2 py-1 shadow-[0_-8px_32px_rgba(0,0,0,0.85)] backdrop-blur-xl">
+      <nav className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-[rgba(14,23,34,0.96)] border-t border-[rgba(255,255,255,0.12)] px-2 py-1 shadow-[0_-8px_32px_rgba(0,0,0,0.85)] backdrop-blur-xl">
         <div className="flex items-center justify-around max-w-md mx-auto">
           {primaryNavItems.map((item) => {
             const Icon = item.icon;
@@ -93,23 +93,24 @@ export function MobileBottomNav() {
                 href={item.href}
                 onClick={() => setMoreOpen(false)}
                 className={cn(
-                  "flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all cursor-pointer relative",
-                  isActive ? "text-[#00D69A]" : "text-[#98A9A1] hover:text-[#F5F8F6]"
+                  "flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]",
+                  isActive ? "text-[#4DB8FF]" : "text-[#A3B3C2] hover:text-[#F2F6FA]"
                 )}
+                aria-label={item.label}
               >
                 {item.highlight && !isActive && (
-                  <span className="absolute top-1 right-2 w-1.5 h-1.5 rounded-full bg-[#00D69A] animate-ping" />
+                  <span className="absolute top-1 right-2 w-1.5 h-1.5 rounded-full bg-[#4DB8FF] animate-ping" />
                 )}
                 <Icon
                   className={cn(
                     "w-5 h-5 transition-transform",
-                    isActive ? "text-[#00D69A] scale-110" : "text-[#98A9A1]"
+                    isActive ? "text-[#4DB8FF] scale-110" : "text-[#A3B3C2]"
                   )}
                 />
                 <span
                   className={cn(
-                    "text-[10px] mt-0.5 leading-none transition-colors",
-                    isActive ? "font-bold text-[#00D69A]" : "font-medium text-[#98A9A1]"
+                    "text-xs mt-0.5 leading-none transition-colors",
+                    isActive ? "font-bold text-[#4DB8FF]" : "font-medium text-[#A3B3C2]"
                   )}
                 >
                   {item.label}
@@ -122,15 +123,15 @@ export function MobileBottomNav() {
           <button
             onClick={() => setMoreOpen(!moreOpen)}
             className={cn(
-              "flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all cursor-pointer relative",
+              "flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition-all cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]",
               moreOpen || pathname === "/impact" || pathname === "/community"
-                ? "text-[#00D69A]"
-                : "text-[#98A9A1] hover:text-[#F5F8F6]"
+                ? "text-[#4DB8FF]"
+                : "text-[#A3B3C2] hover:text-[#F2F6FA]"
             )}
             aria-label="Open more options"
           >
             <Menu className="w-5 h-5" />
-            <span className="text-[10px] mt-0.5 font-medium leading-none">More</span>
+            <span className="text-xs mt-0.5 font-medium leading-none">More</span>
           </button>
         </div>
       </nav>
@@ -151,43 +152,46 @@ export function MobileBottomNav() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 350 }}
-              className="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-[rgba(9,20,16,0.98)] border-t border-[rgba(255,255,255,0.15)] rounded-t-3xl shadow-[0_-16px_48px_rgba(0,0,0,0.9)] p-4 pb-8 space-y-4 max-w-lg mx-auto"
+              className="fixed bottom-0 inset-x-0 z-50 lg:hidden bg-[rgba(14,23,34,0.98)] border-t border-[rgba(255,255,255,0.15)] rounded-t-3xl shadow-[0_-16px_48px_rgba(0,0,0,0.9)] p-4 pb-8 space-y-4 max-w-lg mx-auto"
             >
               {/* Drag Handle */}
               <div className="w-10 h-1 bg-[rgba(255,255,255,0.2)] rounded-full mx-auto" />
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-[#F5F8F6]">More Features & Standards</h3>
-                  <p className="text-[11px] text-[#98A9A1]">Quick navigation and atmospheric settings</p>
+                  <h3 className="text-sm font-bold text-[#F2F6FA]">More Features & Standards</h3>
+                  <p className="text-xs text-[#A3B3C2]">Quick navigation and atmospheric settings</p>
                 </div>
                 <button
                   onClick={() => setMoreOpen(false)}
-                  className="p-1.5 rounded-full bg-[rgba(255,255,255,0.06)] text-[#98A9A1] hover:text-[#F5F8F6]"
+                  className="p-1.5 rounded-full bg-[rgba(255,255,255,0.06)] text-[#A3B3C2] hover:text-[#F2F6FA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]"
+                  aria-label="Close bottom sheet"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Standard Switcher Segment */}
-              <div className="p-3 rounded-2xl bg-[rgba(6,14,11,0.7)] border border-[rgba(255,255,255,0.08)] space-y-2">
-                <div className="flex items-center justify-between text-xs font-semibold text-[#F5F8F6]">
+              <div className="p-3 rounded-2xl bg-[rgba(10,17,24,0.7)] border border-[rgba(255,255,255,0.08)] space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold text-[#F2F6FA]">
                   <span className="flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-[#00D69A]" />
+                    <Sliders className="w-3.5 h-3.5 text-[#4DB8FF]" />
                     AQI Calculation Standard
                   </span>
-                  <span className="text-[10px] text-[#00D69A]">
+                  <span className="text-xs text-[#4DB8FF]">
                     {isCpcb ? "India CPCB" : "US EPA"}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setAqiStandard("INDIA_CPCB")}
+                    aria-pressed={isCpcb}
+                    aria-label="Switch to India CPCB NAQI standard"
                     className={cn(
-                      "py-2 px-3 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all cursor-pointer",
+                      "py-2 px-3 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]",
                       isCpcb
-                        ? "bg-[rgba(0,214,154,0.18)] border-[#00D69A] text-[#00D69A]"
-                        : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.08)] text-[#98A9A1]"
+                        ? "bg-[rgba(77,184,255,0.18)] border-[#4DB8FF] text-[#4DB8FF]"
+                        : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.08)] text-[#A3B3C2]"
                     )}
                   >
                     {isCpcb && <Check className="w-3.5 h-3.5" />}
@@ -195,11 +199,13 @@ export function MobileBottomNav() {
                   </button>
                   <button
                     onClick={() => setAqiStandard("US_EPA")}
+                    aria-pressed={!isCpcb}
+                    aria-label="Switch to US EPA AQI standard"
                     className={cn(
-                      "py-2 px-3 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all cursor-pointer",
+                      "py-2 px-3 rounded-xl text-xs font-semibold border flex items-center justify-center gap-1.5 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]",
                       !isCpcb
-                        ? "bg-[rgba(56,189,248,0.18)] border-[#38BDF8] text-[#38BDF8]"
-                        : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.08)] text-[#98A9A1]"
+                        ? "bg-[rgba(77,184,255,0.18)] border-[#4DB8FF] text-[#4DB8FF]"
+                        : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.08)] text-[#A3B3C2]"
                     )}
                   >
                     {!isCpcb && <Check className="w-3.5 h-3.5" />}
@@ -219,22 +225,23 @@ export function MobileBottomNav() {
                       href={item.href}
                       onClick={() => setMoreOpen(false)}
                       className={cn(
-                        "flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer",
+                        "flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]",
                         isActive
-                          ? "bg-[rgba(0,214,154,0.14)] border-[#00D69A]"
-                          : "bg-[rgba(12,24,19,0.7)] border-[rgba(255,255,255,0.08)] hover:bg-[rgba(16,32,25,0.9)]"
+                          ? "bg-[rgba(77,184,255,0.14)] border-[#4DB8FF]"
+                          : "bg-[rgba(18,29,42,0.7)] border-[rgba(255,255,255,0.08)] hover:bg-[rgba(24,38,56,0.9)]"
                       )}
+                      aria-label={item.label}
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-[rgba(255,255,255,0.05)] flex items-center justify-center">
                           <Icon className={cn("w-5 h-5", item.color)} />
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-[#F5F8F6]">{item.label}</div>
-                          <div className="text-[10px] text-[#98A9A1]">{item.description}</div>
+                          <div className="text-xs font-bold text-[#F2F6FA]">{item.label}</div>
+                          <div className="text-xs text-[#A3B3C2]">{item.description}</div>
                         </div>
                       </div>
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-[rgba(255,255,255,0.06)] text-[#98A9A1] border border-[rgba(255,255,255,0.08)]">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-[rgba(255,255,255,0.06)] text-[#A3B3C2] border border-[rgba(255,255,255,0.08)]">
                         {item.badge}
                       </span>
                     </Link>

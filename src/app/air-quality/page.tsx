@@ -40,10 +40,10 @@ export default function AirQualityPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#F5F8F6]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#F2F6FA]">
             Atmospheric Diagnostics & Smog Science
           </h1>
-          <p className="text-xs text-[#98A9A1] mt-0.5">
+          <p className="text-xs text-[#A3B3C2] mt-0.5">
             Comprehensive multi-pollutant chemistry and numerical model assimilation for {airData.city.name}.
           </p>
         </div>
@@ -64,7 +64,7 @@ export default function AirQualityPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Pollutant Selector List */}
         <div className="lg:col-span-1 space-y-2">
-          <div className="text-xs font-semibold uppercase tracking-wider text-[#64786E] px-1">
+          <div className="text-xs font-semibold uppercase tracking-wider text-[#8496A8] px-1">
             Measured Parameters
           </div>
           {Object.entries(airData.pollutants).map(([key, item]) => {
@@ -75,26 +75,26 @@ export default function AirQualityPage() {
                 whileHover={{ x: 2 }}
                 key={key}
                 onClick={() => setSelectedPollutant(key)}
-                className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between backdrop-blur-xl cursor-pointer ${
+                className={`w-full text-left p-3.5 rounded-2xl border transition-all flex items-center justify-between backdrop-blur-xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF] ${
                   isSelected
-                    ? "bg-[rgba(0,214,154,0.12)] border-[rgba(0,214,154,0.35)] shadow-[0_4px_16px_rgba(0,214,154,0.12)]"
-                    : "bg-[rgba(10,20,16,0.45)] border-[rgba(255,255,255,0.06)] hover:bg-[rgba(13,26,20,0.6)]"
+                    ? "bg-[rgba(77,184,255,0.14)] border-[rgba(77,184,255,0.35)] shadow-[0_4px_16px_rgba(77,184,255,0.15)]"
+                    : "bg-[rgba(14,23,34,0.55)] border-[rgba(255,255,255,0.06)] hover:bg-[rgba(18,29,42,0.7)]"
                 }`}
               >
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-[#F5F8F6]">
+                    <span className="text-sm font-bold text-[#F2F6FA]">
                       {item.chemicalFormula}
                     </span>
-                    <span className="text-xs text-[#98A9A1]">{item.name}</span>
+                    <span className="text-xs text-[#A3B3C2]">{item.name}</span>
                   </div>
-                  <div className="text-xs text-[#64786E]">
+                  <div className="text-xs text-[#8496A8]">
                     WHO Cap: {item.whoLimit} {item.unit}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-base font-bold text-[#F5F8F6] tabular-nums">
-                    {item.value} <span className="text-[10px] text-[#98A9A1]">{item.unit}</span>
+                  <div className="text-base font-bold text-[#F2F6FA] tabular-nums">
+                    {item.value} <span className="text-xs text-[#A3B3C2]">{item.unit}</span>
                   </div>
                   <Badge
                     size="sm"
@@ -117,32 +117,32 @@ export default function AirQualityPage() {
             <div className="flex items-start justify-between border-b border-[rgba(255,255,255,0.06)] pb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-[#F5F8F6]">
+                  <span className="text-2xl font-bold text-[#F2F6FA]">
                     {activePollutant.chemicalFormula}
                   </span>
-                  <span className="text-base text-[#98A9A1]">({activePollutant.name})</span>
+                  <span className="text-base text-[#A3B3C2]">({activePollutant.name})</span>
                 </div>
-                <p className="text-xs text-[#98A9A1] mt-1">
+                <p className="text-xs text-[#A3B3C2] mt-1">
                   {activePollutant.description}
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <span className="text-3xl font-bold text-[#00D69A] tabular-nums">
+                <span className="text-3xl font-bold text-[#4DB8FF] tabular-nums">
                   {activePollutant.value}
                 </span>
-                <span className="text-xs text-[#98A9A1] block">{activePollutant.unit}</span>
+                <span className="text-xs text-[#A3B3C2] block">{activePollutant.unit}</span>
               </div>
             </div>
 
             {/* Threshold progress indicator */}
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-[#98A9A1]">Concentration vs WHO 24h Guideline Limit</span>
-                <span className="font-semibold text-[#F5F8F6]">
+                <span className="text-[#A3B3C2]">Concentration vs WHO 24h Guideline Limit</span>
+                <span className="font-semibold text-[#F2F6FA]">
                   {activePollutant.percentageOfLimit}% of WHO threshold
                 </span>
               </div>
-              <div className="w-full bg-[rgba(6,14,11,0.7)] rounded-full h-2.5 p-0.5 border border-[rgba(255,255,255,0.06)]">
+              <div className="w-full bg-[rgba(14,23,34,0.7)] rounded-full h-2.5 p-0.5 border border-[rgba(255,255,255,0.06)]">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min(100, activePollutant.percentageOfLimit)}%` }}
@@ -151,14 +151,14 @@ export default function AirQualityPage() {
                   style={{
                     backgroundColor:
                       activePollutant.percentageOfLimit > 200
-                        ? "#F87171"
+                        ? "#FF5C5C"
                         : activePollutant.percentageOfLimit > 100
-                        ? "#FB923C"
-                        : "#00D69A",
+                        ? "#FF9F45"
+                        : "#3DDC84",
                   }}
                 />
               </div>
-              <div className="flex justify-between text-[10px] text-[#64786E]">
+              <div className="flex justify-between text-xs text-[#8496A8]">
                 <span>0 {activePollutant.unit} (Clean)</span>
                 <span>WHO Cap: {activePollutant.whoLimit} {activePollutant.unit}</span>
                 <span>Elevated Hazard</span>
@@ -167,22 +167,22 @@ export default function AirQualityPage() {
 
             {/* Health Implications */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-              <div className="p-4 rounded-2xl bg-[rgba(12,24,19,0.5)] border border-[rgba(255,255,255,0.06)] space-y-1.5">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#F87171]">
+              <div className="p-4 rounded-2xl bg-[rgba(18,29,42,0.5)] border border-[rgba(255,255,255,0.06)] space-y-1.5">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#FF5C5C]">
                   <AlertCircle className="w-4 h-4" />
                   <span>Physiological Vulnerability</span>
                 </div>
-                <p className="text-xs text-[#98A9A1] leading-relaxed">
+                <p className="text-xs text-[#A3B3C2] leading-relaxed">
                   Prolonged exposure promotes systemic inflammation, alveolar capillary diffusion, and triggers bronchial asthma flare-ups.
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[rgba(12,24,19,0.5)] border border-[rgba(255,255,255,0.06)] space-y-1.5">
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#00D69A]">
+              <div className="p-4 rounded-2xl bg-[rgba(18,29,42,0.5)] border border-[rgba(255,255,255,0.06)] space-y-1.5">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#3DDC84]">
                   <ShieldCheck className="w-4 h-4" />
                   <span>Engineered Countermeasure</span>
                 </div>
-                <p className="text-xs text-[#98A9A1] leading-relaxed">
+                <p className="text-xs text-[#A3B3C2] leading-relaxed">
                   True HEPA H13 filtration (EN 1822 compliant) captures fine particulates down to 0.3 microns. Electrostatically charged N95 respirators filter airborne particulates.
                 </p>
               </div>
@@ -192,24 +192,24 @@ export default function AirQualityPage() {
           {/* Regional Smog Comparison */}
           <Card elevated className="p-5 rounded-3xl space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-[#F5F8F6]">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-[#F2F6FA]">
                 Benchmark Across Global Winter Smog Metros
               </h4>
-              <span className="text-[10px] text-[#64786E]">Click city to switch active model</span>
+              <span className="text-xs text-[#8496A8]">Click city to switch active model</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
               {PRESET_CITIES.slice(0, 5).map((city) => (
                 <button
                   key={city.id}
                   onClick={() => setSelectedCity(city)}
-                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  className={`p-3 rounded-2xl border text-left transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF] ${
                     city.id === airData.city.id
-                      ? "bg-[rgba(0,214,154,0.12)] border-[#00D69A] text-[#00D69A] shadow-sm"
-                      : "bg-[rgba(8,16,13,0.45)] border-[rgba(255,255,255,0.06)] text-[#98A9A1] hover:text-[#F5F8F6]"
+                      ? "bg-[rgba(77,184,255,0.12)] border-[#4DB8FF] text-[#4DB8FF] shadow-sm"
+                      : "bg-[rgba(14,23,34,0.45)] border-[rgba(255,255,255,0.06)] text-[#A3B3C2] hover:text-[#F2F6FA]"
                   }`}
                 >
                   <div className="text-xs font-semibold truncate">{city.name}</div>
-                  <div className="text-[10px] text-[#64786E]">{city.country}</div>
+                  <div className="text-xs text-[#8496A8]">{city.country}</div>
                 </button>
               ))}
             </div>
@@ -217,20 +217,20 @@ export default function AirQualityPage() {
 
           {/* Methodology & Transparency Disclosure Card */}
           <Card elevated className="p-5 rounded-3xl space-y-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#38BDF8]">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#4DB8FF]">
               <Database className="w-4 h-4" />
               <span>Data Provenance & CPCB / CAMS Compliance</span>
             </div>
-            <p className="text-xs text-[#98A9A1] leading-relaxed">
+            <p className="text-xs text-[#A3B3C2] leading-relaxed">
               <strong>Atmospheric Data Source:</strong> {airData.source}
             </p>
-            <p className="text-xs text-[#98A9A1] leading-relaxed">
+            <p className="text-xs text-[#A3B3C2] leading-relaxed">
               <strong>Active Index Standard:</strong> {airData.calculationStandard}
             </p>
-            <p className="text-xs text-[#64786E] leading-relaxed">
+            <p className="text-xs text-[#8496A8] leading-relaxed">
               <strong>Transparency Note:</strong> {airData.cpcbDisclaimer}
             </p>
-            <div className="text-[11px] text-[#64786E] pt-1 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between">
+            <div className="text-xs text-[#8496A8] pt-1 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between">
               <span>Model Run: {airData.modelRunTimestamp}</span>
               <span>Client Sync: {airData.lastUpdated}</span>
             </div>

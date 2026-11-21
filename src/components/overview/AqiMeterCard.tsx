@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { AirQualityData } from "@/types/air-quality";
 import { getAQIColor } from "@/lib/aqi-utils";
 import { Card } from "@/components/ui/Card";
-import { Activity } from "lucide-react";
+import { Activity, ShieldCheck, AlertCircle, AlertTriangle, AlertOctagon, ShieldAlert } from "lucide-react";
 import { motion } from "motion/react";
 
 interface AqiMeterCardProps {
@@ -53,6 +53,24 @@ export function AqiMeterCard({ data }: AqiMeterCardProps) {
   const aqiRatio = (target !== null && isDataSufficient) ? Math.min(Math.max(target / 500, 0.05), 1) : 0;
   const targetOffset = (target !== null && isDataSufficient) ? circumference * (1 - aqiRatio) : circumference;
 
+  const renderCategoryIcon = () => {
+    switch (data.category) {
+      case "Good":
+        return <ShieldCheck className="w-3 h-3 shrink-0" />;
+      case "Moderate":
+        return <AlertCircle className="w-3 h-3 shrink-0" />;
+      case "Unhealthy for Sensitive Groups":
+      case "Unhealthy":
+        return <AlertTriangle className="w-3 h-3 shrink-0" />;
+      case "Very Unhealthy":
+        return <AlertOctagon className="w-3 h-3 shrink-0" />;
+      case "Hazardous":
+        return <ShieldAlert className="w-3 h-3 shrink-0" />;
+      default:
+        return <AlertCircle className="w-3 h-3 shrink-0" />;
+    }
+  };
+
   return (
     <Card
       interactive
@@ -78,20 +96,21 @@ export function AqiMeterCard({ data }: AqiMeterCardProps) {
           >
             <Activity className="w-3.5 h-3.5 animate-pulse" />
           </div>
-          <span className="text-xs font-bold text-[#F5F8F6] whitespace-nowrap">
+          <span className="text-xs font-bold text-[#F2F6FA] whitespace-nowrap">
             AQI
           </span>
         </div>
 
         <span
-          className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap shrink-0 shadow-sm"
+          className="text-xs font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap shrink-0 shadow-sm flex items-center gap-1"
           style={{
             color: color,
             backgroundColor: badgeBg,
             borderColor: borderColor,
           }}
         >
-          {data.category}
+          {renderCategoryIcon()}
+          <span>{data.category}</span>
         </span>
       </div>
 
@@ -147,16 +166,16 @@ export function AqiMeterCard({ data }: AqiMeterCardProps) {
 
       {/* Bottom Dominant Pollutant & WHO Cap */}
       <div className="space-y-1 pt-1.5 border-t border-[rgba(255,255,255,0.06)]">
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="text-[#98A9A1] whitespace-nowrap">Dominant PM2.5</span>
-          <span className="font-semibold text-[#F5F8F6] tabular-nums whitespace-nowrap">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-[#A3B3C2] whitespace-nowrap">Dominant PM2.5</span>
+          <span className="font-semibold text-[#F2F6FA] tabular-nums whitespace-nowrap">
             {data.nowCastConcentration !== null ? `${data.nowCastConcentration} µg/m³` : "N/A"}
           </span>
         </div>
 
-        <div className="flex items-center justify-between text-[10px] text-[#64786E]">
+        <div className="flex items-center justify-between text-xs text-[#8496A8]">
           <span className="whitespace-nowrap">WHO 24h Cap</span>
-          <span className="whitespace-nowrap">15 µg/m³</span>
+          <span className="whitespace-nowrap text-[#3DDC84]">15 µg/m³</span>
         </div>
 
         {/* Visual PM2.5 ratio bar */}

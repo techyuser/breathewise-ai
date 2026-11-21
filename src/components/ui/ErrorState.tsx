@@ -19,16 +19,16 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        "glass-panel rounded-2xl p-8 border-[rgba(255,90,95,0.2)] flex flex-col items-center text-center max-w-md mx-auto my-6 space-y-4",
+        "glass-panel rounded-2xl p-8 border-[rgba(255,92,92,0.25)] flex flex-col items-center text-center max-w-md mx-auto my-6 space-y-4",
         className
       )}
     >
-      <div className="w-12 h-12 rounded-2xl bg-[rgba(255,90,95,0.12)] border border-[rgba(255,90,95,0.25)] flex items-center justify-center text-[#FF5A5F]">
+      <div className="w-12 h-12 rounded-2xl bg-[rgba(255,92,92,0.14)] border border-[rgba(255,92,92,0.3)] flex items-center justify-center text-[#FF5C5C]">
         <AlertCircle className="w-6 h-6" />
       </div>
       <div className="space-y-1.5">
-        <h4 className="text-base font-semibold text-[#F5F8F6]">{title}</h4>
-        <p className="text-xs text-[#98A9A1] leading-relaxed">{message}</p>
+        <h4 className="text-base font-semibold text-[#F2F6FA]">{title}</h4>
+        <p className="text-xs text-[#A3B3C2] leading-relaxed">{message}</p>
       </div>
       {onRetry && (
         <Button

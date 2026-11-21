@@ -332,14 +332,14 @@ export default function CommunityPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(0,214,154,0.08)] border border-[rgba(0,214,154,0.2)] text-[11px] font-semibold text-[#00D69A] mb-1.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(77,184,255,0.08)] border border-[rgba(77,184,255,0.2)] text-xs font-semibold text-[#4DB8FF] mb-1.5">
             <Users className="w-3 h-3" />
             Citizen Mesh Observation Network
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#F5F8F6]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#F2F6FA]">
             Community Smoke Watch & Clean Refuges
           </h1>
-          <p className="text-xs text-[#98A9A1] mt-0.5">
+          <p className="text-xs text-[#A3B3C2] mt-0.5">
             Real-time citizen-reported smoke hazards, community challenges, and verified low-AQI municipal refuges.
           </p>
         </div>
@@ -348,7 +348,7 @@ export default function CommunityPage() {
           <Button
             variant="primary"
             size="sm"
-            icon={<PlusCircle className="w-4 h-4 text-[#07100D]" />}
+            icon={<PlusCircle className="w-4 h-4 text-[#0A1118]" />}
             onClick={() => setReportModalOpen(true)}
           >
             Report Pollution
@@ -371,8 +371,8 @@ export default function CommunityPage() {
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               activeTab === tab.id
-                ? "bg-[#00D69A] text-[#07100D] shadow-sm"
-                : "text-[#98A9A1] hover:text-[#F5F8F6] hover:bg-[rgba(255,255,255,0.05)]"
+                ? "bg-[#4DB8FF] text-[#0A1118] shadow-sm"
+                : "text-[#A3B3C2] hover:text-[#F2F6FA] hover:bg-[rgba(255,255,255,0.05)]"
             }`}
           >
             {tab.icon}
@@ -387,7 +387,7 @@ export default function CommunityPage() {
           {/* Left 2 Cols: Alerts Feed */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <h3 className="text-xs font-semibold tracking-wider text-[#98A9A1] uppercase flex items-center gap-2">
+              <h3 className="text-xs font-semibold tracking-wider text-[#A3B3C2] uppercase flex items-center gap-2">
                 <Radio className="w-3.5 h-3.5 text-[#FACC15] animate-pulse" />
                 Live Incident Stream ({filteredAlerts.length})
               </h3>
@@ -400,8 +400,8 @@ export default function CommunityPage() {
                     onClick={() => setFilterType(cat)}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
                       filterType === cat
-                        ? "bg-[rgba(0,214,154,0.2)] text-[#00D69A] border border-[rgba(0,214,154,0.35)] font-semibold"
-                        : "bg-[rgba(10,20,16,0.5)] text-[#98A9A1] hover:text-[#F5F8F6] border border-[rgba(255,255,255,0.06)]"
+                        ? "bg-[rgba(77,184,255,0.2)] text-[#4DB8FF] border border-[rgba(77,184,255,0.35)] font-semibold"
+                        : "bg-[rgba(14,23,34,0.5)] text-[#A3B3C2] hover:text-[#F2F6FA] border border-[rgba(255,255,255,0.06)]"
                     }`}
                   >
                     {cat}
@@ -429,16 +429,16 @@ export default function CommunityPage() {
                               : "subtle"
                           }
                           size="sm"
-                          className="text-[10px]"
+                          className="text-xs"
                         >
                           {alert.type}
                         </Badge>
-                        <span className="text-[11px] text-[#64786E]">•</span>
-                        <span className="text-[11px] text-[#98A9A1]">{alert.timeAgo}</span>
-                        <span className="text-[11px] text-[#64786E]">•</span>
-                        <span className="text-[11px] text-[#00D69A]">{alert.distance}</span>
+                        <span className="text-xs text-[#8496A8]">•</span>
+                        <span className="text-xs text-[#A3B3C2]">{alert.timeAgo}</span>
+                        <span className="text-xs text-[#8496A8]">•</span>
+                        <span className="text-xs text-[#4DB8FF]">{alert.distance}</span>
                       </div>
-                      <h4 className="text-sm font-bold text-[#F5F8F6] flex items-center gap-1.5">
+                      <h4 className="text-sm font-bold text-[#F2F6FA] flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-[#F87171] shrink-0" />
                         {alert.location}
                       </h4>
@@ -449,8 +449,8 @@ export default function CommunityPage() {
                       onClick={() => handleVerify(alert.id)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer shrink-0 ${
                         alert.verifiedByUser
-                          ? "bg-[rgba(0,214,154,0.2)] border-[#00D69A] text-[#00D69A]"
-                          : "bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.08)] text-[#98A9A1] hover:text-[#F5F8F6] hover:bg-[rgba(255,255,255,0.08)]"
+                          ? "bg-[rgba(77,184,255,0.2)] border-[#4DB8FF] text-[#4DB8FF]"
+                          : "bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.08)] text-[#A3B3C2] hover:text-[#F2F6FA] hover:bg-[rgba(255,255,255,0.08)]"
                       }`}
                       title="Verify this observation"
                     >
@@ -459,12 +459,12 @@ export default function CommunityPage() {
                     </button>
                   </div>
 
-                  <p className="text-xs text-[#98A9A1] leading-relaxed">
+                  <p className="text-xs text-[#A3B3C2] leading-relaxed">
                     {alert.description}
                   </p>
 
                   {alert.hasPhoto && (
-                    <div className="p-2 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] flex items-center gap-2 text-[11px] text-[#64786E]">
+                    <div className="p-2 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] flex items-center gap-2 text-xs text-[#8496A8]">
                       <Camera className="w-3.5 h-3.5 text-[#38BDF8]" />
                       <span>Citizen attached photo verification telemetry</span>
                     </div>
@@ -477,8 +477,8 @@ export default function CommunityPage() {
           {/* Right Col: Clean Refuges */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold tracking-wider text-[#98A9A1] uppercase flex items-center gap-2">
-                <Building className="w-3.5 h-3.5 text-[#00D69A]" />
+              <h3 className="text-xs font-semibold tracking-wider text-[#A3B3C2] uppercase flex items-center gap-2">
+                <Building className="w-3.5 h-3.5 text-[#4DB8FF]" />
                 Verified Clean Air Refuges
               </h3>
               <Badge variant="accent" size="sm">
@@ -495,32 +495,32 @@ export default function CommunityPage() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h4 className="text-xs font-bold text-[#F5F8F6]">
+                      <h4 className="text-xs font-bold text-[#F2F6FA]">
                         {refuge.name}
                       </h4>
-                      <p className="text-[11px] text-[#98A9A1] mt-0.5">
+                      <p className="text-xs text-[#A3B3C2] mt-0.5">
                         {refuge.address}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-base font-extrabold text-[#00D69A]">
+                      <div className="text-base font-extrabold text-[#4DB8FF]">
                         {refuge.indoorAqi}
                       </div>
-                      <div className="text-[9px] uppercase tracking-wider text-[#64786E]">
+                      <div className="text-xs uppercase tracking-wider text-[#8496A8]">
                         Indoor AQI
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-[rgba(255,255,255,0.06)] text-[11px]">
-                    <span className="text-[#64786E]">{refuge.openHours}</span>
+                  <div className="flex items-center justify-between pt-1 border-t border-[rgba(255,255,255,0.06)] text-xs">
+                    <span className="text-[#8496A8]">{refuge.openHours}</span>
                     <button
                       onClick={() => handleCopyShelter(refuge)}
-                      className="text-xs font-semibold text-[#00D69A] hover:text-[#05E5A6] flex items-center gap-1 cursor-pointer"
+                      className="text-xs font-semibold text-[#4DB8FF] hover:text-[#7CCBFF] flex items-center gap-1 cursor-pointer"
                     >
                       {copiedId === refuge.id ? (
                         <>
-                          <Check className="w-3 h-3 text-[#00D69A]" />
+                          <Check className="w-3 h-3 text-[#4DB8FF]" />
                           <span>Copied</span>
                         </>
                       ) : (
@@ -540,14 +540,14 @@ export default function CommunityPage() {
 
       {/* TAB 2: RADAR HOTSPOT MAP */}
       {activeTab === "map" && (
-        <Card elevated className="p-5 md:p-6 rounded-3xl space-y-4 border border-[rgba(0,214,154,0.2)] bg-[rgba(9,18,14,0.8)]">
+        <Card elevated className="p-5 md:p-6 rounded-3xl space-y-4 border border-[rgba(77,184,255,0.2)] bg-[rgba(9,18,14,0.8)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-[#F5F8F6] flex items-center gap-2">
-                <Compass className="w-4 h-4 text-[#00D69A]" />
+              <h3 className="text-base font-bold text-[#F2F6FA] flex items-center gap-2">
+                <Compass className="w-4 h-4 text-[#4DB8FF]" />
                 Micro-Climate Hotspot Radar: {selectedCity.name}
               </h3>
-              <p className="text-xs text-[#98A9A1] mt-0.5">
+              <p className="text-xs text-[#A3B3C2] mt-0.5">
                 Spatial distribution of citizen-reported plumes and sensor cross-correlations
               </p>
             </div>
@@ -557,12 +557,12 @@ export default function CommunityPage() {
           </div>
 
           {/* Interactive Radar Visual Canvas */}
-          <div className="relative w-full h-80 rounded-2xl bg-[rgba(6,14,11,0.95)] border border-[rgba(255,255,255,0.08)] overflow-hidden flex items-center justify-center">
+          <div className="relative w-full h-80 rounded-2xl bg-[rgba(10,17,24,0.95)] border border-[rgba(255,255,255,0.08)] overflow-hidden flex items-center justify-center">
             {/* Concentric Radar Rings */}
-            <div className="absolute w-72 h-72 rounded-full border border-[rgba(0,214,154,0.15)] pointer-events-none" />
-            <div className="absolute w-48 h-48 rounded-full border border-[rgba(0,214,154,0.2)] pointer-events-none" />
-            <div className="absolute w-24 h-24 rounded-full border border-[rgba(0,214,154,0.3)] pointer-events-none" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,214,154,0.06)_0%,transparent_75%)] pointer-events-none" />
+            <div className="absolute w-72 h-72 rounded-full border border-[rgba(77,184,255,0.15)] pointer-events-none" />
+            <div className="absolute w-48 h-48 rounded-full border border-[rgba(77,184,255,0.2)] pointer-events-none" />
+            <div className="absolute w-24 h-24 rounded-full border border-[rgba(77,184,255,0.3)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(77,184,255,0.06)_0%,transparent_75%)] pointer-events-none" />
 
             {/* Crosshairs */}
             <div className="absolute w-full h-px bg-[rgba(255,255,255,0.08)] pointer-events-none" />
@@ -570,8 +570,8 @@ export default function CommunityPage() {
 
             {/* Center Pin: Current User */}
             <div className="relative z-10 flex flex-col items-center">
-              <div className="w-4 h-4 rounded-full bg-[#00D69A] border-2 border-white shadow-[0_0_16px_#00D69A] animate-ping" />
-              <span className="text-[10px] font-bold text-[#F5F8F6] bg-[rgba(0,0,0,0.7)] px-2 py-0.5 rounded-full mt-1 border border-[rgba(255,255,255,0.1)]">
+              <div className="w-4 h-4 rounded-full bg-[#4DB8FF] border-2 border-white shadow-[0_0_16px_#4DB8FF] animate-ping" />
+              <span className="text-xs font-bold text-[#F2F6FA] bg-[rgba(0,0,0,0.7)] px-2 py-0.5 rounded-full mt-1 border border-[rgba(255,255,255,0.1)]">
                 You ({selectedCity.name})
               </span>
             </div>
@@ -603,7 +603,7 @@ export default function CommunityPage() {
                         : "bg-[#FACC15] border-white shadow-[0_0_12px_#FACC15]"
                     }`}
                   />
-                  <div className="hidden group-hover:block absolute bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[rgba(10,22,17,0.95)] border border-[rgba(255,255,255,0.2)] rounded-xl px-2.5 py-1 text-[10px] text-[#F5F8F6] shadow-xl z-30">
+                  <div className="hidden group-hover:block absolute bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[rgba(10,22,17,0.95)] border border-[rgba(255,255,255,0.2)] rounded-xl px-2.5 py-1 text-xs text-[#F2F6FA] shadow-xl z-30">
                     <span className="font-bold">{item.type}</span>: {item.location}
                   </div>
                 </div>
@@ -611,7 +611,7 @@ export default function CommunityPage() {
             })}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-[#98A9A1] pt-1">
+          <div className="flex items-center justify-between text-xs text-[#A3B3C2] pt-1">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#F87171]" />
@@ -632,11 +632,11 @@ export default function CommunityPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-[#F5F8F6] flex items-center gap-2">
+              <h3 className="text-base font-bold text-[#F2F6FA] flex items-center gap-2">
                 <Award className="w-4 h-4 text-[#FACC15]" />
                 Clean Air Community Awareness Challenges
               </h3>
-              <p className="text-xs text-[#98A9A1] mt-0.5">
+              <p className="text-xs text-[#A3B3C2] mt-0.5">
                 Join collective citizen initiatives to reduce neighborhood smog plumes and earn Clean Air Points.
               </p>
             </div>
@@ -654,28 +654,28 @@ export default function CommunityPage() {
                     <Badge variant={ch.completed ? "accent" : ch.joined ? "subtle" : "outline"} size="sm">
                       {ch.completed ? "Completed" : ch.joined ? "Active" : "Open"}
                     </Badge>
-                    <span className="text-xs font-bold text-[#00D69A]">
+                    <span className="text-xs font-bold text-[#4DB8FF]">
                       +{ch.rewardPoints} Pts
                     </span>
                   </div>
 
-                  <h4 className="text-sm font-bold text-[#F5F8F6] leading-snug">
+                  <h4 className="text-sm font-bold text-[#F2F6FA] leading-snug">
                     {ch.title}
                   </h4>
-                  <p className="text-xs text-[#98A9A1] leading-relaxed">
+                  <p className="text-xs text-[#A3B3C2] leading-relaxed">
                     {ch.description}
                   </p>
                 </div>
 
                 <div className="space-y-3 pt-2 border-t border-[rgba(255,255,255,0.06)]">
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-[#98A9A1]">
+                    <div className="flex items-center justify-between text-xs text-[#A3B3C2]">
                       <span>{ch.participants} Citizens Joined</span>
-                      <span className="font-semibold text-[#F5F8F6]">{ch.progressPercent}%</span>
+                      <span className="font-semibold text-[#F2F6FA]">{ch.progressPercent}%</span>
                     </div>
                     <div className="w-full h-1.5 bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-[#00D69A] rounded-full transition-all"
+                        className="h-full bg-[#4DB8FF] rounded-full transition-all"
                         style={{ width: `${ch.progressPercent}%` }}
                       />
                     </div>
@@ -726,13 +726,13 @@ export default function CommunityPage() {
               <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-3">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-[#FACC15]" />
-                  <h3 className="text-base font-bold text-[#F5F8F6]">
+                  <h3 className="text-base font-bold text-[#F2F6FA]">
                     Report Environmental Pollution Incident
                   </h3>
                 </div>
                 <button
                   onClick={() => setReportModalOpen(false)}
-                  className="p-1 rounded-lg text-[#98A9A1] hover:text-[#F5F8F6] cursor-pointer"
+                  className="p-1 rounded-lg text-[#A3B3C2] hover:text-[#F2F6FA] cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -742,13 +742,13 @@ export default function CommunityPage() {
                 {/* Location Input with GPS Detect Button */}
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-[#98A9A1]">
+                    <label className="text-xs font-semibold text-[#A3B3C2]">
                       Incident Location / Landmark
                     </label>
                     <button
                       type="button"
                       onClick={handleDetectGps}
-                      className="text-[11px] font-semibold text-[#00D69A] hover:underline flex items-center gap-1 cursor-pointer"
+                      className="text-xs font-semibold text-[#4DB8FF] hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <MapPin className="w-3 h-3" />
                       Detect GPS
@@ -760,20 +760,20 @@ export default function CommunityPage() {
                     placeholder="e.g. Ring Road service lane near Sector 12"
                     value={formLocation}
                     onChange={(e) => setFormLocation(e.target.value)}
-                    className="w-full bg-[rgba(14,28,22,0.9)] border border-[rgba(255,255,255,0.1)] rounded-xl px-3 py-2.5 text-xs text-[#F5F8F6] outline-none focus:border-[#00D69A]"
+                    className="w-full bg-[rgba(18,29,42,0.9)] border border-[rgba(255,255,255,0.1)] rounded-xl px-3 py-2.5 text-xs text-[#F2F6FA] outline-none focus:border-[#4DB8FF]"
                   />
                 </div>
 
                 {/* Category & Severity Selectors */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#98A9A1]">
+                    <label className="text-xs font-semibold text-[#A3B3C2]">
                       Pollution Category
                     </label>
                     <select
                       value={formType}
                       onChange={(e) => setFormType(e.target.value as CommunityAlert["type"])}
-                      className="w-full bg-[rgba(14,28,22,0.9)] border border-[rgba(255,255,255,0.1)] rounded-xl px-3 py-2 text-xs text-[#F5F8F6] outline-none focus:border-[#00D69A]"
+                      className="w-full bg-[rgba(18,29,42,0.9)] border border-[rgba(255,255,255,0.1)] rounded-xl px-3 py-2 text-xs text-[#F2F6FA] outline-none focus:border-[#4DB8FF]"
                     >
                       <option value="Biomass Burning">Biomass / Garbage Burning</option>
                       <option value="Construction Dust">Construction Dust Plume</option>
@@ -784,13 +784,13 @@ export default function CommunityPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[#98A9A1]">
+                    <label className="text-xs font-semibold text-[#A3B3C2]">
                       Severity Level
                     </label>
                     <select
                       value={formSeverity}
                       onChange={(e) => setFormSeverity(e.target.value as CommunityAlert["severity"])}
-                      className="w-full bg-[rgba(14,28,22,0.9)] border border-[rgba(255,255,255,0.1)] rounded-xl px-3 py-2 text-xs text-[#F5F8F6] outline-none focus:border-[#00D69A]"
+                      className="w-full bg-[rgba(18,29,42,0.9)] border border-[rgba(255,255,255,0.1)] rounded-xl px-3 py-2 text-xs text-[#F2F6FA] outline-none focus:border-[#4DB8FF]"
                     >
                       <option value="Moderate">Moderate Issue</option>
                       <option value="High">High Smoke / Dust</option>
@@ -801,7 +801,7 @@ export default function CommunityPage() {
 
                 {/* Description */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[#98A9A1]">
+                  <label className="text-xs font-semibold text-[#A3B3C2]">
                     Detailed Observation Description
                   </label>
                   <textarea
@@ -810,27 +810,27 @@ export default function CommunityPage() {
                     placeholder="Describe source, wind direction, visible smoke density, or ongoing construction activities..."
                     value={formDesc}
                     onChange={(e) => setFormDesc(e.target.value)}
-                    className="w-full bg-[rgba(14,28,22,0.9)] border border-[rgba(255,255,255,0.1)] rounded-xl p-3 text-xs text-[#F5F8F6] outline-none focus:border-[#00D69A]"
+                    className="w-full bg-[rgba(18,29,42,0.9)] border border-[rgba(255,255,255,0.1)] rounded-xl p-3 text-xs text-[#F2F6FA] outline-none focus:border-[#4DB8FF]"
                   />
                 </div>
 
                 {/* Simulated Photo Attachment */}
                 <div className="p-3 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-[#98A9A1]">
+                  <div className="flex items-center gap-2 text-xs text-[#A3B3C2]">
                     <Camera className="w-4 h-4 text-[#38BDF8]" />
                     <span>{formPhoto ? "Photo Attached (1 file)" : "Attach Photo Evidence (Optional)"}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setFormPhoto(formPhoto ? null : "photo_simulated.jpg")}
-                    className="text-xs font-semibold text-[#00D69A] hover:underline cursor-pointer"
+                    className="text-xs font-semibold text-[#4DB8FF] hover:underline cursor-pointer"
                   >
                     {formPhoto ? "Remove" : "Simulate Upload"}
                   </button>
                 </div>
 
                 {submitSuccess ? (
-                  <div className="p-3 rounded-xl bg-[rgba(0,214,154,0.15)] border border-[#00D69A] text-xs font-bold text-[#00D69A] text-center flex items-center justify-center gap-2">
+                  <div className="p-3 rounded-xl bg-[rgba(77,184,255,0.15)] border border-[#4DB8FF] text-xs font-bold text-[#4DB8FF] text-center flex items-center justify-center gap-2">
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Incident successfully logged to Citizen Mesh!</span>
                   </div>

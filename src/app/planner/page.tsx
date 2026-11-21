@@ -174,9 +174,6 @@ export default function PlannerPage() {
   const totalActions = effectiveActivities.length;
   const completedActions = effectiveActivities.filter((a) => a.completed).length;
   const protectionScore = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
-  const totalEarnedPoints = effectiveActivities
-    .filter((a) => a.completed)
-    .reduce((sum, a) => sum + (a.impactPoints || 25), 0);
 
   const morningActivities = effectiveActivities.filter((a) => a.period === "morning");
   const afternoonActivities = effectiveActivities.filter((a) => a.period === "afternoon");
@@ -187,11 +184,11 @@ export default function PlannerPage() {
       {/* 1. Header with Language Switcher and Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-[#F5F8F6] flex items-center gap-2.5">
-            <CalendarClock className="w-5 h-5 text-[#00D69A]" />
-            {lang === "hi" ? "दैनिक वायु सुरक्षा योजनाकार" : "AI Daily Air Hygiene Planner"}
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-[#F2F6FA] flex items-center gap-2.5">
+            <CalendarClock className="w-5 h-5 text-[#4DB8FF]" />
+            {lang === "hi" ? "दैनिक सुरक्षा योजनाकार" : "Daily Planner"}
           </h1>
-          <p className="text-xs text-[#98A9A1] mt-0.5">
+          <p className="text-xs text-[#A3B3C2] mt-0.5">
             {lang === "hi"
               ? `${airData?.city.name} के लाइव इनवर्जन व AQI डेटा पर आधारित व्यक्तिगत पारिवारिक सुरक्षा समय-सारणी।`
               : `Personalized, timed respiratory protection routines calibrated to ${airData?.city.name}'s diurnal atmospheric inversion.`}
@@ -200,14 +197,14 @@ export default function PlannerPage() {
 
         <div className="flex items-center gap-2 flex-wrap">
           {/* Language Toggle */}
-          <div className="flex items-center p-0.5 rounded-full bg-[rgba(7,14,11,0.6)] border border-[rgba(255,255,255,0.08)] text-[11px]">
+          <div className="flex items-center p-0.5 rounded-full bg-[rgba(10,17,24,0.6)] border border-[rgba(255,255,255,0.08)] text-xs">
             <button
               onClick={() => handleLanguageSwitch("en")}
               className={cn(
                 "px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer",
                 lang === "en"
-                  ? "bg-[rgba(0,214,154,0.18)] text-[#00D69A] border border-[rgba(0,214,154,0.3)] shadow-sm"
-                  : "text-[#98A9A1] hover:text-[#F5F8F6]"
+                  ? "bg-[rgba(77,184,255,0.18)] text-[#4DB8FF] border border-[rgba(77,184,255,0.3)] shadow-sm"
+                  : "text-[#A3B3C2] hover:text-[#F2F6FA]"
               )}
             >
               EN
@@ -217,8 +214,8 @@ export default function PlannerPage() {
               className={cn(
                 "px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer",
                 lang === "hi"
-                  ? "bg-[rgba(0,214,154,0.18)] text-[#00D69A] border border-[rgba(0,214,154,0.3)] shadow-sm"
-                  : "text-[#98A9A1] hover:text-[#F5F8F6]"
+                  ? "bg-[rgba(77,184,255,0.18)] text-[#4DB8FF] border border-[rgba(77,184,255,0.3)] shadow-sm"
+                  : "text-[#A3B3C2] hover:text-[#F2F6FA]"
               )}
             >
               हिंदी
@@ -229,7 +226,7 @@ export default function PlannerPage() {
             variant="secondary"
             size="sm"
             onClick={handleCopySchedule}
-            icon={copied ? <Check className="w-3.5 h-3.5 text-[#00D69A]" /> : <Copy className="w-3.5 h-3.5" />}
+            icon={copied ? <Check className="w-3.5 h-3.5 text-[#4DB8FF]" /> : <Copy className="w-3.5 h-3.5" />}
           >
             {copied ? (lang === "hi" ? "कॉपी हुआ" : "Copied") : (lang === "hi" ? "कॉपी" : "Export")}
           </Button>
@@ -238,7 +235,7 @@ export default function PlannerPage() {
             variant="outline"
             size="sm"
             onClick={() => setShowProfileDrawer(!showProfileDrawer)}
-            icon={<Users className="w-3.5 h-3.5 text-[#00D69A]" />}
+            icon={<Users className="w-3.5 h-3.5 text-[#4DB8FF]" />}
           >
             {lang === "hi" ? "पारिवारिक प्रोफ़ाइल" : "Family Profile"}
           </Button>
@@ -250,27 +247,27 @@ export default function PlannerPage() {
       </div>
 
       {/* 2. Interactive Protection Progress Tracker */}
-      <Card elevated className="p-4 md:p-5 rounded-3xl bg-[rgba(9,18,14,0.7)] space-y-3">
+      <Card elevated className="p-4 md:p-5 rounded-3xl bg-[rgba(18,29,42,0.65)] space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-[rgba(0,214,154,0.12)] border border-[rgba(0,214,154,0.25)] flex items-center justify-center text-[#00D69A]">
+            <div className="w-9 h-9 rounded-2xl bg-[rgba(77,184,255,0.12)] border border-[rgba(77,184,255,0.25)] flex items-center justify-center text-[#4DB8FF]">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-bold text-[#F5F8F6] flex items-center gap-2">
+              <div className="text-xs font-bold text-[#F2F6FA] flex items-center gap-2">
                 <span>{lang === "hi" ? "आज का वायु सुरक्षा स्कोर" : "Daily Protection Score"}</span>
-                <span className="text-[#00D69A] font-extrabold">{protectionScore}%</span>
+                <span className="text-[#4DB8FF] font-extrabold">{protectionScore}%</span>
               </div>
-              <p className="text-[11px] text-[#98A9A1]">
+              <p className="text-xs text-[#A3B3C2]">
                 {lang === "hi"
-                  ? `${totalActions} में से ${completedActions} सुरक्षात्मक क्रियाएं पूरी की गईं (+${totalEarnedPoints} क्लीन एयर क्रेडिट)`
-                  : `${completedActions} of ${totalActions} protective actions marked complete (+${totalEarnedPoints} Clean Air Credits earned)`}
+                  ? `${totalActions} में से ${completedActions} सुरक्षात्मक क्रियाएं पूरी की गईं`
+                  : `${completedActions} of ${totalActions} protective actions completed`}
               </p>
             </div>
           </div>
 
           <div className="text-right flex items-center gap-2 self-end sm:self-auto">
-            <span className="text-[10px] text-[#64786E] uppercase tracking-wider font-semibold">
+            <span className="text-xs text-[#8496A8] uppercase tracking-wider font-semibold">
               Cohort: {profile.cohort}
             </span>
             <Button
@@ -278,7 +275,7 @@ export default function PlannerPage() {
               size="sm"
               onClick={handleResetToDefault}
               title="Reset checklist to uncompleted"
-              icon={<RotateCcw className="w-3 h-3 text-[#98A9A1]" />}
+              icon={<RotateCcw className="w-3 h-3 text-[#A3B3C2]" />}
             >
               Reset
             </Button>
@@ -291,7 +288,7 @@ export default function PlannerPage() {
             initial={{ width: 0 }}
             animate={{ width: `${protectionScore}%` }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="h-full bg-gradient-to-r from-[#00D69A] to-[#38BDF8] rounded-full shadow-[0_0_12px_rgba(0,214,154,0.4)]"
+            className="h-full bg-gradient-to-r from-[#4DB8FF] to-[#38BDF8] rounded-full shadow-[0_0_12px_rgba(77,184,255,0.4)]"
           />
         </div>
       </Card>
@@ -305,15 +302,15 @@ export default function PlannerPage() {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <Card elevated className="p-5 md:p-6 rounded-3xl space-y-4 border-[rgba(0,214,154,0.25)]">
+            <Card elevated className="p-5 md:p-6 rounded-3xl space-y-4 border-[rgba(77,184,255,0.25)]">
               <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] pb-3">
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-[#00D69A]" />
-                  <h3 className="text-sm font-bold text-[#F5F8F6]">
+                  <Users className="w-4 h-4 text-[#4DB8FF]" />
+                  <h3 className="text-sm font-bold text-[#F2F6FA]">
                     {lang === "hi" ? "पारिवारिक प्रोफ़ाइल व आवागमन सेटिंग" : "Family Profile & Commute Configuration"}
                   </h3>
                 </div>
-                <span className="text-[10px] text-[#00D69A] font-semibold">
+                <span className="text-xs text-[#4DB8FF] font-semibold">
                   Personalized Algorithm
                 </span>
               </div>
@@ -321,7 +318,7 @@ export default function PlannerPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                 {/* Cohort Selector */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-[#64786E] uppercase tracking-wider">
+                  <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
                     Primary Household Cohort
                   </label>
                   <select
@@ -337,7 +334,7 @@ export default function PlannerPage() {
                       setProfile(updated);
                       handleRegenerate(updated);
                     }}
-                    className="w-full bg-[rgba(6,14,11,0.6)] border border-[rgba(255,255,255,0.08)] rounded-xl px-3 py-2 text-xs text-[#F5F8F6] focus:outline-none focus:border-[#00D69A]"
+                    className="w-full bg-[rgba(10,17,24,0.6)] border border-[rgba(255,255,255,0.08)] rounded-xl px-3 py-2 text-xs text-[#F2F6FA] focus:outline-none focus:border-[#4DB8FF]"
                   >
                     <option value="family">Family with Children (General)</option>
                     <option value="infant">Infant / Toddler (Pediatric Guard)</option>
@@ -349,7 +346,7 @@ export default function PlannerPage() {
 
                 {/* Commute Mode */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-[#64786E] uppercase tracking-wider">
+                  <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
                     Commute Transportation Mode
                   </label>
                   <select
@@ -362,7 +359,7 @@ export default function PlannerPage() {
                       setProfile(updated);
                       handleRegenerate(updated);
                     }}
-                    className="w-full bg-[rgba(6,14,11,0.6)] border border-[rgba(255,255,255,0.08)] rounded-xl px-3 py-2 text-xs text-[#F5F8F6] focus:outline-none focus:border-[#00D69A]"
+                    className="w-full bg-[rgba(10,17,24,0.6)] border border-[rgba(255,255,255,0.08)] rounded-xl px-3 py-2 text-xs text-[#F2F6FA] focus:outline-none focus:border-[#4DB8FF]"
                   >
                     <option value="metro">Electric Metro / Rail (Protected)</option>
                     <option value="carpool">Carpool (AC Recirculate)</option>
@@ -375,7 +372,7 @@ export default function PlannerPage() {
                 {/* Commute Times */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-[#64786E] uppercase tracking-wider">
+                    <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
                       Morning Leave
                     </label>
                     <input
@@ -386,11 +383,11 @@ export default function PlannerPage() {
                         setProfile(updated);
                         handleRegenerate(updated);
                       }}
-                      className="w-full bg-[rgba(6,14,11,0.6)] border border-[rgba(255,255,255,0.08)] rounded-xl px-2.5 py-1.5 text-xs text-[#F5F8F6] focus:outline-none"
+                      className="w-full bg-[rgba(10,17,24,0.6)] border border-[rgba(255,255,255,0.08)] rounded-xl px-2.5 py-1.5 text-xs text-[#F2F6FA] focus:outline-none"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-[#64786E] uppercase tracking-wider">
+                    <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
                       Evening Return
                     </label>
                     <input
@@ -401,7 +398,7 @@ export default function PlannerPage() {
                         setProfile(updated);
                         handleRegenerate(updated);
                       }}
-                      className="w-full bg-[rgba(6,14,11,0.6)] border border-[rgba(255,255,255,0.08)] rounded-xl px-2.5 py-1.5 text-xs text-[#F5F8F6] focus:outline-none"
+                      className="w-full bg-[rgba(10,17,24,0.6)] border border-[rgba(255,255,255,0.08)] rounded-xl px-2.5 py-1.5 text-xs text-[#F2F6FA] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -409,7 +406,7 @@ export default function PlannerPage() {
 
               {/* Toggles */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[rgba(255,255,255,0.06)] text-xs">
-                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-[rgba(6,14,11,0.4)]">
+                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-[rgba(10,17,24,0.4)]">
                   <input
                     type="checkbox"
                     checked={profile.hasAirPurifier}
@@ -418,12 +415,12 @@ export default function PlannerPage() {
                       setProfile(updated);
                       handleRegenerate(updated);
                     }}
-                    className="accent-[#00D69A]"
+                    className="accent-[#4DB8FF]"
                   />
                   <span>HEPA Air Purifier</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-[rgba(6,14,11,0.4)]">
+                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-[rgba(10,17,24,0.4)]">
                   <input
                     type="checkbox"
                     checked={profile.hasN95Mask}
@@ -432,12 +429,12 @@ export default function PlannerPage() {
                       setProfile(updated);
                       handleRegenerate(updated);
                     }}
-                    className="accent-[#00D69A]"
+                    className="accent-[#4DB8FF]"
                   />
                   <span>N95 Respirators</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-[rgba(6,14,11,0.4)]">
+                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-[rgba(10,17,24,0.4)]">
                   <input
                     type="checkbox"
                     checked={profile.hasKids}
@@ -446,12 +443,12 @@ export default function PlannerPage() {
                       setProfile(updated);
                       handleRegenerate(updated);
                     }}
-                    className="accent-[#00D69A]"
+                    className="accent-[#4DB8FF]"
                   />
                   <span>Children at Home</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-[rgba(6,14,11,0.4)]">
+                <label className="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-[rgba(10,17,24,0.4)]">
                   <input
                     type="checkbox"
                     checked={profile.hasRespiratory}
@@ -460,7 +457,7 @@ export default function PlannerPage() {
                       setProfile(updated);
                       handleRegenerate(updated);
                     }}
-                    className="accent-[#00D69A]"
+                    className="accent-[#4DB8FF]"
                   />
                   <span>Respiratory History</span>
                 </label>
@@ -474,11 +471,11 @@ export default function PlannerPage() {
       <div className="space-y-6">
         {/* SECTION 1: MORNING ROUTINE */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#00D69A] border-b border-[rgba(255,255,255,0.06)] pb-2">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#4DB8FF] border-b border-[rgba(255,255,255,0.06)] pb-2">
             <Sunrise className="w-4 h-4" />
-            <span>{lang === "hi" ? "प्रातःकालीन दिनचर्या (06:00 AM – 11:30 AM)" : "Morning Routine (06:00 AM – 11:30 AM)"}</span>
-            <span className="text-[10px] text-[#64786E] font-normal normal-case ml-auto">
-              {lang === "hi" ? "थर्मल व्युत्क्रमण पीक समय" : "Thermal Inversion Diurnal Peak"}
+            <span>{lang === "hi" ? "प्रातःकालीन दिनचर्या (06:00 AM – 11:30 AM)" : "Morning Interval (06:00 AM – 11:30 AM)"}</span>
+            <span className="text-xs text-[#8496A8] font-normal normal-case ml-auto">
+              {lang === "hi" ? "उच्च प्रदूषण पीक समय" : "High Smog Peak"}
             </span>
           </div>
 
@@ -491,9 +488,9 @@ export default function PlannerPage() {
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#38BDF8] border-b border-[rgba(255,255,255,0.06)] pb-2">
             <Sun className="w-4 h-4" />
-            <span>{lang === "hi" ? "दोपहर का अनुकूल समय (12:00 PM – 04:30 PM)" : "Afternoon Window (12:00 PM – 04:30 PM)"}</span>
-            <span className="text-[10px] text-[#64786E] font-normal normal-case ml-auto">
-              {lang === "hi" ? "सौर संवहन वेंटिलेशन" : "Solar Convective Dilution Window"}
+            <span>{lang === "hi" ? "दोपहर का समय (12:00 PM – 04:30 PM)" : "Afternoon Window (12:00 PM – 04:30 PM)"}</span>
+            <span className="text-xs text-[#8496A8] font-normal normal-case ml-auto">
+              {lang === "hi" ? "सर्वोत्तम वेंटिलेशन समय" : "Optimal Air Window"}
             </span>
           </div>
 
@@ -506,9 +503,9 @@ export default function PlannerPage() {
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#A78BFA] border-b border-[rgba(255,255,255,0.06)] pb-2">
             <Moon className="w-4 h-4" />
-            <span>{lang === "hi" ? "सायंकालीन व रात्रि प्रोटोकॉल (05:00 PM – 10:00 PM+)" : "Evening & Night Protocol (05:00 PM – 10:00 PM+)"}</span>
-            <span className="text-[10px] text-[#64786E] font-normal normal-case ml-auto">
-              {lang === "hi" ? "स्मॉग री-ट्रैपिंग व इनडोर सीलिंग" : "Nocturnal Boundary Smog Trapping"}
+            <span>{lang === "hi" ? "सायंकालीन व रात्रि समय (05:00 PM – 10:00 PM+)" : "Evening & Night (05:00 PM – 10:00 PM+)"}</span>
+            <span className="text-xs text-[#8496A8] font-normal normal-case ml-auto">
+              {lang === "hi" ? "इनडोर एयर सीलिंग" : "Indoor HEPA Protocol"}
             </span>
           </div>
 
@@ -533,61 +530,63 @@ export default function PlannerPage() {
         ? "accent"
         : "subtle";
 
+    const statusLabel =
+      act.status === "avoid"
+        ? `Avoid ${act.location}`
+        : act.status === "caution"
+        ? `Caution (${act.location})`
+        : act.status === "optimal"
+        ? `Safe (${act.location})`
+        : "Safe";
+
     return (
       <Card
         key={act.id}
         elevated
+        hoverEffect
         className={cn(
           "p-4 md:p-5 rounded-3xl transition-all border",
           isDone
-            ? "bg-[rgba(10,24,18,0.5)] border-[rgba(0,214,154,0.3)] shadow-[0_4px_16px_rgba(0,214,154,0.08)]"
-            : "bg-[rgba(10,20,16,0.6)] border-[rgba(255,255,255,0.07)] hover:border-[rgba(255,255,255,0.15)]"
+            ? "bg-[rgba(14,23,34,0.75)] border-[rgba(77,184,255,0.3)] shadow-[0_4px_16px_rgba(77,184,255,0.08)]"
+            : "bg-[rgba(14,23,34,0.6)] border-[rgba(255,255,255,0.07)]"
         )}
       >
         <div className="flex items-start gap-3.5">
           {/* Action Completion Checkbox */}
           <button
             onClick={() => toggleActionCompleted(act.id)}
-            className="mt-1 shrink-0 p-1 rounded-xl text-[#98A9A1] hover:text-[#00D69A] transition-colors cursor-pointer"
+            className="mt-1 shrink-0 p-1 rounded-xl text-[#A3B3C2] hover:text-[#4DB8FF] transition-colors cursor-pointer"
             aria-label={isDone ? "Mark pending" : "Mark completed"}
           >
             {isDone ? (
-              <CheckCircle2 className="w-5 h-5 text-[#00D69A]" />
+              <CheckCircle2 className="w-5 h-5 text-[#4DB8FF]" />
             ) : (
-              <Circle className="w-5 h-5 text-[#64786E] hover:text-[#00D69A]" />
+              <Circle className="w-5 h-5 text-[#8496A8] hover:text-[#4DB8FF]" />
             )}
           </button>
 
           <div className="flex-1 space-y-1.5 min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold text-[#F5F8F6] flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-[#00D69A]" />
+                <span className="text-xs font-bold text-[#F2F6FA] flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-[#4DB8FF]" />
                   {act.time}
                 </span>
-                <span className="text-sm font-semibold text-[#F5F8F6]">
+                <span className="text-sm font-semibold text-[#F2F6FA]">
                   {act.activity}
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <Badge variant={statusBadgeVariant} size="sm">
-                  {act.status.toUpperCase()}
-                </Badge>
-                <Badge variant="outline" size="sm">
-                  {act.location}
-                </Badge>
-                <span className="text-[10px] text-[#00D69A] font-semibold hidden sm:inline">
-                  +{act.impactPoints} pts
-                </span>
-              </div>
+              <Badge variant={statusBadgeVariant} size="sm">
+                {statusLabel}
+              </Badge>
             </div>
 
             {/* Recommendation Directive */}
             <p
               className={cn(
                 "text-xs leading-relaxed",
-                isDone ? "text-[#98A9A1] line-through opacity-80" : "text-[#E6EDE8] font-medium"
+                isDone ? "text-[#A3B3C2] line-through opacity-80" : "text-[#E6EDE8] font-medium"
               )}
             >
               {act.recommendation}
@@ -597,13 +596,13 @@ export default function PlannerPage() {
             <div className="pt-1">
               <button
                 onClick={() => toggleExplanation(act.id)}
-                className="flex items-center gap-1 text-[11px] font-semibold text-[#00D69A] hover:text-[#05E5A6] cursor-pointer transition-colors"
+                className="flex items-center gap-1 text-xs font-semibold text-[#4DB8FF] hover:text-[#7CCBFF] cursor-pointer transition-colors"
               >
                 <Info className="w-3 h-3" />
                 <span>
                   {isExpanded
-                    ? lang === "hi" ? "वैज्ञानिक कारण छिपाएं" : "Hide Scientific Rationale"
-                    : lang === "hi" ? "वैज्ञानिक कारण देखें" : "Why this recommendation? (Scientific Explanation)"}
+                    ? lang === "hi" ? "कारण विवरण छिपाएं" : "Hide Medical Rationale"
+                    : lang === "hi" ? "कारण विवरण देखें" : "Why this recommendation?"}
                 </span>
                 {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               </button>
@@ -617,7 +616,7 @@ export default function PlannerPage() {
                     exit={{ opacity: 0, height: 0, marginTop: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="p-3 rounded-2xl bg-[rgba(6,14,11,0.7)] border border-[rgba(255,255,255,0.06)] space-y-1 text-xs text-[#98A9A1] leading-relaxed">
+                    <div className="p-3 rounded-2xl bg-[rgba(10,17,24,0.7)] border border-[rgba(255,255,255,0.06)] space-y-1 text-xs text-[#A3B3C2] leading-relaxed">
                       <div className="font-semibold text-[#38BDF8] flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5 text-[#38BDF8]" />
                         <span>Clinical & Atmospheric Mechanism:</span>

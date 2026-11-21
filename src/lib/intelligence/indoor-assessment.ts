@@ -156,7 +156,7 @@ export function getBudgetRecommendations(
       title: "Microfiber Damp-Mopping Protocol",
       description: "Stop dry broom sweeping. Use a damp microfiber cloth or mop to bind settled particulates to moisture.",
       diyGuide: "Add a splash of water or mild vinegar. Mop gently from inner corners toward the entrance door.",
-      impactReduction: "Eliminates 85% of mechanical dust resuspension during morning cleaning.",
+      impactReduction: "Illustrative estimate: Reduces up to ~85% of mechanical dust resuspension during morning cleaning.",
       category: "source_control",
     },
     {
@@ -166,7 +166,7 @@ export function getBudgetRecommendations(
       title: "Wet Towel Threshold Draft Sealing",
       description: "Roll up clean damp towels and press them against gaps under exterior doors and balcony slides.",
       diyGuide: "Dampen a bath towel (not dripping wet), roll tightly, and wedge across the drafty door base.",
-      impactReduction: "Blocks up to 45% of wind-driven particulate infiltration through exterior door seams.",
+      impactReduction: "Illustrative estimate: Blocks up to ~45% of wind-driven particulate infiltration through exterior door seams.",
       category: "ventilation",
     },
 
@@ -178,7 +178,7 @@ export function getBudgetRecommendations(
       title: "Silicone Under-Door Brush Sweep Stopper",
       description: "Self-adhesive multi-layer silicone weather stripping attached to front and balcony doors.",
       diyGuide: "Clean door bottom with rubbing alcohol, peel 3M adhesive tape, and press firmly against floor line.",
-      impactReduction: "Cuts perimeter draft infiltration by up to 60% permanently.",
+      impactReduction: "Illustrative estimate: Cuts perimeter draft infiltration by up to ~60%.",
       category: "ventilation",
     },
     {
@@ -200,7 +200,7 @@ export function getBudgetRecommendations(
       title: "DIY Corsi-Rosenthal Box Fan Filter",
       description: "High-volume air cleaner assembled by attaching a MERV 13 / H11 pleated filter furnace panel to a standard 16-inch table box fan.",
       diyGuide: "Tape a 16x16-inch MERV 13 pleated filter firmly onto the intake grille of a standard household box fan using duct tape.",
-      impactReduction: "Delivers clean air equivalent to a ₹7,000 purifier with CADR ~180 CFM.",
+      impactReduction: "Engineering estimate: Delivers clean air equivalent with CADR ~180 CFM.",
       category: "filtration",
     },
     {
@@ -210,7 +210,7 @@ export function getBudgetRecommendations(
       title: "Smart Wi-Fi Timer Plug for Auto-Purifier Cycling",
       description: "Automate your air purifier to run at full turbo 45 minutes before bedtime and before morning wakeup.",
       diyGuide: "Plug into wall outlet, configure timer schedule for 5:30 AM – 8:30 AM and 9:00 PM – 7:00 AM.",
-      impactReduction: "Saves up to 30% electricity while ensuring air is clean exactly when needed.",
+      impactReduction: "Illustrative model: Saves electricity while ensuring filtration cycles run during key hours.",
       category: "filtration",
     },
 
@@ -222,7 +222,7 @@ export function getBudgetRecommendations(
       title: "True HEPA H13 Purifier (CADR 350+ CFM)",
       description: "Certified mechanical air purifier with True HEPA H13 cylindrical filter (EN 1822 compliant for 0.3 µm particulates) and activated carbon barrel.",
       diyGuide: "Position at least 1.5 feet away from walls in the center of the main family room or bedroom.",
-      impactReduction: "Achieves 4–5 Air Changes per Hour (ACH), keeping indoor PM2.5 below 12 µg/m³ even in severe smog.",
+      impactReduction: "Illustrative CADR target: Achieves 4–5 Air Changes per Hour (ACH) for ~300 sq ft room.",
       category: "filtration",
     },
   ];

@@ -25,6 +25,7 @@ import {
   Sliders,
   Flame,
   DollarSign,
+  Info,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -657,6 +658,14 @@ export default function IndoorAirPage() {
               </div>
             </Card>
           ))}
+        </div>
+
+        {/* Indoor Engineering Model Assumptions Disclosure */}
+        <div className="p-3.5 rounded-2xl bg-[rgba(10,22,17,0.5)] border border-[rgba(255,255,255,0.06)] flex items-start gap-2.5 text-[11px] text-[#98A9A1] leading-relaxed">
+          <Info className="w-4 h-4 text-[#38BDF8] shrink-0 mt-0.5" />
+          <span>
+            <strong>Indoor Engineering Model Assumptions:</strong> Room particulate concentrations and purifier reductions are illustrative mass-balance estimates based on door sealing ratios, simulated infiltration factors, and rated CADR delivery curves. They provide comparative behavioral planning guidance and do not replace physical in-situ calibrated laser particle counters.
+          </span>
         </div>
       </div>
 

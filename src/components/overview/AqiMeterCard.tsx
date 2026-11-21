@@ -13,12 +13,16 @@ interface AqiMeterCardProps {
 
 export function AqiMeterCard({ data }: AqiMeterCardProps) {
   const { color, borderColor, badgeBg } = getAQIColor(data.usAqi);
-  const [displayAqi, setDisplayAqi] = useState(0);
+  const isDataSufficient = data.isNowCastDataSufficient !== false && data.usAqi !== null;
+  const target = isDataSufficient ? data.usAqi : null;
+  const [animatedAqi, setAnimatedAqi] = useState(0);
 
   // Live count-up animation for the AQI number (0 -> target)
   useEffect(() => {
+    if (target === null) {
+      return;
+    }
     let animationFrameId: number;
-    const target = data.usAqi;
     const duration = 1200; // ms
     const startTime = performance.now();
 
@@ -27,7 +31,7 @@ export function AqiMeterCard({ data }: AqiMeterCardProps) {
       const progress = Math.min(elapsed / duration, 1);
       const ease = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(target * ease);
-      setDisplayAqi(current);
+      setAnimatedAqi(current);
 
       if (progress < 1) {
         animationFrameId = requestAnimationFrame(step);
@@ -39,13 +43,15 @@ export function AqiMeterCard({ data }: AqiMeterCardProps) {
     return () => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
-  }, [data.usAqi]);
+  }, [target]);
+
+  const displayAqi = target === null ? null : animatedAqi;
 
   // SVG circular gauge geometry
   const radius = 38;
   const circumference = 2 * Math.PI * radius; // ~238.76
-  const aqiRatio = Math.min(Math.max(data.usAqi / 500, 0.05), 1);
-  const targetOffset = circumference * (1 - aqiRatio);
+  const aqiRatio = (target !== null && isDataSufficient) ? Math.min(Math.max(target / 500, 0.05), 1) : 0;
+  const targetOffset = (target !== null && isDataSufficient) ? circumference * (1 - aqiRatio) : circumference;
 
   return (
     <Card
@@ -134,7 +140,7 @@ export function AqiMeterCard({ data }: AqiMeterCardProps) {
             className="text-3xl font-extrabold tracking-tighter tabular-nums leading-none"
             style={{ color }}
           >
-            {displayAqi}
+            {displayAqi !== null ? displayAqi : "--"}
           </span>
         </div>
       </div>
@@ -144,7 +150,7 @@ export function AqiMeterCard({ data }: AqiMeterCardProps) {
         <div className="flex items-center justify-between text-[11px]">
           <span className="text-[#98A9A1] whitespace-nowrap">Dominant PM2.5</span>
           <span className="font-semibold text-[#F5F8F6] tabular-nums whitespace-nowrap">
-            {data.nowCastConcentration} µg/m³
+            {data.nowCastConcentration !== null ? `${data.nowCastConcentration} µg/m³` : "N/A"}
           </span>
         </div>
 
@@ -158,10 +164,11 @@ export function AqiMeterCard({ data }: AqiMeterCardProps) {
           <motion.div
             initial={{ width: 0 }}
             animate={{
-              width: `${Math.min(
-                Math.max((data.nowCastConcentration / 150) * 100, 8),
-                100
-              )}%`,
+              width: `${
+                data.nowCastConcentration !== null
+                  ? Math.min(Math.max((data.nowCastConcentration / 150) * 100, 8), 100)
+                  : 0
+              }%`,
             }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="h-full rounded-full"

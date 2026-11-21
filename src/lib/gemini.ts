@@ -19,6 +19,7 @@ export interface AssistantMessage {
   timestamp?: string;
   sources?: string[];
   suggestedActions?: string[];
+  engine?: string;
 }
 
 export interface UserProfileContext {
@@ -68,7 +69,7 @@ export const BREATHEWISE_SYSTEM_PROMPT = `
 You are BreatheWise AI, a concise respiratory intelligence guide.
 RULES:
 1. Grounded in provided Open-Meteo & CAMS telemetry. NEVER hallucinate unmeasured values.
-2. In India, note data is Copernicus CAMS model grid (~10km), not physical rooftop CPCB hardware.
+2. Note environmental data source is ECMWF Copernicus CAMS global atmospheric model grid (~45km resolution, 3-hour update cycle via Open-Meteo), not physical rooftop CPCB monitoring station hardware.
 3. Recommend physical protections (N95/FFP2 masks, true HEPA H13, avoiding morning boundary inversions). Not a medical doctor.
 4. If asked in Hindi or lang=hi, reply in natural Hindi (हिंदी).
 5. ULTRA-CONCISE: Respond in under 120 words with clear bullet points. Avoid filler text.
@@ -103,23 +104,25 @@ function generateHeuristicAssistantResponse(
   const pm25 = aqiData.pollutants.pm2_5?.value ?? aqiData.nowCastConcentration;
   const city = aqiData.city.name;
   const lowerQ = query.toLowerCase();
+  const aqiDisplay = aqi !== null ? aqi : "N/A";
+  const isElevated = aqi !== null && aqi > 150;
 
   if (lang === "hi") {
     if (lowerQ.includes("jog") || lowerQ.includes("exercise") || lowerQ.includes("दौड़")) {
-      return aqi > 150
-        ? `### 🛑 बाहरी व्यायाम स्थगित करें (${city}):\n\n* **AQI:** ${aqi} (${aqiData.indiaCategory}), PM2.5: ${pm25} µg/m³\n* **जोखिम:** तेज सांस से फेफड़ों में सूक्ष्म कण जमा होते हैं।\n* **सलाह:** इनडोर वर्कआउट करें और HEPA प्यूरीफायर चालू रखें।`
-        : `### ✅ बाहरी गतिविधि सुरक्षित (${city}):\n\n* **AQI:** ${aqi}। सामान्य बाहरी व्यायाम सुरक्षित है।`;
+      return isElevated
+        ? `### 🛑 बाहरी व्यायाम स्थगित करें (${city}):\n\n* **AQI:** ${aqiDisplay} (${aqiData.indiaCategory}), PM2.5: ${pm25} µg/m³\n* **जोखिम:** तेज सांस से फेफड़ों में सूक्ष्म कण जमा होते हैं।\n* **सलाह:** इनडोर वर्कआउट करें और HEPA प्यूरीफायर चालू रखें।`
+        : `### ✅ बाहरी गतिविधि अनुकूल (${city}):\n\n* **AQI:** ${aqiDisplay}। सामान्य बाहरी व्यायाम किया जा सकता है।`;
     }
     if (lowerQ.includes("mask") || lowerQ.includes("मास्क")) {
       return `### 😷 मास्क सुरक्षा निर्देश:\n\n* केवल **N95 / FFP2** रेस्पिरेटर का उपयोग करें।\n* कपड़े या सामान्य सर्जिकल मास्क PM2.5 को रोकने में असमर्थ हैं।\n* नाक की क्लिप को टाइट रखें।`;
     }
-    return `### 🌿 वायु गुणवत्ता सारांश (${city}):\n\n* **AQI:** ${aqi} (${aqiData.indiaCategory}) | **PM2.5:** ${pm25} µg/m³\n* **तापमान व्युत्क्रमण:** ${aqiData.inversionRisk.level}\n* **सलाह:** सुबह 6 से 9:30 बजे बाहरी आवागमन सीमित रखें और N95 मास्क पहनें।`;
+    return `### 🌿 वायु गुणवत्ता सारांश (${city}):\n\n* **AQI:** ${aqiDisplay} (${aqiData.indiaCategory}) | **PM2.5:** ${pm25} µg/m³\n* **तापमान व्युत्क्रमण:** ${aqiData.inversionRisk.level}\n* **सलाह:** सुबह 6 से 9:30 बजे बाहरी आवागमन सीमित रखें और N95 मास्क पहनें।`;
   }
 
   if (lowerQ.includes("jog") || lowerQ.includes("run") || lowerQ.includes("exercise") || lowerQ.includes("walk")) {
-    return aqi > 150
-      ? `### 🛑 Outdoor Exercise Directive for ${city}:\n\n* **AQI:** ${aqi} (${isCpcb ? aqiData.indiaCategory : aqiData.category}) | **PM2.5:** ${pm25} µg/m³\n* **Risk:** High breathing rate causes deep pulmonary particle deposition.\n* **Guidance:** Shift to indoor workout or wait until midday (12:00–3:00 PM) when solar convection clears surface smog.`
-      : `### ✅ Favorable Outdoor Conditions for ${city}:\n\n* Current AQI is **${aqi}** (${isCpcb ? aqiData.indiaCategory : aqiData.category}). Moderate outdoor exercise is safe.`;
+    return isElevated
+      ? `### 🛑 Outdoor Exercise Directive for ${city}:\n\n* **AQI:** ${aqiDisplay} (${isCpcb ? aqiData.indiaCategory : aqiData.category}) | **PM2.5:** ${pm25} µg/m³\n* **Risk:** High breathing rate causes deep pulmonary particle deposition.\n* **Guidance:** Shift to indoor workout or wait until midday (12:00–3:00 PM) when solar convection clears surface smog.`
+      : `### ✅ Favorable Outdoor Conditions for ${city}:\n\n* Current AQI is **${aqiDisplay}** (${isCpcb ? aqiData.indiaCategory : aqiData.category}). Moderate outdoor exercise is safe.`;
   }
 
   if (lowerQ.includes("mask") || lowerQ.includes("n95") || lowerQ.includes("respirator")) {
@@ -130,18 +133,26 @@ function generateHeuristicAssistantResponse(
     return `### 🏠 HEPA Sizing Guidance:\n\n* **CADR Rule:** Sizing CFM should equal 2/3 of room square footage (e.g., 300 sq ft $\\rightarrow$ 200 CFM).\n* **Filtration:** True HEPA H13 (EN 1822 certified for 0.3 µm particulates) + activated carbon.\n* **Ventilation:** Keep windows latched when outdoor PM2.5 exceeds 60 µg/m³; rely on indoor recirculating filtration.`;
   }
 
-  return `### 🌿 Environmental Intelligence for ${city}:\n\n* **AQI:** ${aqi} (${isCpcb ? aqiData.indiaCategory : aqiData.category}) | **PM2.5:** ${pm25} µg/m³\n* **Inversion Risk:** ${aqiData.inversionRisk.level} (${aqiData.inversionRisk.trappedSmogProbability}% smog trap)\n* **Key Actions:** Equip N95 masks for outdoor commutes; operate indoor HEPA filtration.`;
+  return `### 🌿 Environmental Intelligence for ${city}:\n\n* **AQI:** ${aqiDisplay} (${isCpcb ? aqiData.indiaCategory : aqiData.category}) | **PM2.5:** ${pm25} µg/m³\n* **Inversion Risk:** ${aqiData.inversionRisk.level} (${aqiData.inversionRisk.trappedSmogProbability}% smog trap)\n* **Key Actions:** Equip N95 masks for outdoor commutes; operate indoor HEPA filtration.`;
+}
+
+export type AssistantEngineType = "gemini-3.5-flash-lite" | "deterministic-fallback";
+
+export interface StreamAirIntelligenceResult {
+  stream: AsyncIterable<{ text?: string }>;
+  engine: AssistantEngineType;
 }
 
 /**
- * Streaming chat assistant: Truncates history to last 2 messages & limits output to 350 tokens
+ * Streaming chat assistant: Truncates history to last 2 messages & limits output to 350 tokens.
+ * Explicitly identifies whether response is produced by Gemini API or deterministic heuristic fallback.
  */
 export async function streamAirIntelligence(
   messages: AssistantMessage[],
   aqiData: AirQualityData,
   profile?: UserProfileContext,
   lang: "en" | "hi" = "en"
-): Promise<AsyncIterable<{ text?: string }>> {
+): Promise<StreamAirIntelligenceResult> {
   const client = getGeminiClient();
 
   if (!client) {
@@ -149,13 +160,16 @@ export async function streamAirIntelligence(
     const responseText = generateHeuristicAssistantResponse(lastUserQuery, aqiData, profile, lang);
 
     return {
-      async *[Symbol.asyncIterator]() {
-        const words = responseText.split(" ");
-        for (let i = 0; i < words.length; i += 3) {
-          const chunk = words.slice(i, i + 3).join(" ") + " ";
-          yield { text: chunk };
-          await new Promise((r) => setTimeout(r, 15));
-        }
+      engine: "deterministic-fallback",
+      stream: {
+        async *[Symbol.asyncIterator]() {
+          const words = responseText.split(" ");
+          for (let i = 0; i < words.length; i += 3) {
+            const chunk = words.slice(i, i + 3).join(" ") + " ";
+            yield { text: chunk };
+            await new Promise((r) => setTimeout(r, 15));
+          }
+        },
       },
     };
   }
@@ -177,7 +191,7 @@ export async function streamAirIntelligence(
   ];
 
   try {
-    return await client.models.generateContentStream({
+    const rawStream = await client.models.generateContentStream({
       model: "gemini-3.5-flash-lite",
       contents,
       config: {
@@ -186,18 +200,26 @@ export async function streamAirIntelligence(
         maxOutputTokens: 350, // ULTRA-LEAN: Cap generation at ~350 tokens
       },
     });
+
+    return {
+      engine: "gemini-3.5-flash-lite",
+      stream: rawStream,
+    };
   } catch (error) {
     console.warn("Gemini quota or stream error, falling back to heuristic engine:", error);
     const responseText = generateHeuristicAssistantResponse(lastUserMsg, aqiData, profile, lang);
 
     return {
-      async *[Symbol.asyncIterator]() {
-        const words = responseText.split(" ");
-        for (let i = 0; i < words.length; i += 3) {
-          const chunk = words.slice(i, i + 3).join(" ") + " ";
-          yield { text: chunk };
-          await new Promise((r) => setTimeout(r, 12));
-        }
+      engine: "deterministic-fallback",
+      stream: {
+        async *[Symbol.asyncIterator]() {
+          const words = responseText.split(" ");
+          for (let i = 0; i < words.length; i += 3) {
+            const chunk = words.slice(i, i + 3).join(" ") + " ";
+            yield { text: chunk };
+            await new Promise((r) => setTimeout(r, 12));
+          }
+        },
       },
     };
   }

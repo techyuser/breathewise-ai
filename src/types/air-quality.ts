@@ -4,7 +4,8 @@ export type AQICategory =
   | "Unhealthy for Sensitive Groups"
   | "Unhealthy"
   | "Very Unhealthy"
-  | "Hazardous";
+  | "Hazardous"
+  | "Insufficient Data";
 
 export type CpcbCategory =
   | "Good"
@@ -12,7 +13,8 @@ export type CpcbCategory =
   | "Moderate"
   | "Poor"
   | "Very Poor"
-  | "Severe";
+  | "Severe"
+  | "Insufficient Data";
 
 export type AqiStandard = "US_EPA" | "INDIA_CPCB";
 
@@ -31,8 +33,8 @@ export interface PollutantDetail {
 export interface HourlyAQIPoint {
   time: string;
   displayTime: string;
-  usAqi: number;
-  indiaAqi?: number;
+  usAqi: number | null;
+  indiaAqi?: number | null;
   pm2_5: number;
   pm10: number;
   nitrogen_dioxide?: number;
@@ -90,16 +92,17 @@ export interface AirQualityData {
   calculationStandard: string;
   activeStandard: AqiStandard;
   referenceBenchmark: "WHO 2021 24-Hour Guideline Limit (AQG)";
-  usAqi: number;
-  indiaAqi: number;
+  usAqi: number | null;
+  indiaAqi: number | null;
   isCpcbDataSufficient?: boolean;
   cpcbInsufficiencyReason?: string;
   isNowCastDataSufficient?: boolean;
-  displayAqi: number;
+  nowCastHoursUsed?: number;
+  displayAqi: number | null;
   category: AQICategory;
   indiaCategory: CpcbCategory;
   displayCategory: string;
-  nowCastConcentration: number;
+  nowCastConcentration: number | null;
   isNowCastCalculated: boolean;
   isDemoData: boolean;
   europeanAqi: number;

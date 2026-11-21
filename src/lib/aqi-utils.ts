@@ -1,6 +1,7 @@
 import { AQICategory } from "@/types/air-quality";
 
-export function getAQICategory(aqi: number): AQICategory {
+export function getAQICategory(aqi: number | null): AQICategory {
+  if (aqi === null || !Number.isFinite(aqi) || aqi < 0) return "Insufficient Data";
   if (aqi <= 50) return "Good";
   if (aqi <= 100) return "Moderate";
   if (aqi <= 150) return "Unhealthy for Sensitive Groups";
@@ -9,12 +10,20 @@ export function getAQICategory(aqi: number): AQICategory {
   return "Hazardous";
 }
 
-export function getAQIColor(aqi: number): {
+export function getAQIColor(aqi: number | null): {
   color: string;
   bgColor: string;
   borderColor: string;
   badgeBg: string;
 } {
+  if (aqi === null || !Number.isFinite(aqi) || aqi < 0) {
+    return {
+      color: "#98A9A1",
+      bgColor: "rgba(152, 169, 161, 0.08)",
+      borderColor: "rgba(152, 169, 161, 0.25)",
+      badgeBg: "rgba(152, 169, 161, 0.14)",
+    };
+  }
   if (aqi <= 50) {
     return {
       color: "#00D69A", // Emerald
@@ -70,11 +79,12 @@ export function getAQIColor(aqi: number): {
  * If data is insufficient, returns demo fallback metadata.
  */
 export interface NowCastCalculationResult {
-  aqi: number;
-  nowCastConcentration: number;
+  aqi: number | null;
+  nowCastConcentration: number | null;
   isLiveCalculated: boolean;
   isDataSufficient: boolean;
   hoursUsed: number;
+  latest3HoursCount: number;
   methodology: "EPA-style PM2.5 NowCast estimate (CAMS model input)";
 }
 
@@ -82,65 +92,84 @@ export interface NowCastCalculationResult {
  * Calculates US EPA-style PM2.5 NowCast AQI from hourly concentrations.
  *
  * EPA Standard Rules:
- * - Requires at least 2 consecutive hours of valid hourly PM2.5 data (up to 12 hours max).
- * - Applies 12-hour decaying weight function sensitive to rapid wildfire and smog spikes.
+ * - Requires at least 2 valid values among the latest 3 clock hours (h = 0, 1, 2).
+ * - Applies up to 12-hour decaying weight function sensitive to rapid wildfire and smog spikes.
+ * - Preserves original hour offsets when weighting missing observations (uses actual elapsed hour exponent h).
  * - Input source: Copernicus Atmosphere Monitoring Service (CAMS) modelled atmospheric grid.
  *
- * If hourly history < 2 hours, flags isDataSufficient: false.
+ * If hourly history does not satisfy the availability rule, returns isDataSufficient: false and null AQI.
  */
 export function calculateNowCastAqi(
-  hourlyPm25: number[],
+  hourlyPm25: (number | null | undefined)[],
   currentTimeIndex?: number
 ): NowCastCalculationResult {
   if (!hourlyPm25 || hourlyPm25.length === 0) {
     return {
-      aqi: 125,
-      nowCastConcentration: 45.2,
+      aqi: null,
+      nowCastConcentration: null,
       isLiveCalculated: false,
       isDataSufficient: false,
       hoursUsed: 0,
+      latest3HoursCount: 0,
       methodology: "EPA-style PM2.5 NowCast estimate (CAMS model input)",
     };
   }
 
-  const endIndex =
+  // Target current index (hour offset h = 0)
+  const targetIdx =
     currentTimeIndex !== undefined && currentTimeIndex >= 0
-      ? currentTimeIndex + 1
-      : hourlyPm25.length;
-  const startIndex = Math.max(0, endIndex - 12);
-  const slice = hourlyPm25
-    .slice(startIndex, endIndex)
-    .filter((v) => v !== null && v !== undefined && !isNaN(v));
+      ? currentTimeIndex
+      : hourlyPm25.length - 1;
 
-  if (slice.length < 2) {
-    const singleVal = slice[0] ?? 45.2;
+  // Collect observations up to 12 clock hours preceding: h = 0 (current), h = 1 (t-1), ..., h = 11 (t-11)
+  // Preserving the true elapsed hour offset h without compressing gaps
+  const observations: { h: number; c: number }[] = [];
+  let latest3Count = 0;
+
+  for (let h = 0; h < 12; h++) {
+    const idx = targetIdx - h;
+    if (idx < 0 || idx >= hourlyPm25.length) continue;
+
+    const rawVal = hourlyPm25[idx];
+    if (typeof rawVal === "number" && Number.isFinite(rawVal) && rawVal >= 0) {
+      observations.push({ h, c: rawVal });
+      if (h < 3) {
+        latest3Count++;
+      }
+    }
+  }
+
+  // EPA Availability Rule: At least 2 valid values among the latest 3 clock hours
+  if (latest3Count < 2 || observations.length === 0) {
     return {
-      aqi: Math.min(500, Math.round(singleVal * 2.5)),
-      nowCastConcentration: Number(singleVal.toFixed(1)),
+      aqi: null,
+      nowCastConcentration: null,
       isLiveCalculated: false,
       isDataSufficient: false,
-      hoursUsed: slice.length,
+      hoursUsed: observations.length,
+      latest3HoursCount: latest3Count,
       methodology: "EPA-style PM2.5 NowCast estimate (CAMS model input)",
     };
   }
 
-  // Reverse so index 0 is the most recent hour (t), index 1 is t-1, etc.
-  const recent = [...slice].reverse();
-  const cMin = Math.min(...recent);
-  const cMax = Math.max(...recent);
+  const concValues = observations.map((o) => o.c);
+  const cMin = Math.min(...concValues);
+  const cMax = Math.max(...concValues);
 
+  // Decaying weight factor: w* = cMin / cMax, bounded to [0.5, 1.0]
   const wStar = cMax > 0 ? cMin / cMax : 0.5;
-  const w = Math.max(0.5, wStar);
+  const w = Math.max(0.5, Math.min(1.0, wStar));
 
+  // Weight each observation by w^h, using the ACTUAL elapsed hour exponent h (NOT compressed index)
   let num = 0;
   let den = 0;
-  for (let i = 0; i < recent.length; i++) {
-    const weight = Math.pow(w, i);
-    num += recent[i] * weight;
+  for (const obs of observations) {
+    const weight = Math.pow(w, obs.h);
+    num += obs.c * weight;
     den += weight;
   }
 
-  const nowCastC = den > 0 ? num / den : recent[0];
+  const nowCastC = den > 0 ? num / den : 0;
 
   // US EPA PM2.5 Breakpoints (C_low, C_high, I_low, I_high)
   const breakpoints = [
@@ -153,17 +182,30 @@ export function calculateNowCastAqi(
     { cLow: 350.5, cHigh: 500.4, iLow: 401, iHigh: 500 },
   ];
 
+  if (nowCastC <= 0) {
+    return {
+      aqi: 0,
+      nowCastConcentration: 0.0,
+      isLiveCalculated: true,
+      isDataSufficient: true,
+      hoursUsed: observations.length,
+      latest3HoursCount: latest3Count,
+      methodology: "EPA-style PM2.5 NowCast estimate (CAMS model input)",
+    };
+  }
+
   for (const bp of breakpoints) {
     if (nowCastC <= bp.cHigh) {
       const aqi = Math.round(
         ((bp.iHigh - bp.iLow) / (bp.cHigh - bp.cLow)) * (nowCastC - bp.cLow) + bp.iLow
       );
       return {
-        aqi,
+        aqi: Math.min(500, Math.max(0, aqi)),
         nowCastConcentration: Number(nowCastC.toFixed(1)),
         isLiveCalculated: true,
         isDataSufficient: true,
-        hoursUsed: slice.length,
+        hoursUsed: observations.length,
+        latest3HoursCount: latest3Count,
         methodology: "EPA-style PM2.5 NowCast estimate (CAMS model input)",
       };
     }
@@ -174,7 +216,8 @@ export function calculateNowCastAqi(
     nowCastConcentration: Number(nowCastC.toFixed(1)),
     isLiveCalculated: true,
     isDataSufficient: true,
-    hoursUsed: slice.length,
+    hoursUsed: observations.length,
+    latest3HoursCount: latest3Count,
     methodology: "EPA-style PM2.5 NowCast estimate (CAMS model input)",
   };
 }
@@ -183,9 +226,9 @@ export function getHealthAdvisory(category: AQICategory) {
   switch (category) {
     case "Good":
       return {
-        headline: "Air quality is pristine & ideal for all outdoor activities",
+        headline: "Air quality is favorable & ideal for outdoor activities",
         general: "Clean atmospheric air. Natural ventilation is encouraged.",
-        sensitive: "Zero risk for asthma, children, or cardiac patients.",
+        sensitive: "Low baseline risk for asthma, children, or cardiac patients.",
         action: "Open windows to circulate fresh outdoor air.",
         mask: false,
       };
@@ -224,10 +267,18 @@ export function getHealthAdvisory(category: AQICategory) {
     case "Hazardous":
       return {
         headline: "Emergency threshold: critical smog & trapped toxic air",
-        general: "Entire population is likely to be severely affected. Atmospheric inversion trapping particulate matter.",
-        sensitive: "Strict medical quarantine from outdoor air advised.",
+        general: "Entire population is likely to be affected. Atmospheric inversion trapping particulate matter.",
+        sensitive: "Remain strictly indoors with active particulate filtration. Avoid all outdoor physical activity.",
         action: "Continuous indoor HEPA filtration. Essential travel only with certified N95+ mask.",
         mask: true,
+      };
+    case "Insufficient Data":
+      return {
+        headline: "Insufficient hourly data for EPA NowCast estimate",
+        general: "Fewer than 2 valid observations available in the latest 3 clock hours.",
+        sensitive: "Exercise caution. Refer to individual pollutant readings.",
+        action: "Check recent hourly trends and local guidance.",
+        mask: false,
       };
   }
 }

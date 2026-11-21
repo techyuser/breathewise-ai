@@ -54,8 +54,8 @@ export function generateDailyRoutine(
   const isCpcb = aqiData.activeStandard === "INDIA_CPCB";
   const aqi = isCpcb ? aqiData.indiaAqi : aqiData.usAqi;
   const pm25 = aqiData.pollutants.pm2_5?.value ?? aqiData.nowCastConcentration;
-  const isSevere = aqi > 200 || pm25 > 90;
-  const isHigh = aqi > 120 || pm25 > 45;
+  const isSevere = (aqi !== null && aqi > 200) || (typeof pm25 === "number" && pm25 > 90);
+  const isHigh = (aqi !== null && aqi > 120) || (typeof pm25 === "number" && pm25 > 45);
 
   const routine: RoutineActivity[] = [];
 
@@ -124,7 +124,7 @@ export function generateDailyRoutine(
     m2Status = "avoid";
     m2RecEn = "Keep infants indoors in filtered air. Do NOT place particulate masks on infants or children under 2 (risk of suffocation).";
     m2RecHi = "शिशुओं को घर के अंदर सुरक्षित हवा में रखें। 2 वर्ष से कम उम्र के बच्चों को मास्क बिल्कुल न लगाएं (दम घुटने का जोखिम)।";
-    m2ExpEn = "Infant respiratory systems are developing, and tight particulate masks present dangerous airway resistance. Indoor HEPA filtration is the only safe clinical defense.";
+    m2ExpEn = "Infant respiratory systems are developing, and tight particulate masks present dangerous airway resistance. Indoor HEPA filtration is the primary recommended public-health defense.";
     m2ExpHi = "शिशुओं की श्वास नलियां नाजुक होती हैं; टाइट मास्क से ऑक्सीजन प्रवाह बाधित हो सकता है। इनडोर एयर प्यूरीफायर ही एकमात्र सुरक्षित उपाय है।";
   } else if (profile.hasKids) {
     m2RecEn = "Keep school vehicle windows closed and cabin AC on recirculate. For school-age children, use certified pediatric-sized KF94/FFP2 masks with a verified seal; standard adult N95s do not fit pediatric facial structures.";
@@ -162,7 +162,7 @@ export function generateDailyRoutine(
   // 2. AFTERNOON ROUTINE (12:00 PM - 04:30 PM)
   // ==========================================
   // Slot 3: Midday Solar Convection & Recess (01:30 PM)
-  const canVentilate = !isSevere && pm25 <= 60 && aqi <= 150;
+  const canVentilate = !isSevere && (typeof pm25 !== "number" || pm25 <= 60) && (aqi === null || aqi <= 150);
   routine.push({
     id: "act-afternoon-1",
     time: "01:30 PM",

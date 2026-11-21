@@ -15,14 +15,23 @@ export function HeroAqiCard({ data }: HeroAqiCardProps) {
   const isCpcb = data.activeStandard === "INDIA_CPCB";
 
   const targetAqi = isCpcb ? data.indiaAqi : data.usAqi;
-  const activeCategory = isCpcb ? data.indiaCategory : data.category;
+  const isDataSufficient = isCpcb
+    ? (data.isCpcbDataSufficient !== false && targetAqi !== null)
+    : (data.isNowCastDataSufficient !== false && targetAqi !== null);
+
+  const activeCategory = isDataSufficient
+    ? (isCpcb ? data.indiaCategory : data.category)
+    : "Insufficient Data";
   const colorScheme = isCpcb ? getCpcbColor(targetAqi) : getAQIColor(targetAqi);
   const { color, borderColor, badgeBg } = colorScheme;
 
-  const [displayAqi, setDisplayAqi] = useState(0);
+  const [animatedAqi, setAnimatedAqi] = useState(0);
 
   // Smooth count-up animation for the AQI number (0 -> target)
   useEffect(() => {
+    if (targetAqi === null || !isDataSufficient) {
+      return;
+    }
     let animationFrameId: number;
     const duration = 900;
     const startTime = performance.now();
@@ -31,7 +40,7 @@ export function HeroAqiCard({ data }: HeroAqiCardProps) {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const ease = 1 - Math.pow(1 - progress, 3);
-      setDisplayAqi(Math.round(targetAqi * ease));
+      setAnimatedAqi(Math.round(targetAqi * ease));
 
       if (progress < 1) {
         animationFrameId = requestAnimationFrame(step);
@@ -42,13 +51,15 @@ export function HeroAqiCard({ data }: HeroAqiCardProps) {
     return () => {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
-  }, [targetAqi]);
+  }, [targetAqi, isDataSufficient]);
+
+  const displayAqi = !isDataSufficient || targetAqi === null ? null : animatedAqi;
 
   // Circular gauge geometry
   const radius = 52;
   const circumference = 2 * Math.PI * radius; // ~326.72
-  const aqiRatio = Math.min(Math.max(targetAqi / 500, 0.05), 1);
-  const targetOffset = circumference * (1 - aqiRatio);
+  const aqiRatio = (targetAqi !== null && isDataSufficient) ? Math.min(Math.max(targetAqi / 500, 0.05), 1) : 0;
+  const targetOffset = (targetAqi !== null && isDataSufficient) ? circumference * (1 - aqiRatio) : circumference;
 
   return (
     <Card
@@ -115,7 +126,7 @@ export function HeroAqiCard({ data }: HeroAqiCardProps) {
               className="text-3xl md:text-4xl font-extrabold tracking-tighter tabular-nums leading-none"
               style={{ color, textShadow: `0 0 24px ${color}70` }}
             >
-              {displayAqi}
+              {displayAqi !== null ? displayAqi : "--"}
             </span>
             <span className="text-[9px] font-bold text-[#98A9A1] tracking-widest uppercase mt-0.5">
               {isCpcb ? "IN NAQI" : "US AQI"}
@@ -139,15 +150,21 @@ export function HeroAqiCard({ data }: HeroAqiCardProps) {
           </div>
 
           <h2 className="text-lg md:text-xl font-bold tracking-tight text-[#F5F8F6] leading-snug">
-            {targetAqi > 200
+            {!isDataSufficient
+              ? "Insufficient Telemetry for Composite Index"
+              : targetAqi !== null && targetAqi > 200
               ? "Severe Smog Stagnation Active"
-              : targetAqi > 100
+              : targetAqi !== null && targetAqi > 100
               ? "Elevated Atmospheric Particulates"
-              : "Air Quality Within Safe Bounds"}
+              : "Air Quality Within Standard Limits"}
           </h2>
 
           <p className="text-xs text-[#98A9A1] leading-relaxed max-w-2xl">
-            {data.healthSummary}
+            {!isDataSufficient
+              ? (isCpcb
+                  ? data.cpcbInsufficiencyReason || "CPCB NAQI requires at least 3 valid criteria pollutants including PM2.5 or PM10 with ≥16h of observations."
+                  : "EPA NowCast requires at least 2 valid observations among the latest 3 clock hours.")
+              : data.healthSummary}
           </p>
 
           {/* Dominant Pollutant vs WHO Reference Cap */}

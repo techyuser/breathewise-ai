@@ -194,18 +194,23 @@ export async function fetchLiveAirQuality(
     );
 
     const isLive = Boolean(current.pm2_5 !== undefined && isHourlyAvailable);
-    const finalUsAqi = isLive ? nowCastResult.aqi : Math.round(current.us_aqi ?? 125);
+    const finalUsAqi = nowCastResult.isDataSufficient
+      ? nowCastResult.aqi
+      : typeof current.us_aqi === "number" && Number.isFinite(current.us_aqi)
+      ? Math.round(current.us_aqi)
+      : null;
     const usCategory = getAQICategory(finalUsAqi);
     const advisory = getHealthAdvisory(usCategory);
 
     // Calculate India CPCB NAQI using true 24-hour and 8-hour averaging periods (CPCB 2014 mandate)
-    // Enforcing strict >= 16h requirement for 24h metrics and >= 6h for 8h metrics without fabricating concentrations
-    const pm25_24h = computeRollingAverage(hourlyPm25, currentIndex, 24, 16) ?? current.pm2_5;
-    const pm10_24h = computeRollingAverage(hourlyPm10, currentIndex, 24, 16) ?? current.pm10;
-    const no2_24h = computeRollingAverage(hourlyNo2, currentIndex, 24, 16) ?? current.nitrogen_dioxide;
-    const so2_24h = computeRollingAverage(hourlySo2, currentIndex, 24, 16) ?? current.sulphur_dioxide;
-    const ozone_8h = computeRollingAverage(hourlyOzone, currentIndex, 8, 6) ?? current.ozone;
-    const co_8h = computeRollingAverage(hourlyCo, currentIndex, 8, 6) ?? current.carbon_monoxide;
+    // Enforcing strict >= 16h requirement for 24h metrics and >= 6h for 8h metrics
+    // Never fall back to instantaneous concentrations: pass undefined when averaging requirements are unmet
+    const pm25_24h = computeRollingAverage(hourlyPm25, currentIndex, 24, 16);
+    const pm10_24h = computeRollingAverage(hourlyPm10, currentIndex, 24, 16);
+    const no2_24h = computeRollingAverage(hourlyNo2, currentIndex, 24, 16);
+    const so2_24h = computeRollingAverage(hourlySo2, currentIndex, 24, 16);
+    const ozone_8h = computeRollingAverage(hourlyOzone, currentIndex, 8, 6);
+    const co_8h = computeRollingAverage(hourlyCo, currentIndex, 8, 6);
 
     const cpcbResult = calculateCpcbNaqi({
       pm2_5: pm25_24h,
@@ -257,6 +262,7 @@ export async function fetchLiveAirQuality(
 
     // Diurnal atmospheric inversion estimation
     const isInversionProne = windSpeed < 9 && humidity > 55 && temperature < 22;
+    const aqiForInversion = displayAqi ?? 100;
     const trappedSmogProbability = Math.min(
       98,
       Math.max(
@@ -264,7 +270,7 @@ export async function fetchLiveAirQuality(
         Math.round(
           (10 - Math.min(windSpeed, 10)) * 4 +
             (humidity / 100) * 35 +
-            (displayAqi > 150 ? 25 : 10)
+            (aqiForInversion > 150 ? 25 : 10)
         )
       )
     );
@@ -379,24 +385,37 @@ export async function fetchLiveAirQuality(
       const t = hourlyTimes[i];
       const d = new Date(t);
       const displayTime = d.toLocaleTimeString("en-US", { hour: "numeric", hour12: true });
-      const pm25Val = hourlyPm25[i] ?? 45;
-      const pm10Val = hourlyPm10[i] ?? 70;
+      const pm25Val = hourlyPm25[i];
+      const pm10Val = hourlyPm10[i];
+
+      const pm25_roll = computeRollingAverage(hourlyPm25, i, 24, 16);
+      const pm10_roll = computeRollingAverage(hourlyPm10, i, 24, 16);
+      const no2_roll = computeRollingAverage(hourlyNo2, i, 24, 16);
+      const so2_roll = computeRollingAverage(hourlySo2, i, 24, 16);
+      const o3_roll = computeRollingAverage(hourlyOzone, i, 8, 6);
+      const co_roll = computeRollingAverage(hourlyCo, i, 8, 6);
+
       const indiaCalc = calculateCpcbNaqi({
-        pm2_5: pm25Val,
-        pm10: pm10Val,
-        nitrogen_dioxide: hourlyNo2[i],
-        ozone: hourlyOzone[i],
+        pm2_5: pm25_roll,
+        pm10: pm10_roll,
+        nitrogen_dioxide: no2_roll,
+        sulphur_dioxide: so2_roll,
+        ozone: o3_roll,
+        carbon_monoxide: co_roll,
       });
 
       const weatherIdx = weatherHourlyTimes.findIndex((wt) => wt === t);
+      const pointUsAqi = typeof hourlyUsAqi[i] === "number" && Number.isFinite(hourlyUsAqi[i])
+        ? Math.round(hourlyUsAqi[i])
+        : finalUsAqi;
 
       hourlyHistorical.push({
         time: t,
         displayTime,
-        usAqi: Math.round(hourlyUsAqi[i] ?? finalUsAqi),
-        indiaAqi: indiaCalc.naqi,
-        pm2_5: Math.round(pm25Val),
-        pm10: Math.round(pm10Val),
+        usAqi: pointUsAqi,
+        indiaAqi: indiaCalc.isDataSufficient ? indiaCalc.naqi : null,
+        pm2_5: typeof pm25Val === "number" && Number.isFinite(pm25Val) ? Math.round(pm25Val) : 0,
+        pm10: typeof pm10Val === "number" && Number.isFinite(pm10Val) ? Math.round(pm10Val) : 0,
         nitrogen_dioxide: hourlyNo2[i] ? Math.round(hourlyNo2[i]) : undefined,
         ozone: hourlyOzone[i] ? Math.round(hourlyOzone[i]) : undefined,
         temperature: weatherIdx >= 0 ? Math.round(weatherHourlyTemp[weatherIdx] ?? temperature) : temperature,
@@ -413,24 +432,37 @@ export async function fetchLiveAirQuality(
       const t = hourlyTimes[i];
       const d = new Date(t);
       const displayTime = d.toLocaleTimeString("en-US", { hour: "numeric", hour12: true });
-      const pm25Val = hourlyPm25[i] ?? 45;
-      const pm10Val = hourlyPm10[i] ?? 70;
+      const pm25Val = hourlyPm25[i];
+      const pm10Val = hourlyPm10[i];
+
+      const pm25_roll = computeRollingAverage(hourlyPm25, i, 24, 16);
+      const pm10_roll = computeRollingAverage(hourlyPm10, i, 24, 16);
+      const no2_roll = computeRollingAverage(hourlyNo2, i, 24, 16);
+      const so2_roll = computeRollingAverage(hourlySo2, i, 24, 16);
+      const o3_roll = computeRollingAverage(hourlyOzone, i, 8, 6);
+      const co_roll = computeRollingAverage(hourlyCo, i, 8, 6);
+
       const indiaCalc = calculateCpcbNaqi({
-        pm2_5: pm25Val,
-        pm10: pm10Val,
-        nitrogen_dioxide: hourlyNo2[i],
-        ozone: hourlyOzone[i],
+        pm2_5: pm25_roll,
+        pm10: pm10_roll,
+        nitrogen_dioxide: no2_roll,
+        sulphur_dioxide: so2_roll,
+        ozone: o3_roll,
+        carbon_monoxide: co_roll,
       });
 
       const weatherIdx = weatherHourlyTimes.findIndex((wt) => wt === t);
+      const pointUsAqi = typeof hourlyUsAqi[i] === "number" && Number.isFinite(hourlyUsAqi[i])
+        ? Math.round(hourlyUsAqi[i])
+        : finalUsAqi;
 
       hourlyForecast.push({
         time: t,
         displayTime,
-        usAqi: Math.round(hourlyUsAqi[i] ?? finalUsAqi),
-        indiaAqi: indiaCalc.naqi,
-        pm2_5: Math.round(pm25Val),
-        pm10: Math.round(pm10Val),
+        usAqi: pointUsAqi,
+        indiaAqi: indiaCalc.isDataSufficient ? indiaCalc.naqi : null,
+        pm2_5: typeof pm25Val === "number" && Number.isFinite(pm25Val) ? Math.round(pm25Val) : 0,
+        pm10: typeof pm10Val === "number" && Number.isFinite(pm10Val) ? Math.round(pm10Val) : 0,
         nitrogen_dioxide: hourlyNo2[i] ? Math.round(hourlyNo2[i]) : undefined,
         ozone: hourlyOzone[i] ? Math.round(hourlyOzone[i]) : undefined,
         temperature: weatherIdx >= 0 ? Math.round(weatherHourlyTemp[weatherIdx] ?? temperature) : temperature,
@@ -497,27 +529,35 @@ export async function fetchLiveAirQuality(
         general: activeGeneral,
         vulnerable: activeSensitive,
         outdoorActivity: isCpcbStandard
-          ? (finalIndiaAqi > 300
+          ? (finalIndiaAqi !== null && finalIndiaAqi > 300
               ? "Hazardous air. Strictly avoid outdoor exercise and heavy physical exertion."
-              : finalIndiaAqi > 200
+              : finalIndiaAqi !== null && finalIndiaAqi > 200
               ? "Poor air quality. Avoid prolonged outdoor morning and evening exertion."
-              : finalIndiaAqi > 100
+              : finalIndiaAqi !== null && finalIndiaAqi > 100
               ? "Moderate air. Sensitive groups should take frequent breaks during outdoor activities."
-              : "Air quality is favorable for all regular outdoor activities.")
-          : (displayAqi > 180
+              : finalIndiaAqi !== null
+              ? "Air quality is favorable for all regular outdoor activities."
+              : "Insufficient pollutant observations to establish full CPCB NAQI advisory.")
+          : (displayAqi !== null && displayAqi > 180
               ? "Avoid all strenuous outdoor exertion. Shift workouts indoors."
-              : displayAqi > 100
+              : displayAqi !== null && displayAqi > 100
               ? "Limit morning and late evening outdoor runs."
-              : "Outdoor conditions safe for moderate exercise."),
+              : displayAqi !== null
+              ? "Outdoor conditions favorable for moderate exercise."
+              : "Insufficient hourly data to establish NowCast advisory."),
         ventilation: isCpcbStandard
-          ? (finalIndiaAqi > 200
+          ? (finalIndiaAqi !== null && finalIndiaAqi > 200
               ? "Keep windows sealed. Use internal certified HEPA recirculating air filtration."
-              : finalIndiaAqi > 100
+              : finalIndiaAqi !== null && finalIndiaAqi > 100
               ? "Keep windows latched during morning inversion; brief midday airing only if outdoor PM2.5 is low."
-              : "Natural cross-ventilation permitted.")
-          : (displayAqi > 150
+              : finalIndiaAqi !== null
+              ? "Natural cross-ventilation permitted."
+              : "Keep windows closed during morning/evening inversion hours as a precaution.")
+          : (displayAqi !== null && displayAqi > 150
               ? "Keep windows sealed. Use internal certified HEPA recirculating air filtration."
-              : "Brief midday window airing permitted when solar convection peaks."),
+              : displayAqi !== null
+              ? "Brief midday window airing permitted when solar convection peaks."
+              : "Ventilate cautiously during midday only."),
         maskRequired: activeMaskRequired,
       },
     };

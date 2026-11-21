@@ -15,7 +15,7 @@ export function QuickInsights({ data }: QuickInsightsProps) {
   const { activeStandard } = useAirQuality();
   const isCpcb = activeStandard === "INDIA_CPCB";
   const aqiValue = isCpcb ? data.indiaAqi : data.usAqi;
-  const isHighSmog = isCpcb ? aqiValue > 200 : aqiValue > 150;
+  const isHighSmog = aqiValue !== null ? (isCpcb ? aqiValue > 200 : aqiValue > 150) : false;
 
   const actions = [
     {

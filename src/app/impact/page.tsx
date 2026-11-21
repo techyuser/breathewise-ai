@@ -433,6 +433,14 @@ Join clean air initiatives on BreatheWise AI!`;
           ))}
         </div>
       </div>
+
+      {/* Scientific Model Assumptions Disclosure */}
+      <div className="p-3.5 rounded-2xl bg-[rgba(10,22,17,0.5)] border border-[rgba(255,255,255,0.06)] flex items-start gap-2.5 text-[11px] text-[#98A9A1] leading-relaxed">
+        <Info className="w-4 h-4 text-[#38BDF8] shrink-0 mt-0.5" />
+        <span>
+          <strong>Environmental Model Assumptions:</strong> Vehicle emission factors (Petrol: 192 g/km, Diesel: 178 g/km, Metro: 45 g/km, EV: 51 g/km well-to-wheel) are illustrative planning models derived from IPCC transport benchmarks and CEA India national grid averages. Fuel savings assume ₹96.72/L (petrol) and ₹89.62/L (diesel). Inhalation avoidance values are comparative estimates, not calibrated personal exposure monitors.
+        </span>
+      </div>
     </PageTransition>
   );
 }

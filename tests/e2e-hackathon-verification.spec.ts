@@ -194,7 +194,7 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
   });
 
   // Test 9: Gemini AI Integration Endpoint
-  test("9. Gemini API Integration - /api/assistant responds with clinical accuracy and bilingual support", async ({ request }) => {
+  test("9. Gemini API Integration - /api/assistant responds with clinical accuracy and bilingual support", async () => {
     const payload = {
       messages: [
         {
@@ -206,10 +206,12 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
       cityId: "delhi",
     };
 
-    const response = await request.post(`${BASE_URL}/api/assistant`, {
-      data: payload,
+    const response = await fetch(`${BASE_URL}/api/assistant`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
-    expect(response.status()).toBe(200);
+    expect(response.status).toBe(200);
 
     const text = await response.text();
     expect(text).toBeDefined();

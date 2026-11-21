@@ -151,8 +151,8 @@ export async function POST(req: NextRequest) {
     // Fetch verified atmospheric telemetry from Open-Meteo server-side
     const aqiData: AirQualityData = await fetchLiveAirQuality(targetCity, standardParam);
 
-    // 4. Stream AI Response from Gemini
-    const stream = await streamAirIntelligence(
+    // 4. Stream AI Response from Gemini or Deterministic Fallback Engine
+    const { stream, engine } = await streamAirIntelligence(
       sanitizedMessages,
       aqiData,
       userProfile,
@@ -182,6 +182,7 @@ export async function POST(req: NextRequest) {
         "Cache-Control": "no-cache, no-transform",
         "Connection": "keep-alive",
         "X-RateLimit-Remaining": rateLimit.remaining.toString(),
+        "X-AI-Engine": engine,
       },
     });
   } catch (error) {

@@ -187,6 +187,7 @@ export default function AssistantPage() {
           throw new Error(`Assistant API HTTP ${response.status}`);
         }
 
+        const responseEngine = response.headers.get("X-AI-Engine") || "gemini-3.5-flash-lite";
         const reader = response.body?.getReader();
         if (!reader) throw new Error("No readable stream response");
 
@@ -197,6 +198,7 @@ export default function AssistantPage() {
           content: "",
           timestamp: lang === "hi" ? "अभी" : "Now",
           suggestedActions: [],
+          engine: responseEngine,
         };
 
         setMessages((prev) => [...prev, botMsg]);
@@ -437,6 +439,22 @@ export default function AssistantPage() {
                     </div>
 
                     <div className="space-y-2 min-w-0">
+                      {isBot && msg.engine && (
+                        <div className="flex items-center gap-1.5 px-1">
+                          <span
+                            className={cn(
+                              "text-[9px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase",
+                              msg.engine === "deterministic-fallback"
+                                ? "bg-[rgba(250,204,21,0.12)] text-[#FACC15] border-[rgba(250,204,21,0.3)]"
+                                : "bg-[rgba(0,214,154,0.12)] text-[#00D69A] border-[rgba(0,214,154,0.3)]"
+                            )}
+                          >
+                            {msg.engine === "deterministic-fallback"
+                              ? "⚙️ Deterministic Heuristic Engine"
+                              : "✨ Google Gemini 3.5 Flash-Lite"}
+                          </span>
+                        </div>
+                      )}
                       <div
                         className={cn(
                           "p-4 rounded-3xl text-xs md:text-sm leading-relaxed border backdrop-blur-md",

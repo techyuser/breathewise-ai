@@ -9,7 +9,8 @@ export interface CpcbSubIndex {
  * Official Indian National Air Quality Index (NAQI) Categories
  * Formulated by the Central Pollution Control Board (CPCB, October 2014)
  */
-export function getCpcbCategory(naqi: number): CpcbCategory {
+export function getCpcbCategory(naqi: number | null): CpcbCategory {
+  if (naqi === null || !Number.isFinite(naqi) || naqi < 0) return "Insufficient Data";
   if (naqi <= 50) return "Good";
   if (naqi <= 100) return "Satisfactory";
   if (naqi <= 200) return "Moderate";
@@ -23,12 +24,20 @@ export function getCpcbCategory(naqi: number): CpcbCategory {
  * Dark Green (Good) -> Light Green (Satisfactory) -> Yellow (Moderate) ->
  * Orange (Poor) -> Red (Very Poor) -> Dark Red (Severe)
  */
-export function getCpcbColor(naqi: number): {
+export function getCpcbColor(naqi: number | null): {
   color: string;
   bgColor: string;
   borderColor: string;
   badgeBg: string;
 } {
+  if (naqi === null || !Number.isFinite(naqi) || naqi < 0) {
+    return {
+      color: "#98A9A1",
+      bgColor: "rgba(152, 169, 161, 0.08)",
+      borderColor: "rgba(152, 169, 161, 0.25)",
+      badgeBg: "rgba(152, 169, 161, 0.14)",
+    };
+  }
   if (naqi <= 50) {
     return {
       color: "#00D69A",
@@ -78,29 +87,38 @@ export function getCpcbColor(naqi: number): {
 }
 
 /**
- * Official CPCB Health Statements & Medical Advisory (CPCB 2014 Report)
+ * Official CPCB Health Statements & Evidence-Aligned Advisory (CPCB 2014 Report)
  */
-export function getCpcbHealthDirective(naqi: number): {
+export function getCpcbHealthDirective(naqi: number | null): {
   headline: string;
   generalPublic: string;
   sensitiveGroups: string;
   maskRecommended: boolean;
 } {
+  if (naqi === null || !Number.isFinite(naqi) || naqi < 0) {
+    return {
+      headline: "Insufficient Data for CPCB NAQI",
+      generalPublic: "Fewer than 3 criteria pollutants or particulate averages available to compute regulatory NAQI.",
+      sensitiveGroups: "Exercise caution. Refer to individual particulate and gas metrics.",
+      maskRecommended: false,
+    };
+  }
+
   const cat = getCpcbCategory(naqi);
 
   switch (cat) {
     case "Good":
       return {
-        headline: "Minimal Impact — Clean Air",
-        generalPublic: "Air quality is favorable. Outdoor exercise and natural ventilation are safe.",
-        sensitiveGroups: "No restrictions for sensitive individuals.",
+        headline: "Minimal Impact — Favorable Air Quality",
+        generalPublic: "Air quality is favorable. Outdoor activities and natural ventilation carry low baseline risk.",
+        sensitiveGroups: "No restrictions indicated for sensitive individuals.",
         maskRecommended: false,
       };
     case "Satisfactory":
       return {
         headline: "Minor Discomfort for Sensitive Groups",
         generalPublic: "Air quality is acceptable for most people.",
-        sensitiveGroups: "Unusually sensitive individuals with asthma may experience minor breathing discomfort.",
+        sensitiveGroups: "Sensitive individuals with respiratory conditions may experience minor breathing discomfort.",
         maskRecommended: false,
       };
     case "Moderate":
@@ -112,7 +130,7 @@ export function getCpcbHealthDirective(naqi: number): {
       };
     case "Poor":
       return {
-        headline: "Breathing Discomfort for Most People",
+        headline: "Breathing Discomfort on Prolonged Exposure",
         generalPublic: "Prolonged outdoor exposure can cause coughing and respiratory strain.",
         sensitiveGroups: "Children, elderly, and respiratory patients should stay indoors during morning and evening peak smog.",
         maskRecommended: true,
@@ -126,23 +144,88 @@ export function getCpcbHealthDirective(naqi: number): {
       };
     case "Severe":
       return {
-        headline: "Severe Health Alert — Serious Respiratory Impact",
+        headline: "Severe Health Alert — High Respiratory Hazard",
         generalPublic: "Even healthy individuals may experience respiratory distress and chest tightness.",
-        sensitiveGroups: "High medical hazard. Keep children, elderly, and pregnant women strictly indoors with active filtration.",
+        sensitiveGroups: "High health hazard. Vulnerable individuals (children, elderly, pregnant women, respiratory patients) should remain indoors with active HEPA filtration.",
         maskRecommended: true,
+      };
+    case "Insufficient Data":
+      return {
+        headline: "Insufficient Data for CPCB NAQI",
+        generalPublic: "Fewer than 3 criteria pollutants or particulate averages available to compute regulatory NAQI.",
+        sensitiveGroups: "Exercise caution. Refer to individual particulate metrics.",
+        maskRecommended: false,
       };
   }
 }
+
+export interface CpcbBreakpoint {
+  cLow: number;
+  cHigh: number;
+  iLow: number;
+  iHigh: number;
+}
+
+export const CPCB_BREAKPOINTS: Record<string, CpcbBreakpoint[]> = {
+  pm2_5: [
+    { cLow: 0, cHigh: 30, iLow: 0, iHigh: 50 },
+    { cLow: 31, cHigh: 60, iLow: 51, iHigh: 100 },
+    { cLow: 61, cHigh: 90, iLow: 101, iHigh: 200 },
+    { cLow: 91, cHigh: 120, iLow: 201, iHigh: 300 },
+    { cLow: 121, cHigh: 250, iLow: 301, iHigh: 400 },
+    { cLow: 251, cHigh: 500, iLow: 401, iHigh: 500 },
+  ],
+  pm10: [
+    { cLow: 0, cHigh: 50, iLow: 0, iHigh: 50 },
+    { cLow: 51, cHigh: 100, iLow: 51, iHigh: 100 },
+    { cLow: 101, cHigh: 250, iLow: 101, iHigh: 200 },
+    { cLow: 251, cHigh: 350, iLow: 201, iHigh: 300 },
+    { cLow: 351, cHigh: 430, iLow: 301, iHigh: 400 },
+    { cLow: 431, cHigh: 600, iLow: 401, iHigh: 500 },
+  ],
+  nitrogen_dioxide: [
+    { cLow: 0, cHigh: 40, iLow: 0, iHigh: 50 },
+    { cLow: 41, cHigh: 80, iLow: 51, iHigh: 100 },
+    { cLow: 81, cHigh: 180, iLow: 101, iHigh: 200 },
+    { cLow: 181, cHigh: 280, iLow: 201, iHigh: 300 },
+    { cLow: 281, cHigh: 400, iLow: 301, iHigh: 400 },
+    { cLow: 401, cHigh: 800, iLow: 401, iHigh: 500 },
+  ],
+  sulphur_dioxide: [
+    { cLow: 0, cHigh: 40, iLow: 0, iHigh: 50 },
+    { cLow: 41, cHigh: 80, iLow: 51, iHigh: 100 },
+    { cLow: 81, cHigh: 380, iLow: 101, iHigh: 200 },
+    { cLow: 381, cHigh: 800, iLow: 201, iHigh: 300 },
+    { cLow: 801, cHigh: 1600, iLow: 301, iHigh: 400 },
+    { cLow: 1601, cHigh: 2000, iLow: 401, iHigh: 500 },
+  ],
+  ozone: [
+    { cLow: 0, cHigh: 50, iLow: 0, iHigh: 50 },
+    { cLow: 51, cHigh: 100, iLow: 51, iHigh: 100 },
+    { cLow: 101, cHigh: 168, iLow: 101, iHigh: 200 },
+    { cLow: 169, cHigh: 208, iLow: 201, iHigh: 300 },
+    { cLow: 209, cHigh: 748, iLow: 301, iHigh: 400 },
+    { cLow: 749, cHigh: 1000, iLow: 401, iHigh: 500 },
+  ],
+  carbon_monoxide: [
+    { cLow: 0.0, cHigh: 1.0, iLow: 0, iHigh: 50 },
+    { cLow: 1.1, cHigh: 2.0, iLow: 51, iHigh: 100 },
+    { cLow: 2.1, cHigh: 10.0, iLow: 101, iHigh: 200 },
+    { cLow: 10.1, cHigh: 17.0, iLow: 201, iHigh: 300 },
+    { cLow: 17.1, cHigh: 34.0, iLow: 301, iHigh: 400 },
+    { cLow: 34.1, cHigh: 50.0, iLow: 401, iHigh: 500 },
+  ],
+};
 
 /**
  * Linear interpolation formula from CPCB 2014 guidelines:
  * Ip = [ (I_HI - I_LO) / (B_HI - B_LO) ] * (Cp - B_LO) + I_LO
  */
-function calculateLinearSubIndex(
+export function calculateCpcbSubIndex(
   c: number,
-  breakpoints: { cLow: number; cHigh: number; iLow: number; iHigh: number }[]
+  breakpoints: CpcbBreakpoint[]
 ): number {
-  if (c <= 0) return 0;
+  if (!Number.isFinite(c) || c <= 0) return 0;
   for (const bp of breakpoints) {
     if (c <= bp.cHigh) {
       return Math.round(
@@ -153,8 +236,15 @@ function calculateLinearSubIndex(
   return 500;
 }
 
+export function calculateLinearSubIndex(
+  c: number,
+  breakpoints: CpcbBreakpoint[]
+): number {
+  return calculateCpcbSubIndex(c, breakpoints);
+}
+
 export interface CpcbCalculationResult {
-  naqi: number;
+  naqi: number | null;
   dominantPollutant: string;
   subIndices: Record<string, number>;
   pollutantsCount: number;
@@ -181,6 +271,8 @@ export interface CpcbCalculationResult {
  * - At least one monitored pollutant MUST be PM2.5 or PM10 (core particulates).
  * - A pollutant 24h sub-index requires at least 16 hourly observations; otherwise it cannot be computed.
  * - Missing concentrations must NEVER be fabricated or assumed.
+ * - Rejects negative values, non-finite values (NaN, Infinity).
+ * - Never returns a valid-looking NAQI when requirements are unmet.
  */
 export function calculateCpcbNaqi(pollutantValues: {
   pm2_5?: number; // 24h average in µg/m³
@@ -190,86 +282,46 @@ export function calculateCpcbNaqi(pollutantValues: {
   carbon_monoxide?: number; // 8h average in µg/m³ (will be converted to mg/m³)
   ozone?: number; // 8h average in µg/m³
 }): CpcbCalculationResult {
-  // 1. PM2.5 Breakpoints (24h µg/m³)
-  const pm25Breakpoints = [
-    { cLow: 0, cHigh: 30, iLow: 0, iHigh: 50 },
-    { cLow: 31, cHigh: 60, iLow: 51, iHigh: 100 },
-    { cLow: 61, cHigh: 90, iLow: 101, iHigh: 200 },
-    { cLow: 91, cHigh: 120, iLow: 201, iHigh: 300 },
-    { cLow: 121, cHigh: 250, iLow: 301, iHigh: 400 },
-    { cLow: 251, cHigh: 500, iLow: 401, iHigh: 500 },
-  ];
+  const pm25Breakpoints = CPCB_BREAKPOINTS.pm2_5;
+  const pm10Breakpoints = CPCB_BREAKPOINTS.pm10;
+  const no2Breakpoints = CPCB_BREAKPOINTS.nitrogen_dioxide;
+  const so2Breakpoints = CPCB_BREAKPOINTS.sulphur_dioxide;
+  const o3Breakpoints = CPCB_BREAKPOINTS.ozone;
+  const coBreakpointsMg = CPCB_BREAKPOINTS.carbon_monoxide;
 
-  // 2. PM10 Breakpoints (24h µg/m³)
-  const pm10Breakpoints = [
-    { cLow: 0, cHigh: 50, iLow: 0, iHigh: 50 },
-    { cLow: 51, cHigh: 100, iLow: 51, iHigh: 100 },
-    { cLow: 101, cHigh: 250, iLow: 101, iHigh: 200 },
-    { cLow: 251, cHigh: 350, iLow: 201, iHigh: 300 },
-    { cLow: 351, cHigh: 430, iLow: 301, iHigh: 400 },
-    { cLow: 431, cHigh: 600, iLow: 401, iHigh: 500 },
-  ];
+  function validateConcentration(val: unknown): number | undefined {
+    if (typeof val === "number" && Number.isFinite(val) && val >= 0) {
+      return val;
+    }
+    return undefined;
+  }
 
-  // 3. NO2 Breakpoints (24h µg/m³)
-  const no2Breakpoints = [
-    { cLow: 0, cHigh: 40, iLow: 0, iHigh: 50 },
-    { cLow: 41, cHigh: 80, iLow: 51, iHigh: 100 },
-    { cLow: 81, cHigh: 180, iLow: 101, iHigh: 200 },
-    { cLow: 181, cHigh: 280, iLow: 201, iHigh: 300 },
-    { cLow: 281, cHigh: 400, iLow: 301, iHigh: 400 },
-    { cLow: 401, cHigh: 800, iLow: 401, iHigh: 500 },
-  ];
-
-  // 4. SO2 Breakpoints (24h µg/m³)
-  const so2Breakpoints = [
-    { cLow: 0, cHigh: 40, iLow: 0, iHigh: 50 },
-    { cLow: 41, cHigh: 80, iLow: 51, iHigh: 100 },
-    { cLow: 81, cHigh: 380, iLow: 101, iHigh: 200 },
-    { cLow: 381, cHigh: 800, iLow: 201, iHigh: 300 },
-    { cLow: 801, cHigh: 1600, iLow: 301, iHigh: 400 },
-    { cLow: 1601, cHigh: 2000, iLow: 401, iHigh: 500 },
-  ];
-
-  // 5. Ozone O3 Breakpoints (8h µg/m³)
-  const o3Breakpoints = [
-    { cLow: 0, cHigh: 50, iLow: 0, iHigh: 50 },
-    { cLow: 51, cHigh: 100, iLow: 51, iHigh: 100 },
-    { cLow: 101, cHigh: 168, iLow: 101, iHigh: 200 },
-    { cLow: 169, cHigh: 208, iLow: 201, iHigh: 300 },
-    { cLow: 209, cHigh: 748, iLow: 301, iHigh: 400 },
-    { cLow: 749, cHigh: 1000, iLow: 401, iHigh: 500 },
-  ];
-
-  // 6. Carbon Monoxide CO Breakpoints (8h in mg/m³)
-  const coBreakpointsMg = [
-    { cLow: 0.0, cHigh: 1.0, iLow: 0, iHigh: 50 },
-    { cLow: 1.1, cHigh: 2.0, iLow: 51, iHigh: 100 },
-    { cLow: 2.1, cHigh: 10.0, iLow: 101, iHigh: 200 },
-    { cLow: 10.1, cHigh: 17.0, iLow: 201, iHigh: 300 },
-    { cLow: 17.1, cHigh: 34.0, iLow: 301, iHigh: 400 },
-    { cLow: 34.1, cHigh: 50.0, iLow: 401, iHigh: 500 },
-  ];
+  const validPm25 = validateConcentration(pollutantValues.pm2_5);
+  const validPm10 = validateConcentration(pollutantValues.pm10);
+  const validNo2 = validateConcentration(pollutantValues.nitrogen_dioxide);
+  const validSo2 = validateConcentration(pollutantValues.sulphur_dioxide);
+  const validOzone = validateConcentration(pollutantValues.ozone);
+  const validCo = validateConcentration(pollutantValues.carbon_monoxide);
 
   const subIndices: Record<string, number> = {};
 
-  if (pollutantValues.pm2_5 !== undefined && !isNaN(pollutantValues.pm2_5)) {
-    subIndices["PM2.5"] = calculateLinearSubIndex(pollutantValues.pm2_5, pm25Breakpoints);
+  if (validPm25 !== undefined) {
+    subIndices["PM2.5"] = calculateLinearSubIndex(validPm25, pm25Breakpoints);
   }
-  if (pollutantValues.pm10 !== undefined && !isNaN(pollutantValues.pm10)) {
-    subIndices["PM10"] = calculateLinearSubIndex(pollutantValues.pm10, pm10Breakpoints);
+  if (validPm10 !== undefined) {
+    subIndices["PM10"] = calculateLinearSubIndex(validPm10, pm10Breakpoints);
   }
-  if (pollutantValues.nitrogen_dioxide !== undefined && !isNaN(pollutantValues.nitrogen_dioxide)) {
-    subIndices["NO₂"] = calculateLinearSubIndex(pollutantValues.nitrogen_dioxide, no2Breakpoints);
+  if (validNo2 !== undefined) {
+    subIndices["NO₂"] = calculateLinearSubIndex(validNo2, no2Breakpoints);
   }
-  if (pollutantValues.sulphur_dioxide !== undefined && !isNaN(pollutantValues.sulphur_dioxide)) {
-    subIndices["SO₂"] = calculateLinearSubIndex(pollutantValues.sulphur_dioxide, so2Breakpoints);
+  if (validSo2 !== undefined) {
+    subIndices["SO₂"] = calculateLinearSubIndex(validSo2, so2Breakpoints);
   }
-  if (pollutantValues.ozone !== undefined && !isNaN(pollutantValues.ozone)) {
-    subIndices["O₃"] = calculateLinearSubIndex(pollutantValues.ozone, o3Breakpoints);
+  if (validOzone !== undefined) {
+    subIndices["O₃"] = calculateLinearSubIndex(validOzone, o3Breakpoints);
   }
-  if (pollutantValues.carbon_monoxide !== undefined && !isNaN(pollutantValues.carbon_monoxide)) {
-    // Open-Meteo returns CO in µg/m³. Convert to mg/m³: 1 mg/m³ = 1000 µg/m³
-    const coMgM3 = pollutantValues.carbon_monoxide / 1000;
+  if (validCo !== undefined) {
+    const coMgM3 = validCo / 1000;
     subIndices["CO"] = calculateLinearSubIndex(coMgM3, coBreakpointsMg);
   }
 
@@ -281,14 +333,14 @@ export function calculateCpcbNaqi(pollutantValues: {
 
   if (pollutantsCount < 3) {
     isDataSufficient = false;
-    insufficiencyReason = "CPCB NAQI requires at least 3 monitored pollutants with valid averaging periods.";
+    insufficiencyReason = `CPCB NAQI requires at least 3 monitored pollutants with valid averaging periods (currently ${pollutantsCount}).`;
   } else if (!hasCoreParticulates) {
     isDataSufficient = false;
-    insufficiencyReason = "CPCB NAQI requires at least one particulate indicator (PM2.5 or PM10).";
+    insufficiencyReason = "CPCB NAQI requires at least one core particulate indicator (PM2.5 or PM10).";
   }
 
   let maxAqi = 0;
-  let dominant = "PM2.5";
+  let dominant = "None";
 
   for (const [pollutant, val] of Object.entries(subIndices)) {
     if (val > maxAqi) {
@@ -298,8 +350,8 @@ export function calculateCpcbNaqi(pollutantValues: {
   }
 
   return {
-    naqi: Math.max(1, maxAqi),
-    dominantPollutant: dominant,
+    naqi: isDataSufficient ? Math.max(1, maxAqi) : null,
+    dominantPollutant: isDataSufficient ? dominant : "Insufficient Data",
     subIndices,
     pollutantsCount,
     hasCoreParticulates,
@@ -307,6 +359,6 @@ export function calculateCpcbNaqi(pollutantValues: {
     insufficiencyReason,
     isModelDerivedEstimate: true,
     standardDisclaimer:
-      "Model-derived CPCB-style estimate calculated from Copernicus CAMS European atmospheric grid (~45km resolution). Not an official physical ground monitoring station reading.",
+      "CPCB-style 6-pollutant estimate (PM2.5, PM10, NO₂, SO₂, CO, O₃; excluding NH₃ and Lead) derived from ECMWF Copernicus CAMS grid (~45km resolution). Not an official physical ground monitoring station reading.",
   };
 }

@@ -34,6 +34,19 @@ export function Card({
 }: CardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(
+        typeof window !== "undefined" &&
+          (window.innerWidth < 768 || window.matchMedia("(pointer: coarse)").matches)
+      );
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // 3D Spatial Cursor Tracking
   const x = useMotionValue(0);
@@ -50,7 +63,7 @@ export function Card({
   const glareY = useTransform(mouseYSpring, [-0.5, 0.5], ["10%", "90%"]);
   const glareBackground = useMotionTemplate`radial-gradient(circle 340px at ${glareX} ${glareY}, rgba(255, 255, 255, 0.18), transparent 75%)`;
 
-  const is3DActive = (interactive || tilt3d) && !shouldReduceMotion;
+  const is3DActive = !isMobile && (interactive || tilt3d) && !shouldReduceMotion;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!is3DActive || !cardRef.current) return;
@@ -77,7 +90,7 @@ export function Card({
       : "vision-glass";
 
   return (
-    <div style={{ perspective: 1200 }} className="h-full">
+    <div style={{ perspective: is3DActive ? 1200 : undefined }} className="h-full">
       <motion.div
         ref={cardRef}
         onMouseMove={handleMouseMove}
@@ -108,7 +121,7 @@ export function Card({
         style={{
           rotateX: is3DActive ? rotateX : 0,
           rotateY: is3DActive ? rotateY : 0,
-          transformStyle: "preserve-3d",
+          transformStyle: is3DActive ? "preserve-3d" : undefined,
           ...style,
         }}
         className={cn(

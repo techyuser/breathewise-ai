@@ -88,7 +88,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const hoverTimer = useRef<NodeJS.Timeout | null>(null);
   const leaveTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const isExpanded = isHovered || isPinned;
+  const isExpanded = isHovered || isPinned || isOpen;
   const isSmogCritical = (airData?.usAqi ?? 0) > 150;
 
   const handleMouseEnter = () => {

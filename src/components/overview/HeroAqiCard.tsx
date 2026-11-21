@@ -55,27 +55,25 @@ export function HeroAqiCard({ data }: HeroAqiCardProps) {
       elevated
       className="p-4 md:p-4.5 rounded-3xl relative overflow-hidden shrink-0"
     >
-      {/* 3D Volumetric Ambient Light Pool behind the meter */}
+      {/* 3D Volumetric Ambient Light Pool behind the meter (hidden on mobile to eliminate rasterization lag) */}
       <div
-        className="absolute -top-16 -left-16 w-72 h-72 rounded-full blur-[75px] opacity-25 pointer-events-none"
+        className="hidden md:block absolute -top-16 -left-16 w-72 h-72 rounded-full blur-[65px] opacity-25 pointer-events-none"
         style={{ backgroundColor: color }}
       />
-      <div className="absolute top-1/2 right-0 w-60 h-60 rounded-full bg-[radial-gradient(circle,rgba(0,214,154,0.12)_0%,transparent_70%)] blur-[90px] pointer-events-none" />
+      <div className="hidden md:block absolute top-1/2 right-0 w-60 h-60 rounded-full bg-[radial-gradient(circle,rgba(0,214,154,0.12)_0%,transparent_70%)] blur-[75px] pointer-events-none" />
 
       <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6">
         {/* Left: 3D Live AQI Radial Arc Meter with Layered Depth */}
         <div
           className="relative flex items-center justify-center shrink-0"
-          style={{ transformStyle: "preserve-3d" }}
         >
           {/* Subtle Outer 3D Ring */}
-          <div className="absolute inset-[-6px] rounded-full border border-[rgba(255,255,255,0.08)] shadow-[0_0_24px_rgba(0,0,0,0.7)] pointer-events-none" />
+          <div className="absolute inset-[-4px] md:inset-[-6px] rounded-full border border-[rgba(255,255,255,0.08)] shadow-[0_0_24px_rgba(0,0,0,0.7)] pointer-events-none" />
 
           <svg
-            className="w-32 h-32 md:w-36 md:h-36 -rotate-90 transform"
+            className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 -rotate-90 transform"
             viewBox="0 0 130 130"
             aria-hidden="true"
-            style={{ transform: "translateZ(16px)" }}
           >
             {/* Background 3D groove */}
             <circle
@@ -85,12 +83,9 @@ export function HeroAqiCard({ data }: HeroAqiCardProps) {
               stroke="rgba(255, 255, 255, 0.08)"
               strokeWidth="8.5"
               fill="none"
-              style={{
-                filter: "drop-shadow(inset 0 2px 4px rgba(0,0,0,0.6))",
-              }}
             />
 
-            {/* Glowing 3D active meter stroke */}
+            {/* Glowing active meter stroke */}
             <motion.circle
               cx="65"
               cy="65"
@@ -107,15 +102,14 @@ export function HeroAqiCard({ data }: HeroAqiCardProps) {
                 ease: [0.16, 1, 0.3, 1],
               }}
               style={{
-                filter: `drop-shadow(0 0 12px ${color}90) drop-shadow(0 4px 16px rgba(0,0,0,0.7))`,
+                filter: `drop-shadow(0 0 8px ${color}80)`,
               }}
             />
           </svg>
 
-          {/* Central 3D Frosted Glass Pod — Floating in Front */}
+          {/* Central Frosted Glass Pod */}
           <div
-            className="absolute inset-5 rounded-full bg-gradient-to-br from-[rgba(14,34,26,0.88)] to-[rgba(7,18,14,0.95)] border border-[rgba(255,255,255,0.22)] shadow-[0_12px_28px_rgba(0,0,0,0.8),inset_0_2px_4px_rgba(255,255,255,0.32),inset_0_-2px_4px_rgba(0,0,0,0.6)] flex flex-col items-center justify-center text-center select-none pointer-events-none backdrop-blur-2xl"
-            style={{ transform: "translateZ(36px)" }}
+            className="absolute inset-4 md:inset-5 rounded-full bg-gradient-to-br from-[rgba(14,34,26,0.92)] to-[rgba(7,18,14,0.98)] border border-[rgba(255,255,255,0.22)] shadow-[0_8px_20px_rgba(0,0,0,0.7),inset_0_1.5px_3px_rgba(255,255,255,0.3)] flex flex-col items-center justify-center text-center select-none pointer-events-none"
           >
             <span
               className="text-3xl md:text-4xl font-extrabold tracking-tighter tabular-nums leading-none"

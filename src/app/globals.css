@@ -189,6 +189,35 @@ html, body {
   background: rgba(0, 214, 154, 0.45);
 }
 
+/* Mobile & Touch Device 120FPS Performance Optimizations */
+@media (max-width: 768px) {
+  .vision-glass {
+    background: rgba(9, 20, 16, 0.94);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+
+  .vision-glass-elevated {
+    background: rgba(11, 24, 18, 0.96);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .glass-panel-subtle {
+    background: rgba(8, 18, 14, 0.92);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .glass-card-interactive {
+    background: rgba(10, 22, 17, 0.94);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.01ms !important;

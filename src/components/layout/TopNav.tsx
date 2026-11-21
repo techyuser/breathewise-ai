@@ -216,16 +216,16 @@ export function TopNav({ onToggleSidebar }: TopNavProps) {
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-[rgba(12,24,19,0.5)] hover:bg-[rgba(16,32,25,0.7)] border border-[rgba(255,255,255,0.08)] text-xs font-medium text-[#F5F8F6] transition-all backdrop-blur-md cursor-pointer shadow-[0_2px_12px_rgba(0,0,0,0.3)]"
             >
-              <MapPin className="w-3.5 h-3.5 text-[#00D69A]" />
-              <span className="font-semibold truncate max-w-[130px] md:max-w-[200px]">
+              <MapPin className="w-3.5 h-3.5 text-[#00D69A] shrink-0" />
+              <span className="font-semibold truncate max-w-[85px] sm:max-w-[150px] md:max-w-[200px]">
                 {selectedCity.name}
               </span>
               {selectedCity.country && (
-                <span className="text-[11px] text-[#98A9A1] hidden sm:inline">
+                <span className="text-[11px] text-[#98A9A1] hidden md:inline">
                   ({selectedCity.country})
                 </span>
               )}
-              <ChevronDown className="w-3.5 h-3.5 text-[#98A9A1]" />
+              <ChevronDown className="w-3.5 h-3.5 text-[#98A9A1] shrink-0" />
             </button>
 
             <AnimatePresence>
@@ -240,7 +240,7 @@ export function TopNav({ onToggleSidebar }: TopNavProps) {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96, y: -4 }}
                     transition={{ duration: 0.16, ease: "easeOut" }}
-                    className="absolute left-0 mt-2 w-84 md:w-96 rounded-3xl bg-[rgba(9,18,14,0.98)] border border-[rgba(255,255,255,0.12)] shadow-[0_16px_40px_rgba(0,0,0,0.85)] z-50 p-3 backdrop-blur-2xl space-y-3"
+                    className="fixed inset-x-3 top-20 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full mt-2 w-auto sm:w-96 max-w-sm rounded-3xl bg-[rgba(9,18,14,0.98)] border border-[rgba(255,255,255,0.12)] shadow-[0_16px_40px_rgba(0,0,0,0.85)] z-50 p-3 backdrop-blur-2xl space-y-3"
                   >
                     {/* Navigation Tabs inside Modal */}
                     <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-[rgba(6,14,11,0.6)] border border-[rgba(255,255,255,0.06)]">
@@ -550,30 +550,32 @@ export function TopNav({ onToggleSidebar }: TopNavProps) {
           )}
 
           {/* AQI Standard Switcher Capsule */}
-          <div className="flex items-center p-0.5 rounded-full bg-[rgba(7,14,11,0.55)] border border-[rgba(255,255,255,0.08)] text-[11px]">
+          <div className="flex items-center p-0.5 rounded-full bg-[rgba(7,14,11,0.55)] border border-[rgba(255,255,255,0.08)] text-[10px] sm:text-[11px]">
             <button
               onClick={() => setAqiStandard("INDIA_CPCB")}
               className={cn(
-                "px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer",
+                "px-2 sm:px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer",
                 isCpcb
                   ? "bg-[rgba(0,214,154,0.2)] text-[#00D69A] border border-[rgba(0,214,154,0.35)] shadow-sm"
                   : "text-[#98A9A1] hover:text-[#F5F8F6]"
               )}
               title="Official India National AQI (CPCB Algorithm)"
             >
-              India NAQI
+              <span className="sm:hidden">NAQI</span>
+              <span className="hidden sm:inline">India NAQI</span>
             </button>
             <button
               onClick={() => setAqiStandard("US_EPA")}
               className={cn(
-                "px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer",
+                "px-2 sm:px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer",
                 !isCpcb
                   ? "bg-[rgba(56,189,248,0.2)] text-[#38BDF8] border border-[rgba(56,189,248,0.35)] shadow-sm"
                   : "text-[#98A9A1] hover:text-[#F5F8F6]"
               )}
               title="US EPA NowCast Algorithm"
             >
-              US EPA
+              <span className="sm:hidden">EPA</span>
+              <span className="hidden sm:inline">US EPA</span>
             </button>
           </div>
 

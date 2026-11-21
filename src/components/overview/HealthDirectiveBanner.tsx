@@ -37,7 +37,7 @@ export function HealthDirectiveBanner({ data }: HealthDirectiveBannerProps) {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-bold text-[#F5F8F6] uppercase tracking-wider flex items-center gap-1.5 shrink-0">
             <Sparkles className="w-3.5 h-3.5 text-[#00D69A]" />
-            Health Directive ({isCpcb ? "India NAQI" : "US EPA"})
+            AI Health Recommendation ({isCpcb ? "India NAQI" : "US EPA"})
           </span>
           <Badge
             variant={isMaskRequired ? "danger" : "accent"}

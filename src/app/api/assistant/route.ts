@@ -1,11 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamAirIntelligence, AssistantMessage, UserProfileContext } from "@/lib/gemini";
 import { fetchLiveAirQuality, PRESET_CITIES } from "@/lib/open-meteo";
-import { AirQualityData, AqiStandard } from "@/types/air-quality";
+import { AirQualityData, AqiStandard, CityLocation } from "@/types/air-quality";
 import { checkRateLimit } from "@/lib/rate-limiter";
 
+const VALID_COHORTS = new Set([
+  "general",
+  "family",
+  "asthma",
+  "elderly",
+  "infant",
+  "commuter",
+  "athlete",
+]);
+
+const VALID_COMMUTE_MODES = new Set([
+  "metro",
+  "car_ac",
+  "bus",
+  "two_wheeler",
+  "walk",
+  "cycling",
+]);
+
 export async function POST(req: NextRequest) {
-  // 1. Rate Limiting Consideration
+  // 1. Instance-level Rate Limiting Consideration with Retry-After header
   const rateLimit = checkRateLimit(req, 40);
   if (!rateLimit.allowed) {
     return NextResponse.json(
@@ -23,7 +42,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // 2. Request Validation
+    // 2. Strict Request Validation
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json(
@@ -40,60 +59,101 @@ export async function POST(req: NextRequest) {
       standard,
       profile,
       lang = "en",
-      aqiData: clientAqiData,
     } = body;
 
-    if (!Array.isArray(messages) || messages.length === 0) {
+    // Validate messages array
+    if (!Array.isArray(messages) || messages.length === 0 || messages.length > 20) {
       return NextResponse.json(
-        { error: "Field 'messages' must be a non-empty array of message objects." },
+        { error: "Field 'messages' must be an array of 1 to 20 message objects." },
         { status: 400 }
       );
     }
 
-    const targetLang: "en" | "hi" = lang === "hi" ? "hi" : "en";
-    const userProfile: UserProfileContext = profile || {};
-
-    // 3. Resolve Real Environmental Data
-    let aqiData: AirQualityData;
-
-    if (clientAqiData && clientAqiData.pollutants && clientAqiData.usAqi !== undefined) {
-      // User passed real client environmental telemetry
-      aqiData = clientAqiData;
-    } else if (lat !== undefined && lon !== undefined) {
-      const parsedLat = parseFloat(lat);
-      const parsedLon = parseFloat(lon);
-      if (isNaN(parsedLat) || isNaN(parsedLon)) {
-        return NextResponse.json({ error: "Invalid latitude or longitude coordinates." }, { status: 400 });
+    // Validate individual messages: role, content type, content length
+    const sanitizedMessages: AssistantMessage[] = [];
+    for (const m of messages) {
+      if (
+        !m ||
+        typeof m !== "object" ||
+        (m.role !== "user" && m.role !== "assistant") ||
+        typeof m.content !== "string"
+      ) {
+        return NextResponse.json(
+          { error: "Each message must have role ('user' or 'assistant') and string content." },
+          { status: 400 }
+        );
       }
-      aqiData = await fetchLiveAirQuality(
-        {
-          id: "custom",
-          name: "Local Coordinates",
-          region: "Real Time Coordinate",
-          country: "GPS",
-          lat: parsedLat,
-          lon: parsedLon,
-        },
-        standard as AqiStandard | undefined
-      );
-    } else {
-      const city = PRESET_CITIES.find((c) => c.id === cityId) || PRESET_CITIES[0];
-      aqiData = await fetchLiveAirQuality(city, standard as AqiStandard | undefined);
+      if (m.content.trim().length === 0 || m.content.length > 1500) {
+        return NextResponse.json(
+          { error: "Message content must be between 1 and 1500 characters." },
+          { status: 400 }
+        );
+      }
+      sanitizedMessages.push({
+        id: typeof m.id === "string" ? m.id : `msg-${Date.now()}-${sanitizedMessages.length}`,
+        role: m.role,
+        content: m.content.trim(),
+        timestamp: typeof m.timestamp === "string" ? m.timestamp : new Date().toISOString(),
+      });
     }
 
-    // 4. Format Messages
-    const assistantMessages: AssistantMessage[] = messages.map(
-      (m: { id?: string; role: "user" | "assistant" | "system"; content: string }) => ({
-        id: m.id || crypto.randomUUID(),
-        role: m.role || "user",
-        content: typeof m.content === "string" ? m.content.trim() : "",
-        timestamp: new Date().toISOString(),
-      })
-    );
+    const targetLang: "en" | "hi" = lang === "hi" ? "hi" : "en";
 
-    // 5. Stream Gemini Intelligence
+    // Validate User Profile
+    const userProfile: UserProfileContext = {};
+    if (profile && typeof profile === "object") {
+      if (profile.cohort && VALID_COHORTS.has(profile.cohort)) {
+        userProfile.cohort = profile.cohort;
+      }
+      if (profile.commuteMode && VALID_COMMUTE_MODES.has(profile.commuteMode)) {
+        userProfile.commuteMode = profile.commuteMode;
+      }
+      if (typeof profile.hasKids === "boolean") userProfile.hasKids = profile.hasKids;
+      if (typeof profile.hasElderly === "boolean") userProfile.hasElderly = profile.hasElderly;
+      if (typeof profile.hasRespiratory === "boolean") userProfile.hasRespiratory = profile.hasRespiratory;
+      if (typeof profile.hasAirPurifier === "boolean") userProfile.hasAirPurifier = profile.hasAirPurifier;
+      if (typeof profile.commuteDistanceKm === "number" && profile.commuteDistanceKm >= 0 && profile.commuteDistanceKm <= 200) {
+        userProfile.commuteDistanceKm = profile.commuteDistanceKm;
+      }
+    }
+
+    // 3. Resolve Real Environmental Data Server-Side ONLY
+    // Security & Data Integrity: Never trust arbitrary client-supplied AQI values.
+    // Always fetch authentic atmospheric data server-side from Open-Meteo.
+    let targetCity: CityLocation;
+
+    if (lat !== undefined && lon !== undefined) {
+      const parsedLat = parseFloat(lat);
+      const parsedLon = parseFloat(lon);
+      if (isNaN(parsedLat) || isNaN(parsedLon) || parsedLat < -90 || parsedLat > 90 || parsedLon < -180 || parsedLon > 180) {
+        return NextResponse.json({ error: "Invalid latitude or longitude coordinates." }, { status: 400 });
+      }
+      const matchedCity = PRESET_CITIES.find(
+        (c) => Math.abs(c.lat - parsedLat) < 0.1 && Math.abs(c.lon - parsedLon) < 0.1
+      );
+      targetCity = matchedCity || {
+        id: `coord-${parsedLat.toFixed(2)}-${parsedLon.toFixed(2)}`,
+        name: `Coordinates (${parsedLat.toFixed(2)}°, ${parsedLon.toFixed(2)}°)`,
+        region: "Custom Region",
+        country: "Coordinates",
+        lat: parsedLat,
+        lon: parsedLon,
+        isCustomCoordinates: true,
+      };
+    } else {
+      const found = PRESET_CITIES.find((c) => c.id === cityId);
+      targetCity = found || PRESET_CITIES[0];
+    }
+
+    const standardParam: AqiStandard | undefined =
+      standard === "INDIA_CPCB" || standard === "US_EPA" ? standard : undefined;
+
+    // Fetch verified atmospheric telemetry from Open-Meteo server-side
+    const aqiData: AirQualityData = await fetchLiveAirQuality(targetCity, standardParam);
+
+    // 4. Stream AI Response from Gemini
     const stream = await streamAirIntelligence(
-      assistantMessages,
+      sanitizedMessages,
       aqiData,
       userProfile,
       targetLang

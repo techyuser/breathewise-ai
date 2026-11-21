@@ -13,10 +13,10 @@ export function getGeminiClient(): GoogleGenAI | null {
 }
 
 export interface AssistantMessage {
-  id: string;
+  id?: string;
   role: "user" | "assistant" | "system";
   content: string;
-  timestamp: string;
+  timestamp?: string;
   sources?: string[];
   suggestedActions?: string[];
 }
@@ -27,6 +27,12 @@ export interface UserProfileContext {
   hasN95Mask?: boolean;
   outdoorActivityPlanned?: string;
   homeVentilation?: "open" | "sealed";
+  cohort?: string;
+  commuteMode?: string;
+  hasKids?: boolean;
+  hasElderly?: boolean;
+  hasRespiratory?: boolean;
+  commuteDistanceKm?: number;
 }
 
 // ============================================================================
@@ -117,11 +123,11 @@ function generateHeuristicAssistantResponse(
   }
 
   if (lowerQ.includes("mask") || lowerQ.includes("n95") || lowerQ.includes("respirator")) {
-    return `### 😷 Respiratory Protection Guidance:\n\n* **Standard:** Use certified **N95 / FFP2** masks with snug nasal seal.\n* **Cloth/Surgical:** Ineffective against microscopic PM2.5.\n* **Pediatric:** Ensure airtight fit without perimeter leaks.`;
+    return `### 😷 Respiratory Protection Guidance:\n\n* **Standard:** Use certified **N95 / FFP2** respirators with adjustable nasal seal for adults.\n* **Pediatric Caution:** Standard adult N95s do not seal on children's faces and increase breathing resistance. For school-age children, use pediatric-sized KF94/FFP2 with airtight fit. **Never place particulate masks on infants under 2 years**.\n* **Cloth/Surgical:** Ineffective against microscopic PM2.5 particles.`;
   }
 
   if (lowerQ.includes("purifier") || lowerQ.includes("cadr") || lowerQ.includes("indoor")) {
-    return `### 🏠 HEPA Sizing Guidance:\n\n* **CADR Rule:** Sizing CFM should equal 2/3 of room square footage (e.g., 300 sq ft $\\rightarrow$ 200 CFM).\n* **Filtration:** True HEPA H13 (99.97% retention at 0.3 µm) + activated carbon.\n* **Ventilation:** Keep windows sealed during morning and evening rush hours.`;
+    return `### 🏠 HEPA Sizing Guidance:\n\n* **CADR Rule:** Sizing CFM should equal 2/3 of room square footage (e.g., 300 sq ft $\\rightarrow$ 200 CFM).\n* **Filtration:** True HEPA H13 (EN 1822 certified for 0.3 µm particulates) + activated carbon.\n* **Ventilation:** Keep windows latched when outdoor PM2.5 exceeds 60 µg/m³; rely on indoor recirculating filtration.`;
   }
 
   return `### 🌿 Environmental Intelligence for ${city}:\n\n* **AQI:** ${aqi} (${isCpcb ? aqiData.indiaCategory : aqiData.category}) | **PM2.5:** ${pm25} µg/m³\n* **Inversion Risk:** ${aqiData.inversionRisk.level} (${aqiData.inversionRisk.trappedSmogProbability}% smog trap)\n* **Key Actions:** Equip N95 masks for outdoor commutes; operate indoor HEPA filtration.`;

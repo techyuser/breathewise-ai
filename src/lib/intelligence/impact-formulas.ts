@@ -73,7 +73,9 @@ export const CALCULATION_ASSUMPTIONS = {
 };
 
 export interface TransportComparisonResult {
-  dailyDistanceKm: number;
+  dailyDistanceKm: number; // One-way distance input
+  effectiveDailyDistanceKm: number; // Actual distance traversed daily (1x or 2x if round-trip)
+  isRoundTrip: boolean;
   workingDaysPerMonth: number;
   baselineMode: TransitMode;
   chosenMode: TransitMode;
@@ -85,32 +87,38 @@ export interface TransportComparisonResult {
   moneySavedMonthlyInr: number;
   particulateExposureAvoidedMg: number;
   treesEquivalentAnnual: number;
+  baselineEmissionFactor: number;
+  chosenEmissionFactor: number;
 }
 
 /**
  * Calculates fuel savings, CO2 mitigation, monetary savings, and monthly projections
  * comparing a baseline car commute against alternative green transit choices.
+ * Accounts for 2-way daily round-trip commute when isRoundTrip is true (default).
  */
 export function calculateTransportationComparison(
   distanceKm: number,
   chosenMode: TransitMode = "metro",
   baselineMode: TransitMode = "car_petrol",
-  workingDaysPerMonth: number = 22
+  workingDaysPerMonth: number = 22,
+  isRoundTrip: boolean = true
 ): TransportComparisonResult {
   const baseline = TRANSPORT_MODES[baselineMode] || TRANSPORT_MODES.car_petrol;
   const chosen = TRANSPORT_MODES[chosenMode] || TRANSPORT_MODES.metro;
 
+  const effectiveDailyDistanceKm = isRoundTrip ? distanceKm * 2 : distanceKm;
+
   // CO2 Emissions (kg CO2e)
-  const baselineCo2Kg = (distanceKm * baseline.emissionFactorGPerKm) / 1000;
-  const chosenCo2Kg = (distanceKm * chosen.emissionFactorGPerKm) / 1000;
+  const baselineCo2Kg = (effectiveDailyDistanceKm * baseline.emissionFactorGPerKm) / 1000;
+  const chosenCo2Kg = (effectiveDailyDistanceKm * chosen.emissionFactorGPerKm) / 1000;
   const co2SavedDailyKg = Math.max(0, Number((baselineCo2Kg - chosenCo2Kg).toFixed(2)));
   const co2SavedMonthlyKg = Number((co2SavedDailyKg * workingDaysPerMonth).toFixed(1));
 
   // Fuel Savings (Liters)
   let fuelSavedDailyLiters = 0;
   if (baseline.fuelEfficiencyKmPerL && baseline.fuelEfficiencyKmPerL > 0) {
-    const baselineFuelLiters = distanceKm / baseline.fuelEfficiencyKmPerL;
-    const chosenFuelLiters = chosen.fuelEfficiencyKmPerL ? distanceKm / chosen.fuelEfficiencyKmPerL : 0;
+    const baselineFuelLiters = effectiveDailyDistanceKm / baseline.fuelEfficiencyKmPerL;
+    const chosenFuelLiters = chosen.fuelEfficiencyKmPerL ? effectiveDailyDistanceKm / chosen.fuelEfficiencyKmPerL : 0;
     fuelSavedDailyLiters = Math.max(0, Number((baselineFuelLiters - chosenFuelLiters).toFixed(2)));
   }
   const fuelSavedMonthlyLiters = Number((fuelSavedDailyLiters * workingDaysPerMonth).toFixed(1));
@@ -121,7 +129,7 @@ export function calculateTransportationComparison(
   const moneySavedMonthlyInr = Math.round(fuelSavedMonthlyLiters * fuelPrice);
 
   // Avoided fine particulate lung inhalation (mg PM2.5 avoided by being in filtered Metro/EV or cycling off-peak)
-  const particulateExposureAvoidedMg = Number((distanceKm * 0.42).toFixed(1));
+  const particulateExposureAvoidedMg = Number((effectiveDailyDistanceKm * 0.42).toFixed(1));
 
   // Tree absorption equivalent (annual trees needed to absorb this monthly saving extrapolated to year)
   const annualCo2Kg = co2SavedMonthlyKg * 12;
@@ -129,6 +137,8 @@ export function calculateTransportationComparison(
 
   return {
     dailyDistanceKm: distanceKm,
+    effectiveDailyDistanceKm,
+    isRoundTrip,
     workingDaysPerMonth,
     baselineMode,
     chosenMode,
@@ -140,6 +150,8 @@ export function calculateTransportationComparison(
     moneySavedMonthlyInr,
     particulateExposureAvoidedMg,
     treesEquivalentAnnual,
+    baselineEmissionFactor: baseline.emissionFactorGPerKm,
+    chosenEmissionFactor: chosen.emissionFactorGPerKm,
   };
 }
 

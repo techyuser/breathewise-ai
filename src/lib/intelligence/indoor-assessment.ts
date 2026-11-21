@@ -220,7 +220,7 @@ export function getBudgetRecommendations(
       tier: "above_3000",
       costLabel: "₹8,500 – ₹13,000",
       title: "True HEPA H13 Purifier (CADR 350+ CFM)",
-      description: "Certified mechanical air purifier with True HEPA H13 cylindrical filter (99.97% capture at 0.3 µm) and carbon barrel.",
+      description: "Certified mechanical air purifier with True HEPA H13 cylindrical filter (EN 1822 compliant for 0.3 µm particulates) and activated carbon barrel.",
       diyGuide: "Position at least 1.5 feet away from walls in the center of the main family room or bedroom.",
       impactReduction: "Achieves 4–5 Air Changes per Hour (ACH), keeping indoor PM2.5 below 12 µg/m³ even in severe smog.",
       category: "filtration",

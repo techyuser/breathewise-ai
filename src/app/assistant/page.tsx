@@ -474,32 +474,39 @@ export default function AssistantPage() {
               })}
             </AnimatePresence>
 
-            {/* Typing Indicator */}
+            {/* AI Thinking & Streaming Pulse */}
             {isTyping && (
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex gap-3 max-w-md mr-auto items-center"
               >
-                <div className="w-8 h-8 rounded-2xl bg-[rgba(12,24,19,0.7)] border border-[rgba(0,214,154,0.25)] text-[#00D69A] flex items-center justify-center">
-                  <Bot className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-2xl bg-[rgba(12,24,19,0.7)] border border-[rgba(0,214,154,0.35)] text-[#00D69A] flex items-center justify-center shadow-[0_0_15px_rgba(0,214,154,0.2)]">
+                  <Bot className="w-4 h-4 animate-pulse" />
                 </div>
-                <div className="px-4 py-3 rounded-2xl bg-[rgba(10,20,16,0.6)] border border-[rgba(255,255,255,0.06)] flex items-center gap-1.5 backdrop-blur-md">
-                  <motion.span
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut" }}
-                    className="w-1.5 h-1.5 rounded-full bg-[#00D69A]"
-                  />
-                  <motion.span
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut", delay: 0.15 }}
-                    className="w-1.5 h-1.5 rounded-full bg-[#00D69A]"
-                  />
-                  <motion.span
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut", delay: 0.3 }}
-                    className="w-1.5 h-1.5 rounded-full bg-[#00D69A]"
-                  />
+                <div className="px-4 py-2.5 rounded-2xl bg-[rgba(10,20,16,0.7)] border border-[rgba(0,214,154,0.2)] flex items-center gap-2.5 backdrop-blur-md">
+                  <div className="flex items-center gap-1">
+                    <motion.span
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut" }}
+                      className="w-1.5 h-1.5 rounded-full bg-[#00D69A]"
+                    />
+                    <motion.span
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut", delay: 0.15 }}
+                      className="w-1.5 h-1.5 rounded-full bg-[#00D69A]"
+                    />
+                    <motion.span
+                      animate={{ y: [0, -3, 0] }}
+                      transition={{ repeat: Infinity, duration: 0.6, ease: "easeInOut", delay: 0.3 }}
+                      className="w-1.5 h-1.5 rounded-full bg-[#00D69A]"
+                    />
+                  </div>
+                  <span className="text-[11px] font-medium text-[#98A9A1]">
+                    {lang === "hi"
+                      ? "वायुमंडलीय टेलीमेट्री व क्लिनिकल दिशानिर्देशों का विश्लेषण..."
+                      : "Analyzing telemetry & scientific guidelines..."}
+                  </span>
                 </div>
               </motion.div>
             )}

@@ -120,11 +120,17 @@ export function generateDailyRoutine(
   let m2ExpEn = "";
   let m2ExpHi = "";
 
-  if (profile.hasKids || profile.cohort === "infant") {
-    m2RecEn = "Equip children with snug-fitting pediatric N95 respirators. Keep school vehicle windows firmly closed.";
-    m2RecHi = "बच्चों को सही फिटिंग वाला N95 मास्क पहनाएं। स्कूल बस की खिड़कियां बंद रखें।";
-    m2ExpEn = "Children inhale 50% more air per pound of body weight than adults, multiplying toxic particulate absorption.";
-    m2ExpHi = "बच्चों के फेफड़ों का आकार छोटा होने से वे वयस्कों की तुलना में प्रति किलोग्राम 50% अधिक विषैले कण सांस में लेते हैं।";
+  if (profile.cohort === "infant") {
+    m2Status = "avoid";
+    m2RecEn = "Keep infants indoors in filtered air. Do NOT place particulate masks on infants or children under 2 (risk of suffocation).";
+    m2RecHi = "शिशुओं को घर के अंदर सुरक्षित हवा में रखें। 2 वर्ष से कम उम्र के बच्चों को मास्क बिल्कुल न लगाएं (दम घुटने का जोखिम)।";
+    m2ExpEn = "Infant respiratory systems are developing, and tight particulate masks present dangerous airway resistance. Indoor HEPA filtration is the only safe clinical defense.";
+    m2ExpHi = "शिशुओं की श्वास नलियां नाजुक होती हैं; टाइट मास्क से ऑक्सीजन प्रवाह बाधित हो सकता है। इनडोर एयर प्यूरीफायर ही एकमात्र सुरक्षित उपाय है।";
+  } else if (profile.hasKids) {
+    m2RecEn = "Keep school vehicle windows closed and cabin AC on recirculate. For school-age children, use certified pediatric-sized KF94/FFP2 masks with a verified seal; standard adult N95s do not fit pediatric facial structures.";
+    m2RecHi = "स्कूल बस की खिड़कियां बंद रखें व एसी को रीसर्क्युलेशन पर रखें। स्कूली बच्चों के लिए केवल प्रमाणित बाल-आकार (Pediatric KF94/FFP2) मास्क इस्तेमाल करें—वयस्क N95 बच्चों के चेहरे पर ठीक नहीं बैठते।";
+    m2ExpEn = "Adult N95 respirators leave perimeter gaps on children's smaller faces, rendering filtration ineffective. Properly sized pediatric respirators or filtered transit cabins are required.";
+    m2ExpHi = "वयस्क N95 मास्क बच्चों के छोटे चेहरे पर ढीले रहते हैं जिससे प्रदूषित हवा किनारों से अंदर जाती है। सही आकार का बाल मास्क या वातानुकूलित केबिन आवश्यक है।";
   } else if (profile.commuteMode === "metro") {
     m2Status = "safe";
     m2RecEn = "Use air-conditioned Metro/Rail transit. Walk underground concourses to bypass street-level diesel exhaust.";
@@ -156,22 +162,29 @@ export function generateDailyRoutine(
   // 2. AFTERNOON ROUTINE (12:00 PM - 04:30 PM)
   // ==========================================
   // Slot 3: Midday Solar Convection & Recess (01:30 PM)
+  const canVentilate = !isSevere && pm25 <= 60 && aqi <= 150;
   routine.push({
     id: "act-afternoon-1",
     time: "01:30 PM",
     displayTime: "01:30 PM",
     period: "afternoon",
     activity: lang === "hi" ? "दोपहर का वेंटिलेशन व आउटडोर समय" : "Midday Ventilation & Outdoor Window",
-    recommendation:
-      lang === "hi"
-        ? "घर व कार्यालय में 20 मिनट के लिए क्रॉस-वेंटिलेशन करें। आवश्यक बाहरी कार्य इस समय निपटाएं।"
-        : "Optimal window for 20-minute cross-ventilation. Schedule outdoor errands and recess during this interval.",
-    status: isSevere ? "caution" : "optimal",
-    location: "Outdoor",
-    explanation:
-      lang === "hi"
+    recommendation: canVentilate
+      ? lang === "hi"
+        ? "घर व कार्यालय में 15-20 मिनट के लिए क्रॉस-वेंटिलेशन करें। आवश्यक बाहरी कार्य इस समय निपटाएं।"
+        : "Optimal window for 15-20 minute cross-ventilation as boundary layer peaks. Schedule essential outdoor errands during this interval."
+      : lang === "hi"
+        ? "बाहरी PM2.5 स्तर 60 µg/m³ से अधिक है। खिड़कियां बंद रखें और इनडोर HEPA प्यूरीफायर पर ही निर्भर रहें, प्राकृतिक वेंटिलेशन न करें।"
+        : "Outdoor PM2.5 exceeds safe ventilation limits (>60 µg/m³). Keep windows firmly latched; rely on continuous indoor HEPA recirculation rather than outside air.",
+    status: canVentilate ? "optimal" : "avoid",
+    location: canVentilate ? "Outdoor" : "Indoor",
+    explanation: canVentilate
+      ? lang === "hi"
         ? "दोपहर में धूप से धरातल गर्म होता है, जिससे थर्मल मिक्सिंग से प्रदूषण ऊपर उठ जाता है और हवा दिन में सबसे साफ होती है।"
-        : "Solar thermal radiation maximizes planetary boundary layer height (~1,200m), dispersing trapped surface smog and yielding the cleanest daily air.",
+        : "Solar thermal radiation maximizes planetary boundary layer height (~1,200m), dispersing trapped surface smog and yielding the cleanest daily air."
+      : lang === "hi"
+        ? "यद्यपि दोपहर में मिक्सिंग बढ़ती है, फिर भी कुल प्रदूषण सुरक्षित जैविक सीमा से अधिक है, अतः खिड़की खोलने से इनडोर हवा दूषित होगी।"
+        : "Even with midday solar convection, ambient particulate density remains biologically elevated; bringing outdoor air inside would introduce toxic particulate load.",
     language: lang,
     impactPoints: 20,
   });

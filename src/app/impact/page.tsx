@@ -49,6 +49,7 @@ const DEFAULT_PLEDGES: Pledge[] = [
 export default function GreenImpactPage() {
   const [distanceKm, setDistanceKm] = useState<number>(14);
   const [workingDays, setWorkingDays] = useState<number>(22);
+  const [isRoundTrip, setIsRoundTrip] = useState<boolean>(true);
   const [chosenMode, setChosenMode] = useState<TransitMode>("metro");
   const baselineMode: TransitMode = "car_petrol";
 
@@ -80,12 +81,13 @@ export default function GreenImpactPage() {
     });
   };
 
-  // Run real-time transportation comparison calculation
+  // Run real-time transportation comparison calculation (with 2-way round-trip support)
   const comparison: TransportComparisonResult = calculateTransportationComparison(
     distanceKm,
     chosenMode,
     baselineMode,
-    workingDays
+    workingDays,
+    isRoundTrip
   );
 
   // Total Clean Air Score
@@ -94,9 +96,10 @@ export default function GreenImpactPage() {
   const totalImpactScore = pledgePoints + transitPoints;
 
   const handleShareSummary = () => {
+    const tripLabel = isRoundTrip ? `2-Way Round-Trip (${comparison.effectiveDailyDistanceKm} km/day)` : `1-Way Commute (${distanceKm} km/day)`;
     const summary = `🌿 BreatheWise AI — My Green Commute Impact:
 • Transit: ${TRANSPORT_MODES[chosenMode].name} vs ${TRANSPORT_MODES[baselineMode].name}
-• Commute Distance: ${distanceKm} km/day (${workingDays} working days/mo)
+• Commute Distance: ${tripLabel} (${workingDays} working days/mo)
 • Monthly CO2 Avoided: ${comparison.co2SavedMonthlyKg} kg CO2e
 • Fuel Saved: ${comparison.fuelSavedMonthlyLiters} L (₹${comparison.moneySavedMonthlyInr.toLocaleString("en-IN")})
 • Tree Equivalent: ${comparison.treesEquivalentAnnual} mature trees/year
@@ -210,7 +213,12 @@ Join clean air initiatives on BreatheWise AI!`;
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-[#98A9A1]">Daily One-Way Commute Distance</span>
-              <span className="font-bold text-[#00D69A] text-sm">{distanceKm} km</span>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-[#00D69A] text-sm">{distanceKm} km one-way</span>
+                <span className="text-[11px] text-[#98A9A1]">
+                  ({comparison.effectiveDailyDistanceKm} km/day total)
+                </span>
+              </div>
             </div>
             <input
               type="range"
@@ -224,6 +232,23 @@ Join clean air initiatives on BreatheWise AI!`;
               <span>1 km (Local)</span>
               <span>30 km (Suburban)</span>
               <span>60 km (Inter-city)</span>
+            </div>
+
+            {/* Round-trip Commute Toggle */}
+            <div className="pt-1.5 flex items-center justify-between bg-[rgba(255,255,255,0.03)] px-3 py-1.5 rounded-xl border border-[rgba(255,255,255,0.06)]">
+              <label htmlFor="roundtrip-toggle" className="text-xs text-[#F5F8F6] flex items-center gap-2 cursor-pointer">
+                <input
+                  id="roundtrip-toggle"
+                  type="checkbox"
+                  checked={isRoundTrip}
+                  onChange={(e) => setIsRoundTrip(e.target.checked)}
+                  className="rounded border-[rgba(255,255,255,0.2)] bg-transparent text-[#00D69A] accent-[#00D69A] cursor-pointer"
+                />
+                <span>Include Return Journey (2× Daily Round-Trip)</span>
+              </label>
+              <Badge variant="subtle" size="sm">
+                {isRoundTrip ? "2-Way Commute" : "1-Way Commute"}
+              </Badge>
             </div>
           </div>
 
@@ -245,6 +270,10 @@ Join clean air initiatives on BreatheWise AI!`;
               <span>5 days (Hybrid)</span>
               <span>22 days (Standard Office)</span>
               <span>30 days (Full Month)</span>
+            </div>
+            <div className="pt-2 text-[11px] text-[#98A9A1] flex items-center gap-2">
+              <Info className="w-3.5 h-3.5 text-[#38BDF8]" />
+              <span>Assumes standard 22 working days/month commuting in metropolitan traffic.</span>
             </div>
           </div>
         </div>

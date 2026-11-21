@@ -579,16 +579,18 @@ export default function IndoorAirPage() {
 
       {/* Interactive Room Sensor Simulators */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Droplets className="w-4 h-4 text-[#38BDF8]" />
             <h2 className="text-base font-bold text-[#F5F8F6]">
               Interactive Room Telemetry & Purifier Control
             </h2>
           </div>
-          <span className="text-xs text-[#98A9A1]">
-            Simulated sensor telemetry
-          </span>
+          <div className="flex items-center gap-2">
+            <Badge variant="subtle" size="sm" className="border-[rgba(56,189,248,0.3)] text-[#38BDF8] bg-[rgba(56,189,248,0.08)]">
+              Simulated Room Sensor Telemetry
+            </Badge>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -599,9 +601,15 @@ export default function IndoorAirPage() {
               className="p-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(9,18,14,0.7)] space-y-3"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#F5F8F6]">
-                  {room.name}
-                </span>
+                <div>
+                  <span className="text-xs font-bold text-[#F5F8F6]">
+                    {room.name}
+                  </span>
+                  <div className="text-[10px] text-[#64786E] flex items-center gap-1.5 mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8]" />
+                    <span>Modeled Infiltration Telemetry</span>
+                  </div>
+                </div>
                 <button
                   onClick={() => togglePurifier(room.id)}
                   className={`p-1.5 rounded-xl border transition-all cursor-pointer ${

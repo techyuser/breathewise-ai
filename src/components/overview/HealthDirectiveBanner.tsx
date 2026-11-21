@@ -11,6 +11,7 @@ interface HealthDirectiveBannerProps {
 }
 
 export function HealthDirectiveBanner({ data }: HealthDirectiveBannerProps) {
+  const isCpcb = data.activeStandard === "INDIA_CPCB";
   const isMaskRequired = data.recommendations.maskRequired;
 
   return (
@@ -32,22 +33,30 @@ export function HealthDirectiveBanner({ data }: HealthDirectiveBannerProps) {
         )}
       </div>
 
-      <div className="space-y-0.5 min-w-0">
+      <div className="space-y-0.5 min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-bold text-[#F5F8F6] uppercase tracking-wider flex items-center gap-1.5 shrink-0">
             <Sparkles className="w-3.5 h-3.5 text-[#00D69A]" />
-            AI Health Recommendation
+            Health Directive ({isCpcb ? "India NAQI" : "US EPA"})
           </span>
           <Badge
             variant={isMaskRequired ? "danger" : "accent"}
             size="sm"
-            className="text-[10px] py-0.5 px-2.5"
+            className="text-[10px] py-0.5 px-2.5 font-semibold"
           >
-            {isMaskRequired ? "N95 / FFP2 Recommended" : "Standard Protection"}
+            {isMaskRequired
+              ? isCpcb
+                ? "Respiratory Protection Advised"
+                : "N95 / FFP2 Recommended"
+              : "Standard Activity Safe"}
           </Badge>
+          <span className="text-[10px] text-[#64786E] hidden sm:inline">
+            • Modelled advisory (Non-clinical)
+          </span>
         </div>
         <p className="text-xs text-[#98A9A1] leading-relaxed line-clamp-1 max-w-3xl">
-          {data.healthSummary}
+          <strong className="text-[#F5F8F6] mr-1">{data.healthSummary}:</strong>
+          {data.recommendations.general}
         </p>
       </div>
     </Card>

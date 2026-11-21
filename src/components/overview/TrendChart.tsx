@@ -217,13 +217,13 @@ export function TrendChart({
                         </div>
                         <span
                           className={cn(
-                            "text-[9px] px-1.5 py-0.2 rounded font-semibold",
+                            "text-[9px] px-1.5 py-0.5 rounded font-semibold",
                             item.isHistorical
-                              ? "bg-[rgba(56,189,248,0.15)] text-[#38BDF8]"
-                              : "bg-[rgba(0,214,154,0.15)] text-[#00D69A]"
+                              ? "bg-[rgba(56,189,248,0.15)] text-[#38BDF8] border border-[rgba(56,189,248,0.3)]"
+                              : "bg-[rgba(0,214,154,0.15)] text-[#00D69A] border border-[rgba(0,214,154,0.3)]"
                           )}
                         >
-                          {item.isHistorical ? "Historical" : "Forecast"}
+                          {item.isHistorical ? "Station Historical" : "CAMS Model Forecast"}
                         </span>
                       </div>
                       <div

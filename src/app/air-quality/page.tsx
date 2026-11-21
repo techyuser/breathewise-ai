@@ -183,7 +183,7 @@ export default function AirQualityPage() {
                   <span>Engineered Countermeasure</span>
                 </div>
                 <p className="text-xs text-[#98A9A1] leading-relaxed">
-                  True HEPA H13 filtration removes 99.97% of particles down to 0.3 microns. Electrostatically charged N95 respirators filter airborne particulates.
+                  True HEPA H13 filtration (EN 1822 compliant) captures fine particulates down to 0.3 microns. Electrostatically charged N95 respirators filter airborne particulates.
                 </p>
               </div>
             </div>

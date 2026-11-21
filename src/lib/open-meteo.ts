@@ -7,8 +7,17 @@ import {
   AqiStandard,
 } from "@/types/air-quality";
 import { getAQICategory, getHealthAdvisory, calculateNowCastAqi } from "./aqi-utils";
-import { calculateCpcbNaqi, getCpcbCategory } from "./cpcb-utils";
+import { calculateCpcbNaqi, getCpcbCategory, getCpcbHealthDirective } from "./cpcb-utils";
 import { parseWmoWeatherCode } from "./weather-codes";
+
+function computeRollingAverage(arr: number[] | undefined, endIdx: number, hours: number): number | undefined {
+  if (!arr || arr.length === 0 || endIdx < 0) return undefined;
+  const startIdx = Math.max(0, endIdx - hours + 1);
+  const slice = arr.slice(startIdx, endIdx + 1).filter((v) => v !== null && v !== undefined && !isNaN(v));
+  if (slice.length === 0) return undefined;
+  const sum = slice.reduce((a, b) => a + b, 0);
+  return Number((sum / slice.length).toFixed(1));
+}
 
 export const PRESET_CITIES: CityLocation[] = [
   {
@@ -111,7 +120,7 @@ export async function fetchLiveAirQuality(
   city: CityLocation = PRESET_CITIES[0],
   forcedStandard?: AqiStandard
 ): Promise<AirQualityData> {
-  const aqUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${city.lat}&longitude=${city.lon}&current=european_aqi,us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone&hourly=pm2_5,pm10,nitrogen_dioxide,ozone,us_aqi&timezone=auto&past_days=1&forecast_days=2`;
+  const aqUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${city.lat}&longitude=${city.lon}&current=european_aqi,us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone&hourly=pm2_5,pm10,nitrogen_dioxide,sulphur_dioxide,ozone,carbon_monoxide,us_aqi&timezone=auto&past_days=1&forecast_days=2`;
   const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,apparent_temperature,surface_pressure&hourly=temperature_2m,relative_humidity_2m&timezone=auto&past_days=1&forecast_days=2`;
 
   const clientFetchTimestamp = new Date().toLocaleTimeString("en-US", {
@@ -142,6 +151,9 @@ export async function fetchLiveAirQuality(
     const hourlyNo2: number[] = aqiJson.hourly?.nitrogen_dioxide || [];
     const hourlyOzone: number[] = aqiJson.hourly?.ozone || [];
     const hourlyUsAqi: number[] = aqiJson.hourly?.us_aqi || [];
+
+    const hourlySo2: number[] = aqiJson.hourly?.sulphur_dioxide || [];
+    const hourlyCo: number[] = aqiJson.hourly?.carbon_monoxide || [];
 
     const weatherHourlyTimes: string[] = weatherJson?.hourly?.time || [];
     const weatherHourlyTemp: number[] = weatherJson?.hourly?.temperature_2m || [];
@@ -174,25 +186,39 @@ export async function fetchLiveAirQuality(
     const usCategory = getAQICategory(finalUsAqi);
     const advisory = getHealthAdvisory(usCategory);
 
-    // Calculate India CPCB NAQI (Central Pollution Control Board)
+    // Calculate India CPCB NAQI using true 24-hour and 8-hour averaging periods (CPCB 2014 mandate)
+    const pm25_24h = computeRollingAverage(hourlyPm25, currentIndex, 24) ?? current.pm2_5 ?? 45;
+    const pm10_24h = computeRollingAverage(hourlyPm10, currentIndex, 24) ?? current.pm10 ?? 75;
+    const no2_24h = computeRollingAverage(hourlyNo2, currentIndex, 24) ?? current.nitrogen_dioxide;
+    const so2_24h = computeRollingAverage(hourlySo2, currentIndex, 24) ?? current.sulphur_dioxide;
+    const ozone_8h = computeRollingAverage(hourlyOzone, currentIndex, 8) ?? current.ozone;
+    const co_8h = computeRollingAverage(hourlyCo, currentIndex, 8) ?? current.carbon_monoxide;
+
     const cpcbResult = calculateCpcbNaqi({
-      pm2_5: current.pm2_5 ?? 45,
-      pm10: current.pm10 ?? 75,
-      nitrogen_dioxide: current.nitrogen_dioxide,
-      sulphur_dioxide: current.sulphur_dioxide,
-      carbon_monoxide: current.carbon_monoxide,
-      ozone: current.ozone,
+      pm2_5: pm25_24h,
+      pm10: pm10_24h,
+      nitrogen_dioxide: no2_24h,
+      sulphur_dioxide: so2_24h,
+      carbon_monoxide: co_8h,
+      ozone: ozone_8h,
     });
     const finalIndiaAqi = cpcbResult.naqi;
     const indiaCategory = getCpcbCategory(finalIndiaAqi);
+    const cpcbDirective = getCpcbHealthDirective(finalIndiaAqi);
 
     const inIndia = isLocationInIndia(city.lat, city.lon, city.country);
     const activeStandard: AqiStandard =
       forcedStandard || (inIndia ? "INDIA_CPCB" : "US_EPA");
 
-    const displayAqi = activeStandard === "INDIA_CPCB" ? finalIndiaAqi : finalUsAqi;
-    const displayCategory =
-      activeStandard === "INDIA_CPCB" ? indiaCategory : usCategory;
+    const isCpcbStandard = activeStandard === "INDIA_CPCB";
+    const displayAqi = isCpcbStandard ? finalIndiaAqi : finalUsAqi;
+    const displayCategory = isCpcbStandard ? indiaCategory : usCategory;
+
+    // Active health directives and advisories strictly tied to selected standard
+    const activeHeadline = isCpcbStandard ? cpcbDirective.headline : advisory.headline;
+    const activeGeneral = isCpcbStandard ? cpcbDirective.generalPublic : advisory.general;
+    const activeSensitive = isCpcbStandard ? cpcbDirective.sensitiveGroups : advisory.sensitive;
+    const activeMaskRequired = isCpcbStandard ? cpcbDirective.maskRecommended : advisory.mask;
 
     // Weather Metrics
     const temperature = Math.round(weatherCurrent.temperature_2m ?? 18);
@@ -433,7 +459,7 @@ export async function fetchLiveAirQuality(
       isDemoData: !isLive,
       europeanAqi: Math.round(current.european_aqi ?? 50),
       primaryPollutant: activeStandard === "INDIA_CPCB" ? cpcbResult.dominantPollutant : "PM2.5",
-      healthSummary: advisory.headline,
+      healthSummary: activeHeadline,
       temperature,
       humidity,
       windSpeed,
@@ -452,19 +478,31 @@ export async function fetchLiveAirQuality(
         trappedSmogProbability,
       },
       recommendations: {
-        general: advisory.general,
-        vulnerable: advisory.sensitive,
-        outdoorActivity:
-          displayAqi > 180
-            ? "Avoid all strenuous outdoor exertion. Shift workouts indoors."
-            : displayAqi > 100
-            ? "Limit morning and late evening outdoor runs."
-            : "Outdoor conditions safe for moderate exercise.",
-        ventilation:
-          displayAqi > 150
-            ? "Keep windows sealed. Use internal HEPA recirculating air filtration."
-            : "Brief midday window airing permitted when solar convection peaks.",
-        maskRequired: advisory.mask,
+        general: activeGeneral,
+        vulnerable: activeSensitive,
+        outdoorActivity: isCpcbStandard
+          ? (finalIndiaAqi > 300
+              ? "Hazardous air. Strictly avoid outdoor exercise and heavy physical exertion."
+              : finalIndiaAqi > 200
+              ? "Poor air quality. Avoid prolonged outdoor morning and evening exertion."
+              : finalIndiaAqi > 100
+              ? "Moderate air. Sensitive groups should take frequent breaks during outdoor activities."
+              : "Air quality is favorable for all regular outdoor activities.")
+          : (displayAqi > 180
+              ? "Avoid all strenuous outdoor exertion. Shift workouts indoors."
+              : displayAqi > 100
+              ? "Limit morning and late evening outdoor runs."
+              : "Outdoor conditions safe for moderate exercise."),
+        ventilation: isCpcbStandard
+          ? (finalIndiaAqi > 200
+              ? "Keep windows sealed. Use internal certified HEPA recirculating air filtration."
+              : finalIndiaAqi > 100
+              ? "Keep windows latched during morning inversion; brief midday airing only if outdoor PM2.5 is low."
+              : "Natural cross-ventilation permitted.")
+          : (displayAqi > 150
+              ? "Keep windows sealed. Use internal certified HEPA recirculating air filtration."
+              : "Brief midday window airing permitted when solar convection peaks."),
+        maskRequired: activeMaskRequired,
       },
     };
   } catch (err) {

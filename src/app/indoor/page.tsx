@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { useAirQuality } from "@/context/AirQualityContext";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { HouseholdAssessmentDrawer } from "@/components/indoor/HouseholdAssessmentDrawer";
+import { DiyPurifierModal } from "@/components/indoor/DiyPurifierModal";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -27,7 +29,6 @@ import {
   DollarSign,
   Info,
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
 
 interface RoomSensor {
   id: string;
@@ -175,182 +176,11 @@ export default function IndoorAirPage() {
       </div>
 
       {/* Household Assessment Collapsible Drawer */}
-      <AnimatePresence>
-        {assessmentOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <Card elevated className="p-5 md:p-6 rounded-3xl border-[rgba(77,184,255,0.25)] bg-[rgba(10,22,17,0.85)] space-y-5">
-              <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] pb-3">
-                <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-[#4DB8FF]" />
-                  <h3 className="text-sm font-bold text-[#F2F6FA]">
-                    Household Assessment Form
-                  </h3>
-                </div>
-                <span className="text-xs text-[#A3B3C2]">
-                  Personalizes indoor source mitigation
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {/* 1. Home Size & Air Purifier */}
-                <div className="space-y-3">
-                  <label className="text-xs font-semibold text-[#A3B3C2]">
-                    Apartment / Home Size ({homeConfig.homeSizeSqFt} sq.ft)
-                  </label>
-                  <input
-                    type="range"
-                    min="300"
-                    max="3000"
-                    step="50"
-                    value={homeConfig.homeSizeSqFt ?? 650}
-                    aria-label="Apartment or Home Size in square feet"
-                    onChange={(e) =>
-                      saveConfig({
-                        ...homeConfig,
-                        homeSizeSqFt: Number(e.target.value),
-                      })
-                    }
-                    className="w-full accent-[#4DB8FF] cursor-pointer"
-                  />
-                  <div className="flex items-center justify-between text-xs text-[#8496A8]">
-                    <span>300 sq.ft (Studio)</span>
-                    <span>3000 sq.ft (Bungalow)</span>
-                  </div>
-
-                  <div className="pt-2 flex items-center justify-between">
-                    <span className="text-xs text-[#F2F6FA]">HEPA Air Purifier</span>
-                    <button
-                      onClick={() =>
-                        saveConfig({
-                          ...homeConfig,
-                          hasAirPurifier: !homeConfig.hasAirPurifier,
-                        })
-                      }
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                        homeConfig.hasAirPurifier
-                          ? "bg-[#4DB8FF] text-[#0A1118]"
-                          : "bg-[rgba(255,255,255,0.08)] text-[#A3B3C2]"
-                      }`}
-                    >
-                      {homeConfig.hasAirPurifier ? "Active / Owned" : "None"}
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2. Window Drafts & Infiltration */}
-                <div className="space-y-3">
-                  <label className="text-xs font-semibold text-[#A3B3C2]">
-                    Window & Door Draft Seal
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { key: "sealed", label: "Airtight" },
-                      { key: "moderate", label: "Moderate" },
-                      { key: "leaky", label: "Drafty" },
-                    ].map((opt) => (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() =>
-                          saveConfig({
-                            ...homeConfig,
-                            windowDrafts: opt.key as HomeConfig["windowDrafts"],
-                          })
-                        }
-                        className={`py-2 px-2 rounded-xl text-xs font-medium text-center transition-all cursor-pointer border ${
-                          homeConfig.windowDrafts === opt.key
-                            ? "bg-[rgba(77,184,255,0.18)] border-[#4DB8FF] text-[#4DB8FF] font-semibold shadow-[0_0_12px_rgba(77,184,255,0.2)]"
-                            : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.08)] text-[#A3B3C2] hover:text-[#F2F6FA] hover:bg-[rgba(24,38,56,0.85)] hover:border-[rgba(77,184,255,0.4)] hover:shadow-[0_4px_16px_rgba(77,184,255,0.15)] hover:-translate-y-0.5"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="pt-2">
-                    <label className="text-xs font-semibold text-[#A3B3C2] block mb-1.5">
-                      Daily Floor Dusting Method
-                    </label>
-                    <select
-                      value={homeConfig.dustingMethod ?? "wet_mop"}
-                      onChange={(e) =>
-                        saveConfig({
-                          ...homeConfig,
-                          dustingMethod: e.target.value as HomeConfig["dustingMethod"],
-                        })
-                      }
-                      className="w-full bg-[rgba(18,29,42,0.9)] hover:bg-[rgba(24,38,56,0.95)] border border-[rgba(255,255,255,0.1)] hover:border-[rgba(77,184,255,0.4)] hover:shadow-[0_4px_20px_rgba(77,184,255,0.15)] rounded-xl px-3 py-2 text-xs text-[#F2F6FA] outline-none focus:border-[#4DB8FF] transition-all duration-200 cursor-pointer"
-                    >
-                      <option value="wet_mop">Wet Microfiber Mopping (Optimal)</option>
-                      <option value="dry_broom">Dry Broom Sweeping (High Resuspension)</option>
-                      <option value="hepa_vacuum">HEPA-Sealed Vacuum</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* 3. Cooking Fuel & Incense */}
-                <div className="space-y-3">
-                  <label className="text-xs font-semibold text-[#A3B3C2] block mb-1.5">
-                    Kitchen Cooking Setup
-                  </label>
-                  <select
-                    value={homeConfig.cookingType ?? "lpg_exhaust"}
-                    onChange={(e) =>
-                      saveConfig({
-                        ...homeConfig,
-                        cookingType: e.target.value as HomeConfig["cookingType"],
-                      })
-                    }
-                    className="w-full bg-[rgba(18,29,42,0.9)] hover:bg-[rgba(24,38,56,0.95)] border border-[rgba(255,255,255,0.1)] hover:border-[rgba(77,184,255,0.4)] hover:shadow-[0_4px_20px_rgba(77,184,255,0.15)] rounded-xl px-3 py-2 text-xs text-[#F2F6FA] outline-none focus:border-[#4DB8FF] transition-all duration-200 cursor-pointer"
-                  >
-                    <option value="lpg_exhaust">LPG / Piped Gas with Exhaust Chimney</option>
-                    <option value="lpg_no_exhaust">LPG / Gas without Exhaust Hood</option>
-                    <option value="electric">Electric Induction / Ceramic Stove</option>
-                    <option value="chulha">Traditional Biomass / Chulha (High Risk)</option>
-                  </select>
-
-                  <div className="pt-2">
-                    <label className="text-xs font-semibold text-[#A3B3C2] block mb-1.5">
-                      Agarbatti / Incense / Dhoop
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { key: "never", label: "Never" },
-                        { key: "occasional", label: "Weekly" },
-                        { key: "daily", label: "Daily" },
-                      ].map((opt) => (
-                        <button
-                          key={opt.key}
-                          type="button"
-                          onClick={() =>
-                            saveConfig({
-                              ...homeConfig,
-                              incenseUsage: opt.key as HomeConfig["incenseUsage"],
-                            })
-                          }
-                          className={`py-2 px-2 rounded-xl text-xs font-medium text-center transition-all cursor-pointer border ${
-                            homeConfig.incenseUsage === opt.key
-                              ? "bg-[rgba(77,184,255,0.18)] border-[#4DB8FF] text-[#4DB8FF] font-semibold shadow-[0_0_12px_rgba(77,184,255,0.2)]"
-                              : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.08)] text-[#A3B3C2] hover:text-[#F2F6FA] hover:bg-[rgba(24,38,56,0.85)] hover:border-[rgba(77,184,255,0.4)] hover:shadow-[0_4px_16px_rgba(77,184,255,0.15)] hover:-translate-y-0.5"
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <HouseholdAssessmentDrawer
+        isOpen={assessmentOpen}
+        homeConfig={homeConfig}
+        onSaveConfig={saveConfig}
+      />
 
       {/* Ventilation & Atmospheric Verdict Banner */}
       <Card
@@ -675,55 +505,10 @@ export default function IndoorAirPage() {
       </div>
 
       {/* DIY Step-by-Step Guide Modal */}
-      <AnimatePresence>
-        {activeDiyModal && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl"
-            onClick={() => setActiveDiyModal(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg bg-[rgba(9,18,14,0.98)] border border-[rgba(255,255,255,0.15)] rounded-3xl p-6 shadow-2xl space-y-4"
-            >
-              <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-3">
-                <div>
-                  <Badge variant="accent" size="sm" className="mb-1 text-xs">
-                    {activeDiyModal.costLabel}
-                  </Badge>
-                  <h3 className="text-base font-bold text-[#F2F6FA]">
-                    {activeDiyModal.title}
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setActiveDiyModal(null)}
-                  className="p-1 rounded-lg text-[#A3B3C2] hover:text-[#F2F6FA] cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-[rgba(77,184,255,0.08)] border border-[rgba(77,184,255,0.2)] text-xs text-[#4DB8FF] font-semibold">
-                Expected Clean Air Impact: {activeDiyModal.impactReduction}
-              </div>
-
-              <div className="text-xs text-[#A3B3C2] space-y-2 whitespace-pre-line leading-relaxed">
-                {activeDiyModal.diyGuide}
-              </div>
-
-              <Button
-                variant="primary"
-                className="w-full"
-                onClick={() => setActiveDiyModal(null)}
-              >
-                Close Guide
-              </Button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <DiyPurifierModal
+        activeDiyModal={activeDiyModal}
+        onClose={() => setActiveDiyModal(null)}
+      />
     </PageTransition>
   );
 }

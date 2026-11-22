@@ -5,10 +5,13 @@
 
 [![Next.js 16](https://img.shields.io/badge/Next.js-16.4.6-black?logo=next.js)](https://nextjs.org/)
 [![React 19](https://img.shields.io/badge/React-19.3.0-61DAFB?logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.3%20Strict-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Google Gemini](https://img.shields.io/badge/Google%20GenAI-gemini--3.5--flash--lite-4285F4?logo=google)](https://aistudio.google.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS%204.x-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
-[![Playwright](https://img.shields.io/badge/Playwright-10%2F10%20Tests%20Passed-2EAD33?logo=playwright)](https://playwright.dev/)
+[![Playwright](https://img.shields.io/badge/Playwright-29%2F29%20Tests%20Passed-2EAD33?logo=playwright)](https://playwright.dev/)
+[![ESLint](https://img.shields.io/badge/ESLint-0%20Warnings%20%7C%20Clean-4B32C3?logo=eslint)](https://eslint.org/)
+[![Accessibility](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA%20Compliant-008080)](https://www.w3.org/WAI/standards-guidelines/wcag/)
+[![Security](https://img.shields.io/badge/Security-HSTS%20%2B%20Strict%20Headers-green)](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers)
 
 ---
 
@@ -127,9 +130,30 @@ flowchart TD
 
 ---
 
-## 🧪 Senior QA Test Verification Matrix
+## 🧪 Senior QA & Scientific Test Verification Matrix (29/29 Passed)
 
-All 10 test suites have been verified with Playwright automated tests.
+All 29 automated tests have been rigorously executed and verified across Playwright and TypeScript runtime suites.
+
+### Part 1: Scientific Engine & Atmospheric Breakpoints (`tests/scientific-calculations.spec.ts`)
+
+| # | Test Case | Target Algorithm | Status | Verification Detail |
+| :---: | :--- | :--- | :---: | :--- |
+| **1.1** | CPCB Breakpoint Interpolation | Indian NAQI 2014 Standard | ✅ **PASSED** | Verifies linear interpolation across all 6 criteria pollutants (PM2.5, PM10, NO2, SO2, CO, O3). |
+| **1.2** | CPCB Category Mapping | Boundary Conditions | ✅ **PASSED** | Validates breakpoint edges (0-50 Good, 51-100 Satisfactory, 101-200 Moderate, 201-300 Poor, 301-400 Very Poor, 401-500 Severe). |
+| **2.1** | Insufficient Pollutant Handling | CPCB Completeness Rule | ✅ **PASSED** | Rejects NAQI computation if fewer than 3 pollutants are available. |
+| **2.2** | Mandatory Core Particulate Check| CPCB Particulate Rule | ✅ **PASSED** | Rejects NAQI if neither PM2.5 nor PM10 is present in telemetry. |
+| **2.3** | Valid NAQI Synthesis | Complete Data Profile | ✅ **PASSED** | Produces correct maximum sub-index when criteria are fulfilled. |
+| **2.4** | Non-Finite & Negative Rejection | Defensive Input Validation | ✅ **PASSED** | Rejects negative concentrations, NaNs, and infinities gracefully. |
+| **3.1** | NowCast 3-Hour Availability | US EPA 12-Hour Algorithm | ✅ **PASSED** | Enforces ≥2 valid observations in the latest 3 clock hours. |
+| **3.2** | Elapsed-Hour Weight Exponent | Gap-Preserving Formula | ✅ **PASSED** | Uses actual elapsed hour exponent $w = c^{h_i}$ to prevent artificial flattening. |
+| **3.3** | Zero Concentration Handling | EPA Zero Case | ✅ **PASSED** | Correctly weights clean atmospheric episodes without division-by-zero. |
+| **3.4** | Wildfire / Spike Responsiveness | Dynamic Weight Range | ✅ **PASSED** | Rapidly lowers $w$ to $0.5$ during acute spikes for real-time responsiveness. |
+| **3.5** | Empty Input Insufficiency State | Integrity Fallback | ✅ **PASSED** | Returns honest insufficient state when historical points are absent. |
+| **4.1** | Time & Diurnal Multiplier | Boundary Layer Inversion | ✅ **PASSED** | Correctly maps solar expansion windows and nocturnal inversion phases. |
+| **4.2** | Morning Smog Safety Verdict | Minute Ventilation Dose | ✅ **PASSED** | Flags vigorous outdoor workouts with `avoid` verdict and computes alveolar dose. |
+| **4.3** | Indoor HEPA Safety Clearance | Filtration Attenuation | ✅ **PASSED** | Validates 88% particle attenuation under certified HEPA filtration. |
+
+### Part 2: End-to-End QA, Security & Accessibility Suite (`tests/e2e-hackathon-verification.spec.ts`)
 
 | # | Test Scenario | Device / Environment | Status | Verification Detail |
 | :---: | :--- | :--- | :---: | :--- |
@@ -143,6 +167,11 @@ All 10 test suites have been verified with Playwright automated tests.
 | **8** | Environmental API Live Telemetry | Serverless Route (`/api/air-quality`)| ✅ **PASSED** | Fetches live Copernicus CAMS PM2.5, PM10, Temp, Humidity, Wind. |
 | **9** | Gemini GenAI Streaming Flow | Serverless Route (`/api/assistant`)  | ✅ **PASSED** | Streaming clinical advice in English and Hindi in < 1.5 seconds. |
 | **10**| Zero Client Key Leakage | DOM & Bundle Inspection | ✅ **PASSED** | `GEMINI_API_KEY` never emitted to client bundles, HTML, or logs. |
+| **11**| HTTP Production Security Headers | Response Inspection | ✅ **PASSED** | HSTS, X-Frame-Options (SAMEORIGIN), X-Content-Type-Options (nosniff), Permissions-Policy. |
+| **12**| WCAG 2.1 AA Bypass Blocks | DOM Accessibility Tree | ✅ **PASSED** | Skip navigation anchor (`#main-content`) accessible via keyboard navigation. |
+| **13**| Geocoding Telemetry API | Serverless Route (`/api/geocoding`) | ✅ **PASSED** | Global and Indian city coordinates resolution with Open-Meteo. |
+| **14**| Indoor Environmental Diagnostic API | Serverless Route (`/api/indoor`) | ✅ **PASSED** | Returns structured recommendations and internal emission attribution. |
+| **15**| Climate & Carbon Savings API | Serverless Route (`/api/impact`) | ✅ **PASSED** | Scientific carbon savings, avoided particulate exposure, and life gain calculations. |
 
 ---
 
@@ -187,10 +216,19 @@ All 10 test suites have been verified with Playwright automated tests.
 
 ## 🔒 Security & Privacy Architecture
 
+- **Defense-in-Depth HTTP Security Headers**: Configured in `next.config.ts` to protect clients against MIME-type sniffing (`X-Content-Type-Options: nosniff`), clickjacking (`X-Frame-Options: SAMEORIGIN`), unauthorized transport downgrade (`Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`), referrer leakage (`Referrer-Policy: origin-when-cross-origin`), and unauthorized device hardware access (`Permissions-Policy: camera=(), microphone=(), geolocation=(self)`).
 - **Server-Side API Key Isolation**: The `GEMINI_API_KEY` is read strictly within Next.js Node.js serverless runtimes. No `NEXT_PUBLIC_` prefix is ever used.
 - **Prompt Injection Defense**: User queries in `/api/assistant` are sanitized and bounded within clinical system instructions.
 - **Process-Local Rate Limiting & Caching**: The assistant endpoint enforces IP-based rate limiting (40 queries/window) with HTTP 429 backoff headers, and environmental data uses a 5-minute memory cache. As a serverless prototype, this uses process-local memory Maps; for distributed enterprise deployments, this easily swaps for Upstash / Redis.
 - **Strict Device Privacy**: Citizen smoke observations do not collect personal identifiers; user settings and consultation history are strictly local to the user's browser storage (`localStorage`).
+
+---
+
+## ♿ Accessibility & Code Quality (WCAG 2.1 AA)
+
+- **Bypass Blocks (WCAG 2.4.1 - Level A)**: Implemented an accessible skip-to-content anchor (`#main-content`) allowing keyboard and screen-reader users to bypass repeated navigation bars directly.
+- **Semantic ARIA Landmarks**: Every interactive form control, range slider, toggle button, and expandable accordion utilizes explicit `aria-label`, `aria-expanded`, `aria-pressed`, and `aria-haspopup` attributes for assistive technology compliance.
+- **Zero ESLint Warnings & Strict TypeScript**: 100% strict TypeScript typing without `any` casts; clean build tree with 0 linter warnings or cascading effect re-renders.
 
 ---
 

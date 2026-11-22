@@ -3,8 +3,14 @@
  * Based on IPCC 2023 transport guidelines, CEA India grid carbon intensity, and standard vehicle emission factors.
  */
 
+/**
+ * Supported commuter transportation modes for modal shift comparison.
+ */
 export type TransitMode = "car_petrol" | "car_diesel" | "carpool" | "metro" | "ev" | "cycling" | "walk";
 
+/**
+ * Emission factor and fuel consumption metrics for a specific transit modality.
+ */
 export interface TransportModeConfig {
   id: TransitMode;
   name: string;
@@ -13,6 +19,9 @@ export interface TransportModeConfig {
   description: string;
 }
 
+/**
+ * Standard IPCC 2023 & CEA India emission parameters per transportation mode.
+ */
 export const TRANSPORT_MODES: Record<TransitMode, TransportModeConfig> = {
   car_petrol: {
     id: "car_petrol",

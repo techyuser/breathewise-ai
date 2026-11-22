@@ -1,5 +1,8 @@
 import { AirQualityData } from "@/types/air-quality";
 
+/**
+ * Actionable household air mitigation directive with clinical priority.
+ */
 export interface IndoorRecommendation {
   action: string;
   urgency: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
@@ -8,6 +11,9 @@ export interface IndoorRecommendation {
   costTier?: "free" | "under_500" | "500_3000" | "above_3000";
 }
 
+/**
+ * Identified internal pollutant emission source with particulate load estimate.
+ */
 export interface IndoorPollutantSource {
   id: string;
   name: string;
@@ -18,6 +24,9 @@ export interface IndoorPollutantSource {
   mitigation: string;
 }
 
+/**
+ * Budget-segmented intervention recommendation with DIY guide.
+ */
 export interface BudgetRecommendation {
   id: string;
   tier: "free" | "under_500" | "500_3000" | "above_3000";
@@ -29,6 +38,9 @@ export interface BudgetRecommendation {
   category: "ventilation" | "filtration" | "source_control";
 }
 
+/**
+ * Household architectural, cooking, and mechanical ventilation parameters.
+ */
 export interface HomeConfig {
   homeSizeSqFt?: number;
   hasAirPurifier: boolean;
@@ -43,6 +55,9 @@ export interface HomeConfig {
   indoorPlants?: boolean;
 }
 
+/**
+ * Baseline home configuration schema for standard urban apartment settings.
+ */
 export const DEFAULT_HOME_CONFIG: HomeConfig = {
   homeSizeSqFt: 650,
   hasAirPurifier: true,

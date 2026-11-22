@@ -1,8 +1,18 @@
 import { AirQualityData } from "@/types/air-quality";
 
+/**
+ * Diurnal time period of the day for pollution and boundary layer tracking.
+ */
 export type RoutinePeriod = "morning" | "afternoon" | "evening";
+
+/**
+ * Health safety clearance status for a scheduled routine activity.
+ */
 export type RoutineStatus = "safe" | "caution" | "avoid" | "optimal";
 
+/**
+ * Structured activity item in a personalized daily respiratory routine.
+ */
 export interface RoutineActivity {
   id: string;
   time: string;
@@ -23,6 +33,9 @@ export interface RoutineActivity {
   estimatedInhaledDoseUg?: number;
 }
 
+/**
+ * Family demographic and clinical vulnerability input parameters.
+ */
 export interface FamilyProfileInput {
   cohort: "family" | "asthma" | "runner" | "elderly" | "infant";
   hasKids: boolean;
@@ -35,6 +48,9 @@ export interface FamilyProfileInput {
   eveningReturn?: string;
 }
 
+/**
+ * Default family vulnerability profile used for cold-start initializations.
+ */
 export const DEFAULT_FAMILY_PROFILE: FamilyProfileInput = {
   cohort: "family",
   hasKids: true,

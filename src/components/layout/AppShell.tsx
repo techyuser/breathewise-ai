@@ -6,6 +6,7 @@ import { TopNav } from "./TopNav";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { AirQualityProvider } from "@/context/AirQualityContext";
 import { AmbientBackground } from "@/components/ui/AmbientBackground";
+import { LocationPermissionBanner } from "@/components/ui/LocationPermissionBanner";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -23,13 +24,14 @@ export function AppShell({ children }: AppShellProps) {
           {/* Desktop Sidebar (Permanent column that never overlaps dashboard content) */}
           <Sidebar
             isOpen={false}
-            onClose={() => {}}
+            onClose={() => { }}
           />
 
           {/* Main Workspace Area */}
           <div className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-20 lg:pb-0">
             <TopNav />
             <main className="flex-1 px-3 py-3 sm:px-4 md:px-6 md:py-4 max-w-[1560px] w-full mx-auto">
+              <LocationPermissionBanner />
               {children}
             </main>
           </div>

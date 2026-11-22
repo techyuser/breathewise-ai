@@ -26,6 +26,7 @@ import {
 import { AssistantMessage, UserProfileContext } from "@/lib/gemini";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
 
 const INITIAL_MESSAGES_EN: AssistantMessage[] = [
   {
@@ -459,11 +460,55 @@ export default function AssistantPage() {
                         className={cn(
                           "p-4 rounded-3xl text-xs md:text-sm leading-relaxed border backdrop-blur-md",
                           isBot
-                            ? "bg-[rgba(14,23,34,0.65)] border-[rgba(255,255,255,0.08)] text-[#F2F6FA] rounded-tl-sm whitespace-pre-line"
-                            : "bg-[rgba(77,184,255,0.15)] border-[rgba(77,184,255,0.3)] text-[#F2F6FA] rounded-tr-sm"
+                            ? "bg-[rgba(14,23,34,0.65)] border-[rgba(255,255,255,0.08)] text-[#F2F6FA] rounded-tl-sm"
+                            : "bg-[rgba(77,184,255,0.15)] border-[rgba(77,184,255,0.3)] text-[#F2F6FA] rounded-tr-sm whitespace-pre-wrap"
                         )}
                       >
-                        {msg.content}
+                        {isBot ? (
+                          <div className="markdown-content text-xs md:text-sm leading-relaxed text-[#F2F6FA]">
+                            <ReactMarkdown
+                              components={{
+                                p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                                ul: ({ children }) => (
+                                  <ul className="space-y-1.5 my-2 pl-4 list-disc marker:text-[#4DB8FF]">
+                                    {children}
+                                  </ul>
+                                ),
+                                ol: ({ children }) => (
+                                  <ol className="space-y-1.5 my-2 pl-4 list-decimal marker:text-[#4DB8FF]">
+                                    {children}
+                                  </ol>
+                                ),
+                                li: ({ children }) => <li className="pl-0.5 leading-relaxed">{children}</li>,
+                                strong: ({ children }) => (
+                                  <strong className="font-semibold text-white tracking-wide">{children}</strong>
+                                ),
+                                h1: ({ children }) => (
+                                  <h1 className="text-base font-bold text-[#F2F6FA] mt-3 mb-1.5">{children}</h1>
+                                ),
+                                h2: ({ children }) => (
+                                  <h2 className="text-sm md:text-base font-bold text-[#F2F6FA] mt-2.5 mb-1">
+                                    {children}
+                                  </h2>
+                                ),
+                                h3: ({ children }) => (
+                                  <h3 className="text-xs md:text-sm font-bold text-[#4DB8FF] mt-2 mb-1 flex items-center gap-1.5">
+                                    {children}
+                                  </h3>
+                                ),
+                                code: ({ children }) => (
+                                  <code className="px-1.5 py-0.5 rounded bg-[rgba(255,255,255,0.08)] text-[#4DB8FF] text-[11px] font-mono">
+                                    {children}
+                                  </code>
+                                ),
+                              }}
+                            >
+                              {msg.content}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          msg.content
+                        )}
                       </div>
 
                       <div

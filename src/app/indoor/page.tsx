@@ -50,8 +50,8 @@ export default function IndoorAirPage() {
       try {
         const saved = localStorage.getItem("breathewise_indoor_assessment_v2");
         if (saved) return JSON.parse(saved);
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
     }
     return DEFAULT_HOME_CONFIG;
@@ -94,8 +94,8 @@ export default function IndoorAirPage() {
     setHomeConfig(newConfig);
     try {
       localStorage.setItem("breathewise_indoor_assessment_v2", JSON.stringify(newConfig));
-    } catch {
-      // ignore
+    } catch (_err) {
+      // Ignore localStorage restrictions
     }
   };
 

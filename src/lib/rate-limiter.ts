@@ -9,7 +9,10 @@ const rateLimitMap = new Map<string, RateLimitRecord>();
 const WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 40; // 40 requests per window
 
-function cleanExpired() {
+/**
+ * Periodically purges stale IP rate limit tracking records from memory.
+ */
+function cleanExpired(): void {
   const now = Date.now();
   for (const [key, record] of rateLimitMap.entries()) {
     if (record.resetTime < now) {
@@ -18,6 +21,13 @@ function cleanExpired() {
   }
 }
 
+/**
+ * Enforces in-memory sliding window rate limits on serverless API routes.
+ *
+ * @param req - Incoming Next.js API request
+ * @param limit - Max requests permitted within the 60-second window
+ * @returns Object indicating whether request is allowed, remaining requests, and reset seconds
+ */
 export function checkRateLimit(
   req: NextRequest,
   limit: number = MAX_REQUESTS

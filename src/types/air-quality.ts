@@ -1,3 +1,11 @@
+/**
+ * Air Quality Data Models & Regulatory Standard Type Definitions.
+ * Implements schemas for both India CPCB NAQI and US EPA NowCast compliance.
+ */
+
+/**
+ * Categorical health risk classification under the US EPA Air Quality Index scale.
+ */
 export type AQICategory =
   | "Good"
   | "Moderate"
@@ -7,6 +15,9 @@ export type AQICategory =
   | "Hazardous"
   | "Insufficient Data";
 
+/**
+ * Official Indian National Air Quality Index (NAQI) classification defined by CPCB (2014).
+ */
 export type CpcbCategory =
   | "Good"
   | "Satisfactory"
@@ -16,8 +27,14 @@ export type CpcbCategory =
   | "Severe"
   | "Insufficient Data";
 
+/**
+ * Regulatory air quality standard algorithm selector.
+ */
 export type AqiStandard = "US_EPA" | "INDIA_CPCB";
 
+/**
+ * Detailed telemetry and health benchmark comparison for an individual atmospheric pollutant.
+ */
 export interface PollutantDetail {
   code: "pm2_5" | "pm10" | "nitrogen_dioxide" | "ozone" | "carbon_monoxide" | "sulphur_dioxide";
   name: string;
@@ -30,6 +47,9 @@ export interface PollutantDetail {
   description: string;
 }
 
+/**
+ * Hourly atmospheric data point for temporal time series and trend projections.
+ */
 export interface HourlyAQIPoint {
   time: string;
   displayTime: string;
@@ -44,6 +64,9 @@ export interface HourlyAQIPoint {
   isHistorical?: boolean;
 }
 
+/**
+ * Geographic location coordinates and regional metadata.
+ */
 export interface CityLocation {
   id: string;
   name: string;
@@ -57,6 +80,9 @@ export interface CityLocation {
   isIndianCity?: boolean;
 }
 
+/**
+ * Nocturnal boundary layer thermal inversion risk profile.
+ */
 export interface InversionRisk {
   level: "Low" | "Moderate" | "High" | "Extreme";
   description: string;
@@ -66,6 +92,9 @@ export interface InversionRisk {
   trappedSmogProbability: number; // 0 - 100%
 }
 
+/**
+ * Surface meteorological and barometric weather parameters.
+ */
 export interface WeatherCondition {
   code: number;
   description: string;
@@ -78,9 +107,12 @@ export interface WeatherCondition {
   surfacePressure: number;
 }
 
+/**
+ * Comprehensive atmospheric telemetry snapshot synthesized from CAMS and weather models.
+ */
 export interface AirQualityData {
   city: CityLocation;
-  lastUpdated: string; // Client sync display time
+  lastUpdated: string;
   clientFetchTimestamp: string;
   modelRunTimestamp: string;
   camsSource: string;

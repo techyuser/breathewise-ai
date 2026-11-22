@@ -58,8 +58,8 @@ export default function GreenImpactPage() {
       try {
         const saved = localStorage.getItem("breathewise_impact_pledges_v2");
         if (saved) return JSON.parse(saved);
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
     }
     return DEFAULT_PLEDGES;
@@ -74,8 +74,8 @@ export default function GreenImpactPage() {
       );
       try {
         localStorage.setItem("breathewise_impact_pledges_v2", JSON.stringify(updated));
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
       return updated;
     });

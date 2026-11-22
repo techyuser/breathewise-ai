@@ -165,8 +165,8 @@ export default function CommunityPage() {
       try {
         const savedAlerts = localStorage.getItem("breathewise_community_alerts_v2");
         if (savedAlerts) return JSON.parse(savedAlerts);
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
     }
     return INITIAL_ALERTS;
@@ -177,8 +177,8 @@ export default function CommunityPage() {
       try {
         const savedChallenges = localStorage.getItem("breathewise_community_challenges_v2");
         if (savedChallenges) return JSON.parse(savedChallenges);
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
     }
     return INITIAL_CHALLENGES;
@@ -202,8 +202,8 @@ export default function CommunityPage() {
     setAlerts(newAlerts);
     try {
       localStorage.setItem("breathewise_community_alerts_v2", JSON.stringify(newAlerts));
-    } catch {
-      // ignore
+    } catch (_err) {
+      // Ignore localStorage restrictions
     }
   };
 
@@ -288,8 +288,8 @@ export default function CommunityPage() {
       });
       try {
         localStorage.setItem("breathewise_community_challenges_v2", JSON.stringify(updated));
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
       return updated;
     });
@@ -310,8 +310,8 @@ export default function CommunityPage() {
       });
       try {
         localStorage.setItem("breathewise_community_challenges_v2", JSON.stringify(updated));
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
       return updated;
     });

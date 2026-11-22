@@ -63,8 +63,8 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
         if (savedLoc) {
           return JSON.parse(savedLoc) as CityLocation;
         }
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
     }
     return PRESET_CITIES[0];
@@ -76,8 +76,8 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
       try {
         localStorage.setItem("breathewise_selected_city", JSON.stringify(city));
         localStorage.setItem("breathewise_saved_location", JSON.stringify(city));
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
     }
   }, []);
@@ -106,8 +106,8 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
             setError(null);
             setLoading(false);
             return;
-          } catch {
-            // ignore
+          } catch (_err) {
+            // Ignore corrupted cached state and proceed to network sync
           }
         }
         setError("You are currently offline and no local atmospheric cache is present.");
@@ -148,8 +148,8 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
               setAirData(parsed);
               setError(null);
               restoredFromCache = true;
-            } catch {
-              // ignore
+            } catch (_err) {
+              // Ignore corrupted cached state
             }
           }
         }
@@ -183,8 +183,8 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
           localStorage.setItem("breathewise_use_gps", "true");
           localStorage.setItem("breathewise_saved_location", JSON.stringify(loc));
           localStorage.setItem("breathewise_selected_city", JSON.stringify(loc));
-        } catch {
-          // ignore
+        } catch (_err) {
+          // Ignore localStorage quota errors
         }
       }
     };
@@ -253,8 +253,8 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
                 return;
               }
             }
-          } catch {
-            // ignore and fallback to coords
+          } catch (_err) {
+            // Ignore reverse geocode failures and fallback to coordinate labels
           }
 
           const userLoc: CityLocation = {

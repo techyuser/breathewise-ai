@@ -1,5 +1,11 @@
 import { AQICategory } from "@/types/air-quality";
 
+/**
+ * Maps a numeric Air Quality Index (AQI) value to its US EPA health risk category.
+ *
+ * @param aqi - Numerical index or null
+ * @returns Standard EPA category string
+ */
 export function getAQICategory(aqi: number | null): AQICategory {
   if (aqi === null || !Number.isFinite(aqi) || aqi < 0) return "Insufficient Data";
   if (aqi <= 50) return "Good";
@@ -10,6 +16,12 @@ export function getAQICategory(aqi: number | null): AQICategory {
   return "Hazardous";
 }
 
+/**
+ * Returns design tokens (hex, background, border, badge tint) corresponding to an AQI tier.
+ *
+ * @param aqi - Numerical index or null
+ * @returns Color theme palette matching atmospheric severity
+ */
 export function getAQIColor(aqi: number | null): {
   color: string;
   bgColor: string;

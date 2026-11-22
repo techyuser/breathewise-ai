@@ -96,7 +96,7 @@ export function TopNav() {
           const data = await res.json();
           setGeoResults(Array.isArray(data) ? data : (data.results || []));
         }
-      } catch {
+      } catch (_err) {
         setGeoResults([]);
       } finally {
         setIsSearchingGeo(false);

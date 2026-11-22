@@ -113,8 +113,8 @@ export default function PlannerPage() {
           const parsed = JSON.parse(saved);
           if (parsed.lang === "en" || parsed.lang === "hi") return parsed.lang;
         }
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
     }
     return "en";
@@ -128,8 +128,8 @@ export default function PlannerPage() {
           const parsed = JSON.parse(saved);
           if (parsed.profile) return parsed.profile;
         }
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
     }
     return DEFAULT_FAMILY_PROFILE;
@@ -145,8 +145,8 @@ export default function PlannerPage() {
             return parsed.activities;
           }
         }
-      } catch {
-        // ignore
+      } catch (_err) {
+        // Safe fallback when localStorage is restricted or in private browsing
       }
     }
     return [];

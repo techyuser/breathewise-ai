@@ -272,6 +272,8 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
     expect(headers["x-frame-options"]).toBe("SAMEORIGIN");
     expect(headers["referrer-policy"]).toBe("origin-when-cross-origin");
     expect(headers["permissions-policy"]).toContain("geolocation=(self)");
+    expect(headers["x-xss-protection"]).toBe("1; mode=block");
+    expect(headers["content-security-policy"]).toBeDefined();
   });
 
   // Test 12: WCAG 2.1 AA Accessibility Bypass Blocks

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useAirQuality } from "@/context/AirQualityContext";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { Card } from "@/components/ui/Card";
@@ -29,8 +29,6 @@ import {
   Trash2,
   HeartPulse,
   Wind,
-  ShieldAlert,
-  ArrowRight,
   Activity,
   Layers,
 } from "lucide-react";
@@ -46,6 +44,7 @@ import {
   PlanVerificationResult,
   verifyPlanDeterministic,
 } from "@/lib/intelligence/plan-verifier";
+import type { AirQualityData } from "@/types/air-quality";
 import { cn } from "@/lib/utils";
 
 const PLANNER_STORAGE_KEY = "breathewise_planner_data_v2";
@@ -106,25 +105,52 @@ const PRESET_PLANS = [
 export default function PlannerPage() {
   const { airData, loading, activeStandard } = useAirQuality();
 
-  const [lang, setLang] = useState<"en" | "hi">("en");
-  const [profile, setProfile] = useState<FamilyProfileInput>(DEFAULT_FAMILY_PROFILE);
-  const [activities, setActivities] = useState<RoutineActivity[]>([]);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(PLANNER_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.lang) setLang(parsed.lang);
-        if (parsed.profile) setProfile(parsed.profile);
-        if (parsed.activities && parsed.activities.length > 0) {
-          setActivities(parsed.activities);
+  const [lang, setLang] = useState<"en" | "hi">(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(PLANNER_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.lang === "en" || parsed.lang === "hi") return parsed.lang;
         }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
     }
-  }, []);
+    return "en";
+  });
+
+  const [profile, setProfile] = useState<FamilyProfileInput>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(PLANNER_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.profile) return parsed.profile;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return DEFAULT_FAMILY_PROFILE;
+  });
+
+  const [activities, setActivities] = useState<RoutineActivity[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(PLANNER_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.activities && parsed.activities.length > 0) {
+            return parsed.activities;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return [];
+  });
 
   const [showProfileDrawer, setShowProfileDrawer] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -278,16 +304,80 @@ export default function PlannerPage() {
       setVerificationResult(data);
     } catch (err) {
       console.warn("AI verification API error, falling back to local physics engine:", err);
+      const fallbackAqiData: AirQualityData = {
+        city: { id: "delhi", name: "New Delhi", region: "Delhi", country: "India", lat: 28.6139, lon: 77.209 },
+        lastUpdated: new Date().toISOString(),
+        clientFetchTimestamp: new Date().toISOString(),
+        modelRunTimestamp: new Date().toISOString(),
+        camsSource: "CAMS Grid",
+        source: "Open-Meteo",
+        sourceType: "MODELLED_CAMS_GRID",
+        isCpcbGroundStation: false,
+        cpcbDisclaimer: "Simulated fallback",
+        dataNature: "Demo Data",
+        calculationStandard: "India CPCB",
+        activeStandard: "INDIA_CPCB",
+        referenceBenchmark: "WHO 2021 24-Hour Guideline Limit (AQG)",
+        usAqi: 220,
+        indiaAqi: 280,
+        displayAqi: 280,
+        category: "Very Unhealthy",
+        indiaCategory: "Very Poor",
+        displayCategory: "Very Poor",
+        nowCastConcentration: 110,
+        isNowCastCalculated: true,
+        isDemoData: true,
+        europeanAqi: 5,
+        primaryPollutant: "PM2.5",
+        healthSummary: "High air pollution alert",
+        temperature: 22,
+        humidity: 60,
+        windSpeed: 5,
+        weather: {
+          code: 0,
+          description: "Clear",
+          iconName: "Sun",
+          temperature: 22,
+          feelsLike: 22,
+          humidity: 60,
+          windSpeed: 5,
+          windDirection: 180,
+          surfacePressure: 1013,
+        },
+        pollutants: {
+          pm2_5: {
+            code: "pm2_5",
+            name: "PM2.5",
+            chemicalFormula: "PM2.5",
+            value: 110,
+            unit: "µg/m³",
+            whoLimit: 15,
+            percentageOfLimit: 733,
+            status: "Severe",
+            description: "Elevated particulate matter",
+          },
+        },
+        hourlyForecast: [],
+        hourlyHistorical: [],
+        inversionRisk: {
+          level: "High",
+          description: "Thermal inversion layer",
+          tempInversion: true,
+          windSpeed: 5,
+          humidity: 60,
+          trappedSmogProbability: 75,
+        },
+        recommendations: {
+          general: "Avoid prolonged outdoor exposure.",
+          vulnerable: "Stay indoors with HEPA air filtration.",
+          outdoorActivity: "Reschedule vigorous workouts to midday or indoors.",
+          ventilation: "Keep windows closed during early morning peaks.",
+          maskRequired: true,
+        },
+      };
       const fallback = verifyPlanDeterministic(
         planInput,
-        airData || ({
-          city: { id: "delhi", name: "New Delhi" },
-          activeStandard: "INDIA_CPCB",
-          indiaAqi: 280,
-          usAqi: 220,
-          pollutants: { pm2_5: { value: 110 } },
-          nowCastConcentration: 110,
-        } as any),
+        airData || fallbackAqiData,
         lang
       );
       setVerificationResult(fallback);
@@ -556,6 +646,7 @@ export default function PlannerPage() {
                     <input
                       type="text"
                       value={profile.morningDeparture || "08:00 AM"}
+                      aria-label="Morning departure time"
                       onChange={(e) => {
                         const updated = { ...profile, morningDeparture: e.target.value };
                         setProfile(updated);
@@ -571,6 +662,7 @@ export default function PlannerPage() {
                     <input
                       type="text"
                       value={profile.eveningReturn || "06:30 PM"}
+                      aria-label="Evening return time"
                       onChange={(e) => {
                         const updated = { ...profile, eveningReturn: e.target.value };
                         setProfile(updated);
@@ -707,6 +799,7 @@ export default function PlannerPage() {
             <input
               type="text"
               value={planInput.activityName}
+              aria-label={lang === "hi" ? "गतिविधि का नाम" : "Planned Activity Name"}
               onChange={(e) => setPlanInput({ ...planInput, activityName: e.target.value })}
               placeholder={
                 lang === "hi"

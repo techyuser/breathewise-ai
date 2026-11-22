@@ -208,6 +208,7 @@ export default function IndoorAirPage() {
                     max="3000"
                     step="50"
                     value={homeConfig.homeSizeSqFt ?? 650}
+                    aria-label="Apartment or Home Size in square feet"
                     onChange={(e) =>
                       saveConfig({
                         ...homeConfig,

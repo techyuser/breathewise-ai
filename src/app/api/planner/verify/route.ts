@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLiveAirQuality, PRESET_CITIES } from "@/lib/open-meteo";
 import { verifyPlanWithGemini } from "@/lib/gemini";
-import { UserPlanInput, verifyPlanDeterministic } from "@/lib/intelligence/plan-verifier";
-import { AirQualityData, AqiStandard } from "@/types/air-quality";
+import type { UserPlanInput } from "@/lib/intelligence/plan-verifier";
+import type { AirQualityData } from "@/types/air-quality";
 import { checkRateLimit } from "@/lib/rate-limiter";
 
 export async function POST(req: NextRequest) {

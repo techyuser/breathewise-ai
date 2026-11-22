@@ -292,6 +292,7 @@ export function OverviewMetricsGrid({ data }: OverviewMetricsGridProps) {
       <div className="flex flex-col items-center">
         <button
           onClick={() => setShowGases(!showGases)}
+          aria-expanded={showGases}
           className="flex items-center gap-1.5 text-xs text-[#A3B3C2] hover:text-[#F2F6FA] py-1.5 px-3.5 rounded-full bg-[rgba(14,23,34,0.6)] hover:bg-[rgba(18,29,42,0.8)] border border-[rgba(255,255,255,0.08)] transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]"
         >
           <span>{showGases ? "Hide Atmospheric Gas Matrix" : "View NO₂, CO, O₃ & SO₂ Gas Matrix"}</span>

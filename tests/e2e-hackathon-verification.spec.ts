@@ -155,8 +155,8 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
     await page.goto(`${BASE_URL}/impact`, { waitUntil: "domcontentloaded" });
 
     // Verify mode buttons exist
-    await page.getByRole("button", { name: /Carpool/i }).click();
-    await page.getByRole("button", { name: /Metro Rail/i }).click();
+    await page.getByRole("button", { name: /^Carpool/i }).click();
+    await page.getByRole("button", { name: /^Metro Rail/i }).click();
 
     // Check Real-time Calculated Outputs
     await expect(page.getByText("CO2 Avoided")).toBeVisible();
@@ -260,5 +260,57 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
     if (key) {
       expect(content.includes(key)).toBe(false);
     }
+  });
+
+  // Test 11: Production HTTP Security Headers
+  test("11. HTTP Security Headers - Defense-in-depth headers applied on response", async ({ request }) => {
+    const response = await request.get(`${BASE_URL}/`);
+    expect(response.status()).toBe(200);
+    const headers = response.headers();
+
+    expect(headers["x-content-type-options"]).toBe("nosniff");
+    expect(headers["x-frame-options"]).toBe("SAMEORIGIN");
+    expect(headers["referrer-policy"]).toBe("origin-when-cross-origin");
+    expect(headers["permissions-policy"]).toContain("geolocation=(self)");
+  });
+
+  // Test 12: WCAG 2.1 AA Accessibility Bypass Blocks
+  test("12. Accessibility - Bypass Blocks skip navigation anchor links to main content", async ({ page }) => {
+    await page.goto(`${BASE_URL}/`, { waitUntil: "domcontentloaded" });
+    const skipLink = page.locator('a[href="#main-content"]');
+    await expect(skipLink).toBeAttached();
+    await expect(page.locator("#main-content")).toBeAttached();
+  });
+
+  // Test 13: Geocoding Telemetry Endpoint
+  test("13. Geocoding API - /api/geocoding returns validated global location coordinates", async ({ request }) => {
+    const response = await request.get(`${BASE_URL}/api/geocoding?q=delhi`);
+    expect(response.status()).toBe(200);
+    const results = await response.json();
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeGreaterThan(0);
+    expect(results[0].name.toLowerCase()).toContain("delhi");
+    expect(typeof results[0].lat).toBe("number");
+    expect(typeof results[0].lon).toBe("number");
+  });
+
+  // Test 14: Indoor Air Quality Evaluation API
+  test("14. Indoor API - /api/indoor returns structured indoor air quality assessment", async ({ request }) => {
+    const response = await request.get(`${BASE_URL}/api/indoor?city=delhi&purifier=true&cooking=false`);
+    expect(response.status()).toBe(200);
+    const json = await response.json();
+    expect(json.recommendations).toBeDefined();
+    expect(Array.isArray(json.recommendations)).toBe(true);
+    expect(json.recommendations.length).toBeGreaterThan(0);
+  });
+
+  // Test 15: Public Health Impact Calculation API
+  test("15. Impact API - /api/impact returns scientific carbon and particulate dose savings", async ({ request }) => {
+    const response = await request.get(`${BASE_URL}/api/impact?distance=15&mode=transit&outdoorAqi=250&duration=1&protected=true`);
+    expect(response.status()).toBe(200);
+    const json = await response.json();
+    expect(json.co2Saved).toBeGreaterThan(0);
+    expect(json.exposureAvoided).toBeGreaterThanOrEqual(0);
+    expect(json.aiExplanation).toBeDefined();
   });
 });

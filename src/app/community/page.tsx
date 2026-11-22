@@ -757,6 +757,8 @@ export default function CommunityPage() {
                   <input
                     type="text"
                     required
+                    id="incident-location"
+                    aria-label="Incident Location or Landmark"
                     placeholder="e.g. Ring Road service lane near Sector 12"
                     value={formLocation}
                     onChange={(e) => setFormLocation(e.target.value)}

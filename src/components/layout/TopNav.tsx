@@ -179,6 +179,8 @@ export function TopNav() {
           <div className="relative shrink-0">
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
+              aria-expanded={dropdownOpen}
+              aria-haspopup="dialog"
               className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-2xl bg-[rgba(18,29,42,0.7)] hover:bg-[rgba(24,38,56,0.9)] border border-[rgba(255,255,255,0.1)] text-xs font-medium text-[#F2F6FA] transition-all cursor-pointer shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]"
               aria-label={`Current location: ${selectedCity.name}. Click to change.`}
             >
@@ -249,6 +251,7 @@ export function TopNav() {
                         <button
                           onClick={handleUseCurrentLocation}
                           disabled={isLocating}
+                          aria-label="Use current GPS location"
                           className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-2xl bg-[rgba(77,184,255,0.12)] hover:bg-[rgba(77,184,255,0.2)] border border-[rgba(77,184,255,0.3)] text-[#4DB8FF] text-xs font-semibold transition-all cursor-pointer shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]"
                         >
                           <Crosshair
@@ -269,6 +272,7 @@ export function TopNav() {
                           <input
                             type="text"
                             placeholder="Filter preset hubs..."
+                            aria-label="Filter preset hubs"
                             value={cityFilter}
                             onChange={(e) => setCityFilter(e.target.value)}
                             className="w-full bg-[rgba(10,17,24,0.7)] border border-[rgba(255,255,255,0.06)] rounded-xl pl-8 pr-7 py-1.5 text-xs text-[#F2F6FA] placeholder:text-[#8496A8] focus:outline-none focus:border-[#4DB8FF]"
@@ -332,6 +336,7 @@ export function TopNav() {
                           <input
                             type="text"
                             placeholder="Type any city or town globally..."
+                            aria-label="Search global location by city name"
                             value={geoQuery}
                             onChange={(e) => handleGeoQueryChange(e.target.value)}
                             autoFocus
@@ -400,6 +405,7 @@ export function TopNav() {
                               value={latInput}
                               onChange={(e) => setLatInput(e.target.value)}
                               placeholder="e.g. 28.6139"
+                              aria-label="Latitude coordinate"
                               required
                               className="w-full bg-[rgba(10,17,24,0.7)] border border-[rgba(255,255,255,0.08)] rounded-xl px-2.5 py-1.5 text-xs text-[#F2F6FA] placeholder:text-[#8496A8] focus:outline-none focus:border-[#4DB8FF]"
                             />
@@ -415,6 +421,7 @@ export function TopNav() {
                               value={lonInput}
                               onChange={(e) => setLonInput(e.target.value)}
                               placeholder="e.g. 77.2090"
+                              aria-label="Longitude coordinate"
                               required
                               className="w-full bg-[rgba(10,17,24,0.7)] border border-[rgba(255,255,255,0.08)] rounded-xl px-2.5 py-1.5 text-xs text-[#F2F6FA] placeholder:text-[#8496A8] focus:outline-none focus:border-[#4DB8FF]"
                             />
@@ -430,6 +437,7 @@ export function TopNav() {
                             value={locNameInput}
                             onChange={(e) => setLocNameInput(e.target.value)}
                             placeholder="e.g. Connaught Place Research Site"
+                            aria-label="Custom location label"
                             className="w-full bg-[rgba(10,17,24,0.7)] border border-[rgba(255,255,255,0.08)] rounded-xl px-2.5 py-1.5 text-xs text-[#F2F6FA] placeholder:text-[#8496A8] focus:outline-none focus:border-[#4DB8FF]"
                           />
                         </div>

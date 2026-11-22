@@ -595,6 +595,7 @@ export default function AssistantPage() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                aria-label={lang === "hi" ? "वायु गुणवत्ता परामर्श प्रश्न पूछें" : "Ask BreatheWise AI about air quality and smog"}
                 placeholder={
                   lang === "hi"
                     ? "स्मॉग से बचाव, HEPA साइजिंग या बाहर निकलने के सुरक्षित समय के बारे में पूछें..."

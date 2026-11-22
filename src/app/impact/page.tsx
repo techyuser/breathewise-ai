@@ -226,6 +226,7 @@ Join clean air initiatives on BreatheWise AI!`;
               max="60"
               value={distanceKm}
               onChange={(e) => setDistanceKm(Number(e.target.value))}
+              aria-label="Daily outdoor commute in kilometers"
               className="w-full accent-[#4DB8FF] cursor-pointer"
             />
             <div className="flex items-center justify-between text-xs text-[#8496A8]">
@@ -264,6 +265,7 @@ Join clean air initiatives on BreatheWise AI!`;
               max="30"
               value={workingDays}
               onChange={(e) => setWorkingDays(Number(e.target.value))}
+              aria-label="Monthly working days"
               className="w-full accent-[#38BDF8] cursor-pointer"
             />
             <div className="flex items-center justify-between text-xs text-[#8496A8]">
@@ -405,6 +407,8 @@ Join clean air initiatives on BreatheWise AI!`;
                     e.stopPropagation();
                     togglePledge(pledge.id);
                   }}
+                  aria-label={`Toggle pledge: ${pledge.title}`}
+                  aria-pressed={pledge.completed}
                   className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all shrink-0 cursor-pointer ${
                     pledge.completed
                       ? "bg-[#4DB8FF] border-[#4DB8FF] text-[#0A1118]"

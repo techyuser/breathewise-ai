@@ -16,7 +16,7 @@ import {
   getDiurnalMultiplier,
   UserPlanInput,
 } from "../src/lib/intelligence/plan-verifier";
-import { AirQualityData } from "../src/types/air-quality";
+import { AirQualityData, PollutantDetail } from "../src/types/air-quality";
 
 test.describe("Scientific Calculations - CPCB NAQI & EPA NowCast Validation", () => {
   // =========================================================================
@@ -276,7 +276,7 @@ test.describe("Scientific Calculations - CPCB NAQI & EPA NowCast Validation", ()
           status: "Severe",
           description: "Elevated",
         },
-      } as any,
+      } as Record<string, PollutantDetail>,
       inversionRisk: {
         level: "High",
         description: "Surface inversion",
@@ -343,7 +343,7 @@ test.describe("Scientific Calculations - CPCB NAQI & EPA NowCast Validation", ()
           status: "Severe",
           description: "Elevated",
         },
-      } as any,
+      } as Record<string, PollutantDetail>,
       inversionRisk: {
         level: "High",
         description: "Surface inversion",

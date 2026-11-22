@@ -19,6 +19,14 @@ export function AppShell({ children }: AppShellProps) {
         {/* Luminous, multi-layered atmospheric lighting backdrop (lightweight on mobile) */}
         <AmbientBackground />
 
+        {/* Skip to Main Content Link for Keyboard and Screen Reader Accessibility */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#0284C7] focus:text-white focus:rounded-xl focus:shadow-2xl focus:outline-none focus:ring-2 focus:ring-white text-xs font-bold"
+        >
+          Skip to main content
+        </a>
+
         {/* Master Glass Chassis Container */}
         <div className="relative z-10 w-full max-w-[1600px] min-h-screen md:min-h-[96vh] mx-auto rounded-none md:rounded-[36px] bg-[rgba(14,23,34,0.92)] md:bg-[rgba(14,23,34,0.52)] md:backdrop-blur-3xl border-0 md:border md:border-[rgba(255,255,255,0.12)] shadow-none md:shadow-[0_32px_100px_-16px_rgba(0,0,0,0.92),inset_0_1.5px_0_0_rgba(255,255,255,0.24),inset_0_-1.5px_0_0_rgba(0,0,0,0.5)] flex flex-col lg:flex-row overflow-x-hidden">
           {/* Desktop Sidebar (Permanent column that never overlaps dashboard content) */}
@@ -30,7 +38,7 @@ export function AppShell({ children }: AppShellProps) {
           {/* Main Workspace Area */}
           <div className="flex-1 flex flex-col min-w-0 overflow-y-auto pb-20 lg:pb-0">
             <TopNav />
-            <main className="flex-1 px-3 py-3 sm:px-4 md:px-6 md:py-4 max-w-[1560px] w-full mx-auto">
+            <main id="main-content" className="flex-1 px-3 py-3 sm:px-4 md:px-6 md:py-4 max-w-[1560px] w-full mx-auto focus:outline-none" tabIndex={-1}>
               <LocationPermissionBanner />
               {children}
             </main>

@@ -9,6 +9,14 @@ import {
   calculateNowCastAqi,
   getAQICategory,
 } from "../src/lib/aqi-utils";
+import {
+  verifyPlanDeterministic,
+  parseTimeToHour,
+  getPeriodFromHour,
+  getDiurnalMultiplier,
+  UserPlanInput,
+} from "../src/lib/intelligence/plan-verifier";
+import { AirQualityData } from "../src/types/air-quality";
 
 test.describe("Scientific Calculations - CPCB NAQI & EPA NowCast Validation", () => {
   // =========================================================================
@@ -213,5 +221,155 @@ test.describe("Scientific Calculations - CPCB NAQI & EPA NowCast Validation", ()
     // Non-finite array
     expect(calculateNowCastAqi([NaN, undefined, null]).isDataSufficient).toBe(false);
     expect(calculateNowCastAqi([NaN, undefined, null]).aqi).toBeNull();
+  });
+
+  // =========================================================================
+  // 4. AI ACTIVITY PLAN VERIFICATION & DIURNAL PHYSIOLOGY
+  // =========================================================================
+  test("4.1 Time Parsing and Diurnal Phase Determination", () => {
+    expect(parseTimeToHour("07:00 AM")).toBe(7);
+    expect(parseTimeToHour("01:30 PM")).toBe(13.5);
+    expect(parseTimeToHour("06:30 PM")).toBe(18.5);
+    expect(parseTimeToHour("12:00 PM")).toBe(12);
+    expect(parseTimeToHour("12:00 AM")).toBe(0);
+
+    expect(getPeriodFromHour(7)).toBe("morning");
+    expect(getPeriodFromHour(13.5)).toBe("afternoon");
+    expect(getPeriodFromHour(19)).toBe("evening");
+
+    // Morning stagnation vs afternoon convection
+    expect(getDiurnalMultiplier(7)).toBeGreaterThan(1.2);
+    expect(getDiurnalMultiplier(14)).toBeLessThan(0.8);
+  });
+
+  test("4.2 Severe Morning Smog Triggers Avoid Verdict for Vigorous Outdoor Exertion", () => {
+    const mockAqiData = {
+      city: { id: "delhi", name: "Delhi", region: "Delhi", country: "India", lat: 28.6, lon: 77.2 },
+      lastUpdated: new Date().toISOString(),
+      clientFetchTimestamp: new Date().toISOString(),
+      modelRunTimestamp: new Date().toISOString(),
+      camsSource: "CAMS Grid",
+      source: "Open-Meteo",
+      sourceType: "MODELLED_CAMS_GRID",
+      isCpcbGroundStation: false,
+      cpcbDisclaimer: "Test",
+      dataNature: "Latest Modelled Air-Quality Data (CAMS Grid)",
+      calculationStandard: "India CPCB",
+      activeStandard: "INDIA_CPCB",
+      referenceBenchmark: "WHO 2021 24-Hour Guideline Limit (AQG)",
+      usAqi: 240,
+      indiaAqi: 310,
+      category: "Very Unhealthy",
+      indiaCategory: "Very Poor",
+      temperature: 18,
+      humidity: 75,
+      windSpeed: 4.5,
+      pollutants: {
+        pm2_5: {
+          code: "pm2_5",
+          name: "PM2.5",
+          chemicalFormula: "PM2.5",
+          value: 120,
+          unit: "µg/m³",
+          whoLimit: 15,
+          percentageOfLimit: 800,
+          status: "Severe",
+          description: "Elevated",
+        },
+      } as any,
+      inversionRisk: {
+        level: "High",
+        description: "Surface inversion",
+        tempInversion: true,
+        windSpeed: 4.5,
+        humidity: 75,
+        trappedSmogProbability: 85,
+      },
+      nowCastConcentration: 120,
+      hourlyForecast: [],
+    } as unknown as AirQualityData;
+
+    const plan: UserPlanInput = {
+      activityName: "Morning 5K Outdoor Run",
+      plannedTime: "07:00 AM",
+      durationMinutes: 45,
+      environment: "outdoor",
+      intensity: "vigorous",
+      cohort: "athlete",
+      hasN95Mask: false,
+    };
+
+    const result = verifyPlanDeterministic(plan, mockAqiData, "en");
+
+    expect(result.status).toBe("avoid");
+    expect(result.period).toBe("morning");
+    expect(result.safetyScore).toBeLessThan(50);
+    expect(result.estimatedInhaledDoseUg).toBeGreaterThan(50); // Massive inhaled alveolar deposition
+    expect(result.suggestedAlternativeTime).toBe("01:30 PM"); // Suggests afternoon solar convection window
+    expect(result.protectiveMeasures.length).toBeGreaterThan(0);
+  });
+
+  test("4.3 Indoor HEPA Filtration Provides Optimal Safety Clearance", () => {
+    const mockAqiData = {
+      city: { id: "delhi", name: "Delhi", region: "Delhi", country: "India", lat: 28.6, lon: 77.2 },
+      lastUpdated: new Date().toISOString(),
+      clientFetchTimestamp: new Date().toISOString(),
+      modelRunTimestamp: new Date().toISOString(),
+      camsSource: "CAMS Grid",
+      source: "Open-Meteo",
+      sourceType: "MODELLED_CAMS_GRID",
+      isCpcbGroundStation: false,
+      cpcbDisclaimer: "Test",
+      dataNature: "Latest Modelled Air-Quality Data (CAMS Grid)",
+      calculationStandard: "India CPCB",
+      activeStandard: "INDIA_CPCB",
+      referenceBenchmark: "WHO 2021 24-Hour Guideline Limit (AQG)",
+      usAqi: 240,
+      indiaAqi: 310,
+      category: "Very Unhealthy",
+      indiaCategory: "Very Poor",
+      temperature: 18,
+      humidity: 75,
+      windSpeed: 4.5,
+      pollutants: {
+        pm2_5: {
+          code: "pm2_5",
+          name: "PM2.5",
+          chemicalFormula: "PM2.5",
+          value: 120,
+          unit: "µg/m³",
+          whoLimit: 15,
+          percentageOfLimit: 800,
+          status: "Severe",
+          description: "Elevated",
+        },
+      } as any,
+      inversionRisk: {
+        level: "High",
+        description: "Surface inversion",
+        tempInversion: true,
+        windSpeed: 4.5,
+        humidity: 75,
+        trappedSmogProbability: 85,
+      },
+      nowCastConcentration: 120,
+      hourlyForecast: [],
+    } as unknown as AirQualityData;
+
+    const plan: UserPlanInput = {
+      activityName: "Indoor Yoga",
+      plannedTime: "06:30 AM",
+      durationMinutes: 40,
+      environment: "indoor_hepa",
+      intensity: "light",
+      cohort: "asthma",
+      hasN95Mask: false,
+    };
+
+    const result = verifyPlanDeterministic(plan, mockAqiData, "en");
+
+    expect(result.status).toBe("optimal");
+    expect(result.safetyScore).toBeGreaterThanOrEqual(90);
+    expect(result.estimatedInhaledDoseUg).toBeLessThan(15);
   });
 });

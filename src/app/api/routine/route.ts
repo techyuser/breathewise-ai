@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLiveAirQuality, PRESET_CITIES } from "@/lib/open-meteo";
-import { generateStructuredRoutineWithGemini, UserProfileContext } from "@/lib/gemini";
+import { generateStructuredRoutineWithGemini, verifyPlanWithGemini, UserProfileContext } from "@/lib/gemini";
+import { UserPlanInput } from "@/lib/intelligence/plan-verifier";
 import { AirQualityData, AqiStandard } from "@/types/air-quality";
 import { checkRateLimit } from "@/lib/rate-limiter";
 
@@ -64,6 +65,39 @@ async function processRoutineRequest(
   } else {
     const city = PRESET_CITIES.find((c) => c.id === cityId) || PRESET_CITIES[0];
     aqiData = await fetchLiveAirQuality(city, standard || undefined);
+  }
+
+  if (bodyData?.plan || bodyData?.action === "verify_plan") {
+    const rawPlan = (bodyData.plan || bodyData) as Record<string, unknown>;
+    const sanitizedPlan: UserPlanInput = {
+      activityName: String(rawPlan.activityName || "Outdoor Activity").slice(0, 120),
+      plannedTime: String(rawPlan.plannedTime || "08:00 AM"),
+      durationMinutes: Number(rawPlan.durationMinutes) || 30,
+      environment: ["outdoor", "indoor_unfiltered", "indoor_hepa", "transit"].includes(rawPlan.environment as string)
+        ? (rawPlan.environment as UserPlanInput["environment"])
+        : "outdoor",
+      intensity: ["light", "moderate", "vigorous"].includes(rawPlan.intensity as string)
+        ? (rawPlan.intensity as UserPlanInput["intensity"])
+        : "moderate",
+      cohort: ["general", "infant", "kids", "asthma", "elderly", "athlete"].includes(rawPlan.cohort as string)
+        ? (rawPlan.cohort as UserPlanInput["cohort"])
+        : "general",
+      hasN95Mask: Boolean(rawPlan.hasN95Mask),
+    };
+
+    const verified = await verifyPlanWithGemini(
+      sanitizedPlan,
+      aqiData,
+      lang === "hi" ? "hi" : "en"
+    );
+
+    return NextResponse.json(verified, {
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, s-maxage=120, stale-while-revalidate=30",
+        "X-RateLimit-Remaining": rateLimit.remaining.toString(),
+      },
+    });
   }
 
   const routine = await generateStructuredRoutineWithGemini(

@@ -85,6 +85,34 @@ test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
     await profileBtn.click();
     await expect(page.getByText("Primary Household Cohort")).toBeVisible();
 
+    // Verify AI Activity Safety Verifier is present
+    await expect(page.getByText("AI Activity Safety Verifier")).toBeVisible();
+
+    // Click a preset plan scenario (e.g. 5K Morning Run)
+    const presetBtn = page.getByRole("button", { name: /5K Morning Run/i });
+    await expect(presetBtn).toBeVisible();
+    await presetBtn.click();
+
+    // Verify the input has been populated
+    const activityInput = page.getByPlaceholder(/Morning 5km run/i);
+    await expect(activityInput).toHaveValue("Morning 5K Outdoor Run");
+
+    // Click "Verify with AI"
+    const verifyBtn = page.getByRole("button", { name: /Verify with AI/i });
+    await verifyBtn.click();
+
+    // Verify AI Verification Result is rendered
+    await expect(page.getByText("Safety Index")).toBeVisible({ timeout: 12000 });
+    await expect(page.getByText(/Estimated Inhaled PM2.5/i)).toBeVisible();
+
+    // Add verified plan to today's schedule
+    const addToRoutineBtn = page.getByRole("button", { name: /Add to Today's Routine/i });
+    await expect(addToRoutineBtn).toBeVisible();
+    await addToRoutineBtn.click();
+
+    // Confirm that the custom plan is added to the schedule with AI Verified badge
+    await expect(page.getByText("AI Verified Plan")).toBeVisible();
+
     // Check an activity item checkbox
     const checkboxes = page.locator("button:has(svg.lucide-circle, svg.lucide-check-circle-2)");
     const firstCheckbox = checkboxes.first();

@@ -2,6 +2,11 @@ import { GoogleGenAI } from "@google/genai";
 import { AirQualityData } from "@/types/air-quality";
 import { RoutineActivity, generateDailyRoutine } from "./intelligence/routine-generator";
 import { HomeConfig, IndoorRecommendation, assessIndoorAir } from "./intelligence/indoor-assessment";
+import {
+  UserPlanInput,
+  PlanVerificationResult,
+  verifyPlanDeterministic,
+} from "./intelligence/plan-verifier";
 
 // Server-side only: never expose GEMINI_API_KEY to client code
 export function getGeminiClient(): GoogleGenAI | null {
@@ -48,6 +53,7 @@ const CACHE_TTL = 20 * 60 * 1000; // 20 minutes
 const routineCache = new Map<string, CacheEntry<RoutineActivity[]>>();
 const indoorCache = new Map<string, CacheEntry<IndoorRecommendation[]>>();
 const impactCache = new Map<string, CacheEntry<{ explanation: string; tips: string[] }>>();
+const planVerificationCache = new Map<string, CacheEntry<PlanVerificationResult>>();
 
 function getCached<T>(map: Map<string, CacheEntry<T>>, key: string): T | null {
   const entry = map.get(key);
@@ -401,5 +407,105 @@ Output JSON: {"explanation":"2 concise sentences in ${lang === "hi" ? "Hindi" : 
     ],
   };
   setCached(impactCache, cacheKey, fallback);
+  return fallback;
+}
+
+/**
+ * Verifies a user-submitted activity plan against diurnal inversion physics,
+ * ambient air quality, and user cohort using Gemini, with a deterministic fallback.
+ */
+export async function verifyPlanWithGemini(
+  plan: UserPlanInput,
+  aqiData: AirQualityData,
+  lang: "en" | "hi" = "en"
+): Promise<PlanVerificationResult> {
+  const cacheKey = `${aqiData.city.id}:${plan.activityName}:${plan.plannedTime}:${plan.durationMinutes}:${plan.environment}:${plan.intensity}:${plan.cohort}:${plan.hasN95Mask}:${lang}`;
+  const cached = getCached(planVerificationCache, cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  // Pre-calculate deterministic physical metrics
+  const fallback = verifyPlanDeterministic(plan, aqiData, lang);
+
+  const client = getGeminiClient();
+  if (!client) {
+    setCached(planVerificationCache, cacheKey, fallback);
+    return fallback;
+  }
+
+  const context = constructIntelligenceContext(aqiData, undefined, lang);
+  const prompt = `You are BreatheWise AI's respiratory safety validator.
+Evaluate this user's custom planned activity:
+- Activity: "${plan.activityName}"
+- Planned Time: "${plan.plannedTime}"
+- Duration: ${plan.durationMinutes} mins
+- Environment: ${plan.environment}
+- Intensity: ${plan.intensity}
+- Cohort: ${plan.cohort}
+- Using N95 Mask: ${plan.hasN95Mask ? "Yes" : "No"}
+
+Current Environmental Telemetry:
+${context}
+Diurnal Period: ${fallback.period}
+Estimated Physical PM2.5 Inhaled Dose: ${fallback.estimatedInhaledDoseUg} µg
+
+Respond in valid JSON matching this schema:
+{
+  "status": "${fallback.status}",
+  "safetyScore": number between 15 and 99,
+  "verdict": "short punchy verdict heading in ${lang === "hi" ? "Hindi" : "English"}",
+  "summary": "1 concise sentence summary in ${lang === "hi" ? "Hindi" : "English"}",
+  "explanation": "2-3 sentences explaining pulmonary minute-ventilation, atmospheric diurnal inversion, and alveolar deposition in ${lang === "hi" ? "Hindi" : "English"}",
+  "suggestedAlternativeTime": "e.g. 01:30 PM",
+  "recommendedAdjustment": "specific actionable adjustment or null",
+  "protectiveMeasures": ["bullet 1", "bullet 2", "bullet 3"]
+}`;
+
+  try {
+    const res = await client.models.generateContent({
+      model: "gemini-3.5-flash-lite",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        temperature: 0.2,
+        maxOutputTokens: 450,
+      },
+    });
+
+    const text = res.text?.trim() || "";
+    const parsed = JSON.parse(text);
+
+    if (parsed && typeof parsed === "object") {
+      const merged: PlanVerificationResult = {
+        ...fallback,
+        status: (["optimal", "safe", "caution", "avoid"].includes(parsed.status)
+          ? parsed.status
+          : fallback.status) as PlanVerificationResult["status"],
+        safetyScore:
+          typeof parsed.safetyScore === "number"
+            ? Math.min(99, Math.max(10, parsed.safetyScore))
+            : fallback.safetyScore,
+        verdict: parsed.verdict || fallback.verdict,
+        summary: parsed.summary || fallback.summary,
+        explanation: parsed.explanation || fallback.explanation,
+        suggestedAlternativeTime:
+          parsed.suggestedAlternativeTime || fallback.suggestedAlternativeTime,
+        recommendedAdjustment:
+          parsed.recommendedAdjustment || fallback.recommendedAdjustment,
+        protectiveMeasures:
+          Array.isArray(parsed.protectiveMeasures) && parsed.protectiveMeasures.length > 0
+            ? parsed.protectiveMeasures
+            : fallback.protectiveMeasures,
+      };
+
+      setCached(planVerificationCache, cacheKey, merged);
+      return merged;
+    }
+  } catch (err) {
+    console.warn("Gemini plan verification error, using deterministic engine:", err);
+  }
+
+  setCached(planVerificationCache, cacheKey, fallback);
   return fallback;
 }

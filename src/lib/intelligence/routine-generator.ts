@@ -16,6 +16,11 @@ export interface RoutineActivity {
   language: "en" | "hi";
   completed?: boolean;
   impactPoints: number;
+  isCustom?: boolean;
+  safetyScore?: number;
+  protectiveMeasures?: string[];
+  suggestedAlternativeTime?: string;
+  estimatedInhaledDoseUg?: number;
 }
 
 export interface FamilyProfileInput {

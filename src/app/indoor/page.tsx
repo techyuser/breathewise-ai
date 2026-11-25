@@ -5,6 +5,7 @@ import { useAirQuality } from "@/context/AirQualityContext";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { HouseholdAssessmentDrawer } from "@/components/indoor/HouseholdAssessmentDrawer";
 import { DiyPurifierModal } from "@/components/indoor/DiyPurifierModal";
+import { RoomSimulatorSection, type RoomSensor } from "@/components/indoor/RoomSimulatorSection";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -13,31 +14,29 @@ import {
   DEFAULT_HOME_CONFIG,
   identifyIndoorSources,
   getBudgetRecommendations,
-  IndoorPollutantSource,
   BudgetRecommendation,
 } from "@/lib/intelligence/indoor-assessment";
+import { readStorageJson, writeStorageJson } from "@/lib/storage";
 import {
   Home,
   Wind,
   ShieldCheck,
   ShieldAlert,
-  Droplets,
-  Power,
   Sparkles,
   Sliders,
   Flame,
   DollarSign,
-  Info,
 } from "lucide-react";
 
-interface RoomSensor {
-  id: string;
-  name: string;
-  estimatedAqi: number;
-  pm2_5: number;
-  purifierActive: boolean;
-  filterLife: number;
-}
+const INDOOR_STORAGE_KEY = "breathewise_indoor_assessment_v2";
+
+const BUDGET_TIERS = [
+  { id: "all", label: "All Tiers" },
+  { id: "free", label: "Free (₹0)" },
+  { id: "under_500", label: "Under ₹500" },
+  { id: "500_3000", label: "₹500 – ₹3,000" },
+  { id: "above_3000", label: "Above ₹3,000" },
+] as const;
 
 export default function IndoorAirPage() {
   const { airData, activeStandard } = useAirQuality();
@@ -45,26 +44,15 @@ export default function IndoorAirPage() {
   const outdoorAqi = isCpcb ? (airData?.indiaAqi ?? 220) : (airData?.usAqi ?? 160);
   const outdoorPm25 = airData?.pollutants.pm2_5?.value ?? 68;
 
-  // Household assessment config state with localStorage persistence
-  const [homeConfig, setHomeConfig] = useState<HomeConfig>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("breathewise_indoor_assessment_v2");
-        if (saved) return JSON.parse(saved);
-      } catch (_err) {
-        // Safe fallback when localStorage is restricted or in private browsing
-      }
-    }
-    return DEFAULT_HOME_CONFIG;
-  });
+  const [homeConfig, setHomeConfig] = useState<HomeConfig>(() =>
+    readStorageJson(INDOOR_STORAGE_KEY, DEFAULT_HOME_CONFIG)
+  );
   const [assessmentOpen, setAssessmentOpen] = useState(false);
-  const [selectedBudgetTier, setSelectedBudgetTier] = useState<
-    "all" | "free" | "under_500" | "500_3000" | "above_3000"
-  >("all");
+  const [selectedBudgetTier, setSelectedBudgetTier] =
+    useState<(typeof BUDGET_TIERS)[number]["id"]>("all");
   const [activeDiyModal, setActiveDiyModal] = useState<BudgetRecommendation | null>(null);
 
-  // Room sensors state
-  const [rooms, setRooms] = useState<RoomSensor[]>([
+  const [rooms, setRooms] = useState<RoomSensor[]>(() => [
     {
       id: "living",
       name: "Living Room (Main Area)",
@@ -93,59 +81,41 @@ export default function IndoorAirPage() {
 
   const saveConfig = (newConfig: HomeConfig) => {
     setHomeConfig(newConfig);
-    try {
-      localStorage.setItem("breathewise_indoor_assessment_v2", JSON.stringify(newConfig));
-    } catch (_err) {
-      // Ignore localStorage restrictions
-    }
+    writeStorageJson(INDOOR_STORAGE_KEY, newConfig);
   };
 
   const togglePurifier = (id: string) => {
     setRooms((prev) =>
       prev.map((r) => {
-        if (r.id === id) {
-          const nextActive = !r.purifierActive;
-          return {
-            ...r,
-            purifierActive: nextActive,
-            estimatedAqi: nextActive
-              ? Math.max(20, Math.round(r.estimatedAqi * 0.45))
-              : Math.round(r.estimatedAqi * 2.1),
-            pm2_5: nextActive
-              ? Math.max(6, Math.round(r.pm2_5 * 0.45))
-              : Math.round(r.pm2_5 * 2.1),
-          };
-        }
-        return r;
+        if (r.id !== id) return r;
+        const nextActive = !r.purifierActive;
+        return {
+          ...r,
+          purifierActive: nextActive,
+          estimatedAqi: nextActive
+            ? Math.max(20, Math.round(r.estimatedAqi * 0.45))
+            : Math.round(r.estimatedAqi * 2.1),
+          pm2_5: nextActive
+            ? Math.max(6, Math.round(r.pm2_5 * 0.45))
+            : Math.round(r.pm2_5 * 2.1),
+        };
       })
     );
   };
 
-  // Run intelligence evaluations
-  const assessedSources: IndoorPollutantSource[] = airData
-    ? identifyIndoorSources(airData, homeConfig)
-    : [];
-
-  const allBudgetRecs: BudgetRecommendation[] = airData
-    ? getBudgetRecommendations(airData, homeConfig)
-    : [];
-
-  const budgetRecommendations: BudgetRecommendation[] =
+  const assessedSources = airData ? identifyIndoorSources(airData, homeConfig) : [];
+  const allBudgetRecs = airData ? getBudgetRecommendations(airData, homeConfig) : [];
+  const budgetRecommendations =
     selectedBudgetTier === "all"
       ? allBudgetRecs
       : allBudgetRecs.filter((r) => r.tier === selectedBudgetTier);
 
-  // CADR ACH calculation for a standard 180 sq ft bedroom with 9 ft ceiling (~45 m3)
-  const roomVolumeM3 = 45;
   const cadr = homeConfig.purifierCadr || 200;
-  const airChangesPerHour = Math.round((cadr / roomVolumeM3) * 10) / 10;
-
-  // Ventilation Window Verdict
+  const airChangesPerHour = Math.round((cadr / 45) * 10) / 10;
   const canOpenWindows = outdoorAqi < 100 && outdoorPm25 < 35;
 
   return (
     <PageTransition className="space-y-6 pb-12">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(77,184,255,0.08)] border border-[rgba(77,184,255,0.2)] text-xs font-semibold text-[#4DB8FF] mb-1.5">
@@ -175,7 +145,6 @@ export default function IndoorAirPage() {
         </div>
       </div>
 
-      {/* Household Assessment Collapsible Drawer */}
       <HouseholdAssessmentDrawer
         isOpen={assessmentOpen}
         homeConfig={homeConfig}
@@ -214,11 +183,7 @@ export default function IndoorAirPage() {
                     ? "Safe for Natural Cross-Ventilation"
                     : "Smog Infiltration Hazard — Keep Windows Latched"}
                 </span>
-                <Badge
-                  variant={canOpenWindows ? "accent" : "danger"}
-                  size="sm"
-                  className="text-xs"
-                >
+                <Badge variant={canOpenWindows ? "accent" : "danger"} size="sm" className="text-xs">
                   Outdoor AQI {outdoorAqi}
                 </Badge>
               </div>
@@ -232,20 +197,12 @@ export default function IndoorAirPage() {
 
           <div className="flex items-center gap-4 text-xs font-medium text-[#A3B3C2] shrink-0 border-t sm:border-t-0 sm:border-l border-[rgba(255,255,255,0.08)] pt-2 sm:pt-0 sm:pl-4">
             <div>
-              <div className="text-xs uppercase tracking-wider text-[#8496A8]">
-                Bedroom CADR
-              </div>
-              <div className="text-sm font-bold text-[#F2F6FA]">
-                {cadr} m³/h
-              </div>
+              <div className="text-xs uppercase tracking-wider text-[#8496A8]">Bedroom CADR</div>
+              <div className="text-sm font-bold text-[#F2F6FA]">{cadr} m³/h</div>
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wider text-[#8496A8]">
-                Air Changes / Hr
-              </div>
-              <div className="text-sm font-bold text-[#4DB8FF]">
-                {airChangesPerHour} ACH
-              </div>
+              <div className="text-xs uppercase tracking-wider text-[#8496A8]">Air Changes / Hr</div>
+              <div className="text-sm font-bold text-[#4DB8FF]">{airChangesPerHour} ACH</div>
             </div>
           </div>
         </div>
@@ -260,9 +217,7 @@ export default function IndoorAirPage() {
               Identified Household Pollution Sources
             </h2>
           </div>
-          <span className="text-xs text-[#A3B3C2]">
-            Modeled estimates based on assessment
-          </span>
+          <span className="text-xs text-[#A3B3C2]">Modeled estimates based on assessment</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -276,9 +231,7 @@ export default function IndoorAirPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[#F2F6FA]">
-                      {source.name}
-                    </span>
+                    <span className="text-xs font-bold text-[#F2F6FA]">{source.name}</span>
                     <Badge
                       variant={
                         source.severity === "CRITICAL"
@@ -301,15 +254,11 @@ export default function IndoorAirPage() {
                   <div className="text-xs font-bold text-[#F87171]">
                     {source.estimatedContribution}
                   </div>
-                  <div className="text-xs uppercase tracking-wider text-[#8496A8]">
-                    Est. Load
-                  </div>
+                  <div className="text-xs uppercase tracking-wider text-[#8496A8]">Est. Load</div>
                 </div>
               </div>
 
-              <p className="text-xs text-[#A3B3C2] leading-relaxed">
-                {source.description}
-              </p>
+              <p className="text-xs text-[#A3B3C2] leading-relaxed">{source.description}</p>
 
               <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] flex items-center gap-2 text-xs text-[#F2F6FA]">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#4DB8FF] shrink-0" />
@@ -331,22 +280,16 @@ export default function IndoorAirPage() {
               </h2>
             </div>
             <p className="text-xs text-[#A3B3C2] mt-0.5">
-              Affordable, proven steps to clean indoor air from zero-cost habitchanges to certified purifiers.
+              Affordable, proven steps to clean indoor air from zero-cost habit changes to certified purifiers.
             </p>
           </div>
 
-          {/* Budget Tier Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            {[
-              { id: "all", label: "All Tiers" },
-              { id: "free", label: "Free (₹0)" },
-              { id: "under_500", label: "Under ₹500" },
-              { id: "500_3000", label: "₹500 – ₹3,000" },
-              { id: "above_3000", label: "Above ₹3,000" },
-            ].map((tier) => (
+            {BUDGET_TIERS.map((tier) => (
               <button
                 key={tier.id}
-                onClick={() => setSelectedBudgetTier(tier.id as typeof selectedBudgetTier)}
+                type="button"
+                onClick={() => setSelectedBudgetTier(tier.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
                   selectedBudgetTier === tier.id
                     ? "bg-[#4DB8FF] text-[#0A1118] font-bold shadow-sm"
@@ -389,17 +332,14 @@ export default function IndoorAirPage() {
                   </span>
                 </div>
 
-                <h3 className="text-sm font-bold text-[#F2F6FA] leading-snug">
-                  {rec.title}
-                </h3>
-                <p className="text-xs text-[#A3B3C2] leading-relaxed">
-                  {rec.description}
-                </p>
+                <h3 className="text-sm font-bold text-[#F2F6FA] leading-snug">{rec.title}</h3>
+                <p className="text-xs text-[#A3B3C2] leading-relaxed">{rec.description}</p>
               </div>
 
               {rec.diyGuide && (
                 <div className="pt-2 border-t border-[rgba(255,255,255,0.06)]">
                   <button
+                    type="button"
                     onClick={() => setActiveDiyModal(rec)}
                     className="text-xs font-semibold text-[#4DB8FF] hover:text-[#7CCBFF] flex items-center gap-1.5 cursor-pointer"
                   >
@@ -413,102 +353,9 @@ export default function IndoorAirPage() {
         </div>
       </div>
 
-      {/* Interactive Room Sensor Simulators */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Droplets className="w-4 h-4 text-[#38BDF8]" />
-            <h2 className="text-base font-bold text-[#F2F6FA]">
-              Interactive Room Model & Purifier Simulation
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="subtle" size="sm" className="border-[rgba(56,189,248,0.3)] text-[#38BDF8] bg-[rgba(56,189,248,0.08)]">
-              Estimated Indoor AQI (Room Model)
-            </Badge>
-          </div>
-        </div>
+      <RoomSimulatorSection rooms={rooms} onTogglePurifier={togglePurifier} />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {rooms.map((room) => (
-            <Card
-              key={room.id}
-              elevated
-              hoverEffect
-              className="p-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(18,29,42,0.65)] space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold text-[#F2F6FA]">
-                    {room.name}
-                  </span>
-                  <div className="text-xs text-[#8496A8] flex items-center gap-1.5 mt-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8]" />
-                    <span>Estimated Infiltration Model</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => togglePurifier(room.id)}
-                  className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
-                    room.purifierActive
-                      ? "bg-[rgba(77,184,255,0.2)] border-[#4DB8FF] text-[#4DB8FF]"
-                      : "bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)] text-[#8496A8]"
-                  }`}
-                  title={room.purifierActive ? "Turn Purifier OFF" : "Turn Purifier ON"}
-                >
-                  <Power className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex items-baseline justify-between pt-1">
-                <div>
-                  <div className="text-3xl font-extrabold text-[#F2F6FA] tracking-tight">
-                    {room.estimatedAqi}
-                  </div>
-                  <div className="text-xs uppercase tracking-wider text-[#A3B3C2]">
-                    Indoor Est. AQI
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-[#4DB8FF]">
-                    {room.pm2_5} µg/m³
-                  </div>
-                  <div className="text-xs uppercase tracking-wider text-[#8496A8]">
-                    PM2.5 Conc.
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1 pt-1">
-                <div className="flex items-center justify-between text-xs text-[#A3B3C2]">
-                  <span>HEPA Filter Life</span>
-                  <span className="font-semibold text-[#F2F6FA]">{room.filterLife}%</span>
-                </div>
-                <div className="w-full h-1.5 bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#4DB8FF] rounded-full"
-                    style={{ width: `${room.filterLife}%` }}
-                  />
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {/* Indoor Engineering Model Assumptions Disclosure */}
-        <div className="p-3.5 rounded-2xl bg-[rgba(10,22,17,0.5)] border border-[rgba(255,255,255,0.06)] flex items-start gap-2.5 text-xs text-[#A3B3C2] leading-relaxed">
-          <Info className="w-4 h-4 text-[#38BDF8] shrink-0 mt-0.5" />
-          <span>
-            <strong>Indoor Engineering Model Assumptions:</strong> Room particulate concentrations and purifier reductions are illustrative mass-balance estimates based on door sealing ratios, simulated infiltration factors, and rated CADR delivery curves. They provide comparative behavioral planning guidance and do not replace physical in-situ calibrated laser particle counters.
-          </span>
-        </div>
-      </div>
-
-      {/* DIY Step-by-Step Guide Modal */}
-      <DiyPurifierModal
-        activeDiyModal={activeDiyModal}
-        onClose={() => setActiveDiyModal(null)}
-      />
+      <DiyPurifierModal activeDiyModal={activeDiyModal} onClose={() => setActiveDiyModal(null)} />
     </PageTransition>
   );
 }

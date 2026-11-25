@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamAirIntelligence, AssistantMessage, UserProfileContext } from "@/lib/gemini";
-import { fetchLiveAirQuality, PRESET_CITIES } from "@/lib/open-meteo";
-import { AirQualityData, AqiStandard, CityLocation } from "@/types/air-quality";
-import { checkRateLimit } from "@/lib/rate-limiter";
+import { fetchLiveAirQuality } from "@/lib/open-meteo";
+import { guardRateLimit, resolveTargetCity } from "@/lib/api-helpers";
+import { AqiStandard } from "@/types/air-quality";
+import { logger } from "@/lib/logger";
 
 const VALID_COHORTS = new Set([
   "general",
@@ -23,26 +24,69 @@ const VALID_COMMUTE_MODES = new Set([
   "cycling",
 ]);
 
-export async function POST(req: NextRequest) {
-  // 1. Instance-level Rate Limiting Consideration with Retry-After header
-  const rateLimit = checkRateLimit(req, 40);
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      {
-        error: "Rate limit exceeded. Please wait before submitting more queries.",
-        retryAfter: rateLimit.resetInSeconds,
-      },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": rateLimit.resetInSeconds.toString(),
-        },
-      }
-    );
+function validateMessages(rawMessages: unknown): AssistantMessage[] | null {
+  if (!Array.isArray(rawMessages) || rawMessages.length === 0 || rawMessages.length > 20) {
+    return null;
   }
 
+  const sanitized: AssistantMessage[] = [];
+  for (const m of rawMessages) {
+    if (
+      !m ||
+      typeof m !== "object" ||
+      (m.role !== "user" && m.role !== "assistant") ||
+      typeof m.content !== "string"
+    ) {
+      return null;
+    }
+    const trimmed = m.content.trim();
+    if (trimmed.length === 0 || m.content.length > 1500) {
+      return null;
+    }
+    sanitized.push({
+      id: typeof m.id === "string" ? m.id : `msg-${Date.now()}-${sanitized.length}`,
+      role: m.role,
+      content: trimmed,
+      timestamp: typeof m.timestamp === "string" ? m.timestamp : new Date().toISOString(),
+    });
+  }
+  return sanitized;
+}
+
+function sanitizeProfile(rawProfile: unknown): UserProfileContext {
+  const userProfile: UserProfileContext = {};
+  if (!rawProfile || typeof rawProfile !== "object") return userProfile;
+
+  const p = rawProfile as Record<string, unknown>;
+  if (typeof p.cohort === "string" && VALID_COHORTS.has(p.cohort)) {
+    userProfile.cohort = p.cohort;
+  }
+  if (typeof p.commuteMode === "string" && VALID_COMMUTE_MODES.has(p.commuteMode)) {
+    userProfile.commuteMode = p.commuteMode;
+  }
+  if (typeof p.hasKids === "boolean") userProfile.hasKids = p.hasKids;
+  if (typeof p.hasElderly === "boolean") userProfile.hasElderly = p.hasElderly;
+  if (typeof p.hasRespiratory === "boolean") userProfile.hasRespiratory = p.hasRespiratory;
+  if (typeof p.hasAirPurifier === "boolean") userProfile.hasAirPurifier = p.hasAirPurifier;
+  if (
+    typeof p.commuteDistanceKm === "number" &&
+    p.commuteDistanceKm >= 0 &&
+    p.commuteDistanceKm <= 200
+  ) {
+    userProfile.commuteDistanceKm = p.commuteDistanceKm;
+  }
+  return userProfile;
+}
+
+export async function POST(req: NextRequest) {
+  const rateLimit = guardRateLimit(
+    req,
+    40,
+    "Rate limit exceeded. Please wait before submitting more queries."
+  );
+  if (!rateLimit.allowed && rateLimit.response) return rateLimit.response;
+
   try {
-    // 2. Strict Request Validation
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json(
@@ -51,127 +95,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const {
-      messages,
-      cityId = "delhi",
-      lat,
-      lon,
-      standard,
-      profile,
-      lang = "en",
-    } = body;
-
-    // Validate messages array
-    if (!Array.isArray(messages) || messages.length === 0 || messages.length > 20) {
+    const sanitizedMessages = validateMessages(body.messages);
+    if (!sanitizedMessages) {
       return NextResponse.json(
-        { error: "Field 'messages' must be an array of 1 to 20 message objects." },
+        {
+          error:
+            "Field 'messages' must be 1 to 20 valid ('user' | 'assistant') objects with 1-1500 char content.",
+        },
         { status: 400 }
       );
     }
 
-    // Validate individual messages: role, content type, content length
-    const sanitizedMessages: AssistantMessage[] = [];
-    for (const m of messages) {
-      if (
-        !m ||
-        typeof m !== "object" ||
-        (m.role !== "user" && m.role !== "assistant") ||
-        typeof m.content !== "string"
-      ) {
-        return NextResponse.json(
-          { error: "Each message must have role ('user' or 'assistant') and string content." },
-          { status: 400 }
-        );
-      }
-      if (m.content.trim().length === 0 || m.content.length > 1500) {
-        return NextResponse.json(
-          { error: "Message content must be between 1 and 1500 characters." },
-          { status: 400 }
-        );
-      }
-      sanitizedMessages.push({
-        id: typeof m.id === "string" ? m.id : `msg-${Date.now()}-${sanitizedMessages.length}`,
-        role: m.role,
-        content: m.content.trim(),
-        timestamp: typeof m.timestamp === "string" ? m.timestamp : new Date().toISOString(),
-      });
-    }
-
-    const targetLang: "en" | "hi" = lang === "hi" ? "hi" : "en";
-
-    // Validate User Profile
-    const userProfile: UserProfileContext = {};
-    if (profile && typeof profile === "object") {
-      if (profile.cohort && VALID_COHORTS.has(profile.cohort)) {
-        userProfile.cohort = profile.cohort;
-      }
-      if (profile.commuteMode && VALID_COMMUTE_MODES.has(profile.commuteMode)) {
-        userProfile.commuteMode = profile.commuteMode;
-      }
-      if (typeof profile.hasKids === "boolean") userProfile.hasKids = profile.hasKids;
-      if (typeof profile.hasElderly === "boolean") userProfile.hasElderly = profile.hasElderly;
-      if (typeof profile.hasRespiratory === "boolean") userProfile.hasRespiratory = profile.hasRespiratory;
-      if (typeof profile.hasAirPurifier === "boolean") userProfile.hasAirPurifier = profile.hasAirPurifier;
-      if (typeof profile.commuteDistanceKm === "number" && profile.commuteDistanceKm >= 0 && profile.commuteDistanceKm <= 200) {
-        userProfile.commuteDistanceKm = profile.commuteDistanceKm;
-      }
-    }
-
-    // 3. Resolve Real Environmental Data Server-Side ONLY
-    // Security & Data Integrity: Never trust arbitrary client-supplied AQI values.
-    // Always fetch authentic atmospheric data server-side from Open-Meteo.
-    let targetCity: CityLocation;
-
-    if (lat !== undefined && lon !== undefined) {
-      const parsedLat = parseFloat(lat);
-      const parsedLon = parseFloat(lon);
-      if (isNaN(parsedLat) || isNaN(parsedLon) || parsedLat < -90 || parsedLat > 90 || parsedLon < -180 || parsedLon > 180) {
-        return NextResponse.json({ error: "Invalid latitude or longitude coordinates." }, { status: 400 });
-      }
-      const matchedCity = PRESET_CITIES.find(
-        (c) => Math.abs(c.lat - parsedLat) < 0.1 && Math.abs(c.lon - parsedLon) < 0.1
-      );
-      targetCity = matchedCity || {
-        id: `coord-${parsedLat.toFixed(2)}-${parsedLon.toFixed(2)}`,
-        name: `Coordinates (${parsedLat.toFixed(2)}°, ${parsedLon.toFixed(2)}°)`,
-        region: "Custom Region",
-        country: "Coordinates",
-        lat: parsedLat,
-        lon: parsedLon,
-        isCustomCoordinates: true,
-      };
-    } else {
-      const found = PRESET_CITIES.find((c) => c.id === cityId);
-      targetCity = found || PRESET_CITIES[0];
-    }
+    const cityResult = resolveTargetCity({
+      cityId: body.cityId || "delhi",
+      latParam: body.lat,
+      lonParam: body.lon,
+      matchPresetThreshold: 0.1,
+    });
+    if ("errorResponse" in cityResult) return cityResult.errorResponse;
 
     const standardParam: AqiStandard | undefined =
-      standard === "INDIA_CPCB" || standard === "US_EPA" ? standard : undefined;
+      body.standard === "INDIA_CPCB" || body.standard === "US_EPA" ? body.standard : undefined;
 
-    // Fetch verified atmospheric telemetry from Open-Meteo server-side
-    const aqiData: AirQualityData = await fetchLiveAirQuality(targetCity, standardParam);
-
-    // 4. Stream AI Response from Gemini or Deterministic Fallback Engine
+    // Security & Integrity: Always resolve atmospheric telemetry server-side
+    const aqiData = await fetchLiveAirQuality(cityResult.city, standardParam);
     const { stream, engine } = await streamAirIntelligence(
       sanitizedMessages,
       aqiData,
-      userProfile,
-      targetLang
+      sanitizeProfile(body.profile),
+      body.lang === "hi" ? "hi" : "en"
     );
 
     const encoder = new TextEncoder();
     const readableStream = new ReadableStream({
       async start(controller) {
+        let emittedAny = false;
         try {
           for await (const chunk of stream) {
             if (chunk.text) {
+              emittedAny = true;
               controller.enqueue(encoder.encode(chunk.text));
             }
           }
           controller.close();
         } catch (err) {
-          console.error("Stream reader error:", err);
-          controller.error(err);
+          logger.error("AssistantStream", err);
+          if (!emittedAny) {
+            controller.enqueue(
+              encoder.encode(
+                "Recommended guidance: Use N95/FFP2 respirators outdoors, seal windows during peak smog, and run HEPA H13 filtration indoors."
+              )
+            );
+          }
+          controller.close();
         }
       },
     });
@@ -180,13 +156,13 @@ export async function POST(req: NextRequest) {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache, no-transform",
-        "Connection": "keep-alive",
+        Connection: "keep-alive",
         "X-RateLimit-Remaining": rateLimit.remaining.toString(),
         "X-AI-Engine": engine,
       },
     });
   } catch (error) {
-    console.error("Assistant API Error:", error);
+    logger.error("AssistantAPI", error);
     return NextResponse.json(
       {
         error: "Failed to process air quality intelligence query",

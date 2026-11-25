@@ -10,8 +10,8 @@ import {
   TRANSPORT_MODES,
   CALCULATION_ASSUMPTIONS,
   calculateTransportationComparison,
-  TransportComparisonResult,
 } from "@/lib/intelligence/impact-formulas";
+import { readStorageJson, writeStorageJson } from "@/lib/storage";
 import {
   Leaf,
   Award,
@@ -38,6 +38,8 @@ interface Pledge {
   points: number;
 }
 
+const PLEDGES_STORAGE_KEY = "breathewise_impact_pledges_v2";
+
 const DEFAULT_PLEDGES: Pledge[] = [
   { id: "1", title: "Zero Engine Idling at Traffic Signals (>15s)", completed: true, points: 50 },
   { id: "2", title: "Took Public Transit / Metro instead of Solo Drive", completed: true, points: 120 },
@@ -46,6 +48,25 @@ const DEFAULT_PLEDGES: Pledge[] = [
   { id: "5", title: "Ran Certified Energy-Star HEPA instead of biomass heating", completed: true, points: 80 },
 ];
 
+const SELECTABLE_MODES: ReadonlyArray<{ id: TransitMode; name: string }> = [
+  { id: "metro", name: "Metro Rail" },
+  { id: "carpool", name: "Carpool (3 pax)" },
+  { id: "ev", name: "Electric EV" },
+  { id: "cycling", name: "Bicycle" },
+  { id: "walk", name: "Walking" },
+  { id: "car_diesel", name: "Solo Diesel" },
+];
+
+const MODE_ICONS: Record<TransitMode, React.ReactNode> = {
+  car_petrol: <Car className="w-4 h-4" />,
+  car_diesel: <Car className="w-4 h-4 text-[#FACC15]" />,
+  carpool: <Users className="w-4 h-4 text-[#38BDF8]" />,
+  metro: <Train className="w-4 h-4 text-[#4DB8FF]" />,
+  ev: <Zap className="w-4 h-4 text-[#38BDF8]" />,
+  cycling: <Bike className="w-4 h-4 text-[#4DB8FF]" />,
+  walk: <Footprints className="w-4 h-4 text-[#4DB8FF]" />,
+};
+
 export default function GreenImpactPage() {
   const [distanceKm, setDistanceKm] = useState<number>(14);
   const [workingDays, setWorkingDays] = useState<number>(22);
@@ -53,36 +74,20 @@ export default function GreenImpactPage() {
   const [chosenMode, setChosenMode] = useState<TransitMode>("metro");
   const baselineMode: TransitMode = "car_petrol";
 
-  const [pledges, setPledges] = useState<Pledge[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("breathewise_impact_pledges_v2");
-        if (saved) return JSON.parse(saved);
-      } catch (_err) {
-        // Safe fallback when localStorage is restricted or in private browsing
-      }
-    }
-    return DEFAULT_PLEDGES;
-  });
-
+  const [pledges, setPledges] = useState<Pledge[]>(() =>
+    readStorageJson(PLEDGES_STORAGE_KEY, DEFAULT_PLEDGES)
+  );
   const [copied, setCopied] = useState(false);
 
   const togglePledge = (id: string) => {
     setPledges((prev) => {
-      const updated = prev.map((p) =>
-        p.id === id ? { ...p, completed: !p.completed } : p
-      );
-      try {
-        localStorage.setItem("breathewise_impact_pledges_v2", JSON.stringify(updated));
-      } catch (_err) {
-        // Safe fallback when localStorage is restricted or in private browsing
-      }
+      const updated = prev.map((p) => (p.id === id ? { ...p, completed: !p.completed } : p));
+      writeStorageJson(PLEDGES_STORAGE_KEY, updated);
       return updated;
     });
   };
 
-  // Run real-time transportation comparison calculation (with 2-way round-trip support)
-  const comparison: TransportComparisonResult = calculateTransportationComparison(
+  const comparison = calculateTransportationComparison(
     distanceKm,
     chosenMode,
     baselineMode,
@@ -90,13 +95,13 @@ export default function GreenImpactPage() {
     isRoundTrip
   );
 
-  // Total Clean Air Score
   const pledgePoints = pledges.filter((p) => p.completed).reduce((acc, p) => acc + p.points, 0);
-  const transitPoints = Math.round(comparison.co2SavedMonthlyKg * 4);
-  const totalImpactScore = pledgePoints + transitPoints;
+  const totalImpactScore = pledgePoints + Math.round(comparison.co2SavedMonthlyKg * 4);
 
   const handleShareSummary = () => {
-    const tripLabel = isRoundTrip ? `2-Way Round-Trip (${comparison.effectiveDailyDistanceKm} km/day)` : `1-Way Commute (${distanceKm} km/day)`;
+    const tripLabel = isRoundTrip
+      ? `2-Way Round-Trip (${comparison.effectiveDailyDistanceKm} km/day)`
+      : `1-Way Commute (${distanceKm} km/day)`;
     const summary = `🌿 BreatheWise AI — My Green Commute Impact:
 • Transit: ${TRANSPORT_MODES[chosenMode].name} vs ${TRANSPORT_MODES[baselineMode].name}
 • Commute Distance: ${tripLabel} (${workingDays} working days/mo)
@@ -111,19 +116,58 @@ Join clean air initiatives on BreatheWise AI!`;
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const modeIcons: Record<TransitMode, React.ReactNode> = {
-    car_petrol: <Car className="w-4 h-4" />,
-    car_diesel: <Car className="w-4 h-4 text-[#FACC15]" />,
-    carpool: <Users className="w-4 h-4 text-[#38BDF8]" />,
-    metro: <Train className="w-4 h-4 text-[#4DB8FF]" />,
-    ev: <Zap className="w-4 h-4 text-[#38BDF8]" />,
-    cycling: <Bike className="w-4 h-4 text-[#4DB8FF]" />,
-    walk: <Footprints className="w-4 h-4 text-[#4DB8FF]" />,
-  };
+  const resultMetrics = [
+    {
+      label: "CO2 Avoided",
+      icon: <Wind className="w-3.5 h-3.5" />,
+      headerClass: "text-[#4DB8FF]",
+      borderClass: "border-[rgba(77,184,255,0.25)]",
+      valueClass: "text-[#F2F6FA]",
+      value: comparison.co2SavedMonthlyKg,
+      unit: "kg/mo",
+      sublabel: `${comparison.co2SavedDailyKg} kg avoided daily`,
+    },
+    {
+      label: "Fuel Saved",
+      icon: <Fuel className="w-3.5 h-3.5" />,
+      headerClass: "text-[#FACC15]",
+      borderClass: "border-[rgba(255,255,255,0.08)]",
+      valueClass: "text-[#F2F6FA]",
+      value: comparison.fuelSavedMonthlyLiters,
+      unit: "Liters",
+      sublabel: `${comparison.fuelSavedDailyLiters} L saved daily`,
+    },
+    {
+      label: "Money Saved",
+      icon: <IndianRupee className="w-3.5 h-3.5" />,
+      headerClass: "text-[#4DB8FF]",
+      borderClass: "border-[rgba(77,184,255,0.25)]",
+      valueClass: "text-[#4DB8FF]",
+      value: `₹${comparison.moneySavedMonthlyInr.toLocaleString("en-IN")}`,
+      unit: "/mo",
+      sublabel: `₹${comparison.moneySavedDailyInr} saved daily`,
+    },
+    {
+      label: "Tree Equivalent",
+      icon: <TreeDeciduous className="w-3.5 h-3.5" />,
+      headerClass: "text-[#38BDF8]",
+      borderClass: "border-[rgba(255,255,255,0.08)]",
+      valueClass: "text-[#F2F6FA]",
+      value: comparison.treesEquivalentAnnual,
+      unit: "Trees",
+      sublabel: "Annual carbon absorption equivalent",
+    },
+  ];
+
+  const assumptionsGrid = [
+    { label: "Petrol Baseline Price", value: `₹${CALCULATION_ASSUMPTIONS.petrolPricePerLiter} / Liter` },
+    { label: "Solo Car Efficiency", value: `${CALCULATION_ASSUMPTIONS.carPetrolEfficiency} km / Liter` },
+    { label: "Car Carbon Intensity", value: "192 g CO2e / km" },
+    { label: "Metro Carbon Intensity", value: "45 g CO2e / pax-km" },
+  ];
 
   return (
     <PageTransition className="space-y-6 pb-12">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(77,184,255,0.08)] border border-[rgba(77,184,255,0.2)] text-xs font-semibold text-[#4DB8FF] mb-1.5">
@@ -142,7 +186,13 @@ Join clean air initiatives on BreatheWise AI!`;
           <Button
             variant="outline"
             size="sm"
-            icon={copied ? <Check className="w-3.5 h-3.5 text-[#4DB8FF]" /> : <Copy className="w-3.5 h-3.5 text-[#4DB8FF]" />}
+            icon={
+              copied ? (
+                <Check className="w-3.5 h-3.5 text-[#4DB8FF]" />
+              ) : (
+                <Copy className="w-3.5 h-3.5 text-[#4DB8FF]" />
+              )
+            }
             onClick={handleShareSummary}
           >
             {copied ? "Copied Impact!" : "Share Impact Summary"}
@@ -153,8 +203,11 @@ Join clean air initiatives on BreatheWise AI!`;
         </div>
       </div>
 
-      {/* Main Transportation Comparison Calculator Card */}
-      <Card elevated className="p-5 md:p-6 rounded-3xl space-y-6 border border-[rgba(77,184,255,0.2)] bg-[rgba(10,22,17,0.75)]">
+      {/* Transportation Comparison Calculator Card */}
+      <Card
+        elevated
+        className="p-5 md:p-6 rounded-3xl space-y-6 border border-[rgba(77,184,255,0.2)] bg-[rgba(10,22,17,0.75)]"
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[rgba(255,255,255,0.08)] pb-4">
           <div>
             <h2 className="text-base font-bold text-[#F2F6FA] flex items-center gap-2">
@@ -170,36 +223,28 @@ Join clean air initiatives on BreatheWise AI!`;
           </Badge>
         </div>
 
-        {/* Mode Selector Buttons */}
         <div className="space-y-2">
           <label className="text-xs font-semibold text-[#A3B3C2]">
             Select Your Alternative Travel Mode:
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-            {[
-              { id: "metro", name: "Metro Rail" },
-              { id: "carpool", name: "Carpool (3 pax)" },
-              { id: "ev", name: "Electric EV" },
-              { id: "cycling", name: "Bicycle" },
-              { id: "walk", name: "Walking" },
-              { id: "car_diesel", name: "Solo Diesel" },
-            ].map((m) => {
-              const modeKey = m.id as TransitMode;
-              const isSelected = chosenMode === modeKey;
+            {SELECTABLE_MODES.map((m) => {
+              const isSelected = chosenMode === m.id;
               return (
                 <button
                   key={m.id}
-                  onClick={() => setChosenMode(modeKey)}
+                  type="button"
+                  onClick={() => setChosenMode(m.id)}
                   className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                     isSelected
                       ? "bg-[rgba(77,184,255,0.18)] border-[#4DB8FF] text-[#4DB8FF] shadow-sm font-semibold"
                       : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.07)] text-[#A3B3C2] hover:text-[#F2F6FA] hover:bg-[rgba(255,255,255,0.07)]"
                   }`}
                 >
-                  {modeIcons[modeKey]}
+                  {MODE_ICONS[m.id]}
                   <span className="text-xs">{m.name}</span>
                   <span className="text-xs text-[#8496A8]">
-                    {TRANSPORT_MODES[modeKey].emissionFactorGPerKm} g/km
+                    {TRANSPORT_MODES[m.id].emissionFactorGPerKm} g/km
                   </span>
                 </button>
               );
@@ -207,9 +252,7 @@ Join clean air initiatives on BreatheWise AI!`;
           </div>
         </div>
 
-        {/* Sliders: Distance & Working Days */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-          {/* Daily Commute Distance Slider */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-[#A3B3C2]">Daily One-Way Commute Distance</span>
@@ -235,9 +278,11 @@ Join clean air initiatives on BreatheWise AI!`;
               <span>60 km (Inter-city)</span>
             </div>
 
-            {/* Round-trip Commute Toggle */}
             <div className="pt-1.5 flex items-center justify-between bg-[rgba(255,255,255,0.03)] px-3 py-1.5 rounded-xl border border-[rgba(255,255,255,0.06)]">
-              <label htmlFor="roundtrip-toggle" className="text-xs text-[#F2F6FA] flex items-center gap-2 cursor-pointer">
+              <label
+                htmlFor="roundtrip-toggle"
+                className="text-xs text-[#F2F6FA] flex items-center gap-2 cursor-pointer"
+              >
                 <input
                   id="roundtrip-toggle"
                   type="checkbox"
@@ -253,7 +298,6 @@ Join clean air initiatives on BreatheWise AI!`;
             </div>
           </div>
 
-          {/* Monthly Working Days Slider */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-[#A3B3C2]">Monthly Working Days</span>
@@ -280,112 +324,61 @@ Join clean air initiatives on BreatheWise AI!`;
           </div>
         </div>
 
-        {/* Real-Time Results Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-3 border-t border-[rgba(255,255,255,0.08)]">
-          {/* Metric 1: Monthly CO2 Avoided */}
-          <div className="p-4 rounded-2xl bg-[rgba(18,29,42,0.7)] border border-[rgba(77,184,255,0.25)] space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-[#4DB8FF] font-semibold">
-              <Wind className="w-3.5 h-3.5" />
-              <span>CO2 Avoided</span>
+          {resultMetrics.map((metric) => (
+            <div
+              key={metric.label}
+              className={`p-4 rounded-2xl bg-[rgba(18,29,42,0.7)] border ${metric.borderClass} space-y-1`}
+            >
+              <div className={`flex items-center gap-1.5 text-xs font-semibold ${metric.headerClass}`}>
+                {metric.icon}
+                <span>{metric.label}</span>
+              </div>
+              <div className={`text-2xl font-extrabold tracking-tight ${metric.valueClass}`}>
+                {metric.value}
+                <span className="text-xs font-normal text-[#A3B3C2] ml-1">{metric.unit}</span>
+              </div>
+              <div className="text-xs text-[#8496A8]">{metric.sublabel}</div>
             </div>
-            <div className="text-2xl font-extrabold text-[#F2F6FA] tracking-tight">
-              {comparison.co2SavedMonthlyKg}
-              <span className="text-xs font-normal text-[#A3B3C2] ml-1">kg/mo</span>
-            </div>
-            <div className="text-xs text-[#8496A8]">
-              {comparison.co2SavedDailyKg} kg avoided daily
-            </div>
-          </div>
-
-          {/* Metric 2: Fuel Saved */}
-          <div className="p-4 rounded-2xl bg-[rgba(18,29,42,0.7)] border border-[rgba(255,255,255,0.08)] space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-[#FACC15] font-semibold">
-              <Fuel className="w-3.5 h-3.5" />
-              <span>Fuel Saved</span>
-            </div>
-            <div className="text-2xl font-extrabold text-[#F2F6FA] tracking-tight">
-              {comparison.fuelSavedMonthlyLiters}
-              <span className="text-xs font-normal text-[#A3B3C2] ml-1">Liters</span>
-            </div>
-            <div className="text-xs text-[#8496A8]">
-              {comparison.fuelSavedDailyLiters} L saved daily
-            </div>
-          </div>
-
-          {/* Metric 3: Money Saved in INR */}
-          <div className="p-4 rounded-2xl bg-[rgba(18,29,42,0.7)] border border-[rgba(77,184,255,0.25)] space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-[#4DB8FF] font-semibold">
-              <IndianRupee className="w-3.5 h-3.5" />
-              <span>Money Saved</span>
-            </div>
-            <div className="text-2xl font-extrabold text-[#4DB8FF] tracking-tight">
-              ₹{comparison.moneySavedMonthlyInr.toLocaleString("en-IN")}
-              <span className="text-xs font-normal text-[#A3B3C2] ml-1">/mo</span>
-            </div>
-            <div className="text-xs text-[#8496A8]">
-              ₹{comparison.moneySavedDailyInr} saved daily
-            </div>
-          </div>
-
-          {/* Metric 4: Trees Equivalent */}
-          <div className="p-4 rounded-2xl bg-[rgba(18,29,42,0.7)] border border-[rgba(255,255,255,0.08)] space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-[#38BDF8] font-semibold">
-              <TreeDeciduous className="w-3.5 h-3.5" />
-              <span>Tree Equivalent</span>
-            </div>
-            <div className="text-2xl font-extrabold text-[#F2F6FA] tracking-tight">
-              {comparison.treesEquivalentAnnual}
-              <span className="text-xs font-normal text-[#A3B3C2] ml-1">Trees</span>
-            </div>
-            <div className="text-xs text-[#8496A8]">
-              Annual carbon absorption equivalent
-            </div>
-          </div>
+          ))}
         </div>
       </Card>
 
-      {/* Transparent Calculation Assumptions & Methodology Card */}
-      <Card elevated className="p-5 rounded-3xl border border-[rgba(255,255,255,0.08)] bg-[rgba(9,18,14,0.7)] space-y-3">
+      {/* Transparent Calculation Assumptions */}
+      <Card
+        elevated
+        className="p-5 rounded-3xl border border-[rgba(255,255,255,0.08)] bg-[rgba(9,18,14,0.7)] space-y-3"
+      >
         <div className="flex items-center gap-2 text-xs font-bold text-[#F2F6FA]">
           <Info className="w-4 h-4 text-[#38BDF8]" />
           <span>Calculation Assumptions & Scientific Basis</span>
         </div>
         <p className="text-xs text-[#A3B3C2] leading-relaxed">
-          All computations are mathematical estimates following the Intergovernmental Panel on Climate Change (IPCC 2023) mobile combustion guidelines and the Indian Central Electricity Authority (CEA) grid carbon baseline.
+          All computations are mathematical estimates following the Intergovernmental Panel on Climate
+          Change (IPCC 2023) mobile combustion guidelines and the Indian Central Electricity
+          Authority (CEA) grid carbon baseline.
         </p>
-
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-xs">
-          <div className="p-2.5 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)]">
-            <div className="text-[#8496A8]">Petrol Baseline Price</div>
-            <div className="font-semibold text-[#F2F6FA] mt-0.5">₹{CALCULATION_ASSUMPTIONS.petrolPricePerLiter} / Liter</div>
-          </div>
-          <div className="p-2.5 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)]">
-            <div className="text-[#8496A8]">Solo Car Efficiency</div>
-            <div className="font-semibold text-[#F2F6FA] mt-0.5">{CALCULATION_ASSUMPTIONS.carPetrolEfficiency} km / Liter</div>
-          </div>
-          <div className="p-2.5 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)]">
-            <div className="text-[#8496A8]">Car Carbon Intensity</div>
-            <div className="font-semibold text-[#F2F6FA] mt-0.5">192 g CO2e / km</div>
-          </div>
-          <div className="p-2.5 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)]">
-            <div className="text-[#8496A8]">Metro Carbon Intensity</div>
-            <div className="font-semibold text-[#F2F6FA] mt-0.5">45 g CO2e / pax-km</div>
-          </div>
+          {assumptionsGrid.map((item) => (
+            <div
+              key={item.label}
+              className="p-2.5 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.05)]"
+            >
+              <div className="text-[#8496A8]">{item.label}</div>
+              <div className="font-semibold text-[#F2F6FA] mt-0.5">{item.value}</div>
+            </div>
+          ))}
         </div>
       </Card>
 
-      {/* Community Clean Air Pledges */}
+      {/* Personal Clean Air Pledges */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Award className="w-4 h-4 text-[#FACC15]" />
-            <h2 className="text-base font-bold text-[#F2F6FA]">
-              Personal Clean Air Pledges
-            </h2>
+            <h2 className="text-base font-bold text-[#F2F6FA]">Personal Clean Air Pledges</h2>
           </div>
-          <span className="text-xs text-[#A3B3C2]">
-            Tap checkbox to log action
-          </span>
+          <span className="text-xs text-[#A3B3C2]">Tap checkbox to log action</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -426,11 +419,7 @@ Join clean air initiatives on BreatheWise AI!`;
                 </span>
               </div>
 
-              <Badge
-                variant={pledge.completed ? "accent" : "subtle"}
-                size="sm"
-                className="shrink-0 text-xs"
-              >
+              <Badge variant={pledge.completed ? "accent" : "subtle"} size="sm" className="shrink-0 text-xs">
                 +{pledge.points} Pts
               </Badge>
             </Card>
@@ -438,11 +427,14 @@ Join clean air initiatives on BreatheWise AI!`;
         </div>
       </div>
 
-      {/* Scientific Model Assumptions Disclosure */}
       <div className="p-3.5 rounded-2xl bg-[rgba(10,22,17,0.5)] border border-[rgba(255,255,255,0.06)] flex items-start gap-2.5 text-xs text-[#A3B3C2] leading-relaxed">
         <Info className="w-4 h-4 text-[#38BDF8] shrink-0 mt-0.5" />
         <span>
-          <strong>Environmental Model Assumptions:</strong> Vehicle emission factors (Petrol: 192 g/km, Diesel: 178 g/km, Metro: 45 g/km, EV: 51 g/km well-to-wheel) are illustrative planning models derived from IPCC transport benchmarks and CEA India national grid averages. Fuel savings assume ₹96.72/L (petrol) and ₹89.62/L (diesel). Inhalation avoidance values are comparative estimates, not calibrated personal exposure monitors.
+          <strong>Environmental Model Assumptions:</strong> Vehicle emission factors (Petrol: 192
+          g/km, Diesel: 178 g/km, Metro: 45 g/km, EV: 51 g/km well-to-wheel) are illustrative
+          planning models derived from IPCC transport benchmarks and CEA India national grid averages.
+          Fuel savings assume ₹96.72/L (petrol) and ₹89.62/L (diesel). Inhalation avoidance values
+          are comparative estimates, not calibrated personal exposure monitors.
         </span>
       </div>
     </PageTransition>

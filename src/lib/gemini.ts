@@ -7,6 +7,7 @@ import {
   PlanVerificationResult,
   verifyPlanDeterministic,
 } from "./intelligence/plan-verifier";
+import { logger } from "./logger";
 
 // Server-side only: never expose GEMINI_API_KEY to client code
 export function getGeminiClient(): GoogleGenAI | null {
@@ -41,15 +42,13 @@ export interface UserProfileContext {
   commuteDistanceKm?: number;
 }
 
-// ============================================================================
-// HACKATHON LEAN CACHING LAYER (Saves up to 90% Gemini quota during judge demos)
-// ============================================================================
 interface CacheEntry<T> {
   data: T;
   expiresAt: number;
 }
-const CACHE_TTL = 20 * 60 * 1000; // 20 minutes
 
+// TTL in-memory cache (20 minutes) to minimize redundant LLM quota consumption
+const CACHE_TTL_MS = 20 * 60 * 1000;
 const routineCache = new Map<string, CacheEntry<RoutineActivity[]>>();
 const indoorCache = new Map<string, CacheEntry<IndoorRecommendation[]>>();
 const impactCache = new Map<string, CacheEntry<{ explanation: string; tips: string[] }>>();
@@ -64,12 +63,49 @@ function getCached<T>(map: Map<string, CacheEntry<T>>, key: string): T | null {
   return null;
 }
 
-function setCached<T>(map: Map<string, CacheEntry<T>>, key: string, data: T) {
-  map.set(key, { data, expiresAt: Date.now() + CACHE_TTL });
+function setCached<T>(map: Map<string, CacheEntry<T>>, key: string, data: T): T {
+  map.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+  return data;
+}
+
+async function resolveWithCache<T>(
+  cache: Map<string, CacheEntry<T>>,
+  cacheKey: string,
+  buildFallback: () => T,
+  fetchRemote?: (client: GoogleGenAI) => Promise<T | null>
+): Promise<T> {
+  const cached = getCached(cache, cacheKey);
+  if (cached) return cached;
+
+  const client = getGeminiClient();
+  if (client && fetchRemote) {
+    try {
+      const result = await fetchRemote(client);
+      if (result !== null) {
+        return setCached(cache, cacheKey, result);
+      }
+    } catch (err) {
+      logger.warn("Gemini", err);
+    }
+  }
+
+  return setCached(cache, cacheKey, buildFallback());
+}
+
+function createDeterministicTextStream(text: string, delayMs = 15): AsyncIterable<{ text?: string }> {
+  return {
+    async *[Symbol.asyncIterator]() {
+      const words = text.split(" ");
+      for (let i = 0; i < words.length; i += 3) {
+        yield { text: `${words.slice(i, i + 3).join(" ")} ` };
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    },
+  };
 }
 
 /**
- * COMPACT SYSTEM PROMPT - Optimized for ultra-low token consumption & fast latency
+ * Compact system instruction optimized for concise, grounded respiratory intelligence.
  */
 export const BREATHEWISE_SYSTEM_PROMPT = `
 You are BreatheWise AI, a concise respiratory intelligence guide.
@@ -82,7 +118,7 @@ RULES:
 `;
 
 /**
- * Compact context payload (drastically reduced token footprint)
+ * Formats atmospheric telemetry and cohort metadata into a token-efficient context prompt.
  */
 export function constructIntelligenceContext(
   aqiData: AirQualityData,
@@ -96,13 +132,9 @@ export function constructIntelligenceContext(
   return `CONTEXT: ${aqiData.city.name} | AQI: ${aqiValue} (${aqiCat}) | Dominant: PM2.5 ${pm25}µg/m³ (WHO limit: 15) | Temp: ${aqiData.temperature}°C | Humidity: ${aqiData.humidity}% | Wind: ${aqiData.windSpeed}km/h | Inversion Risk: ${aqiData.inversionRisk.level} (${aqiData.inversionRisk.trappedSmogProbability}% trapped) | Cohort: ${profile?.sensitivity || "general"} | Lang: ${lang === "hi" ? "Hindi (हिंदी)" : "English"}`;
 }
 
-/**
- * Fallback generator when API key is missing or quota is exhausted.
- */
 function generateHeuristicAssistantResponse(
   query: string,
   aqiData: AirQualityData,
-  profile?: UserProfileContext,
   lang: "en" | "hi" = "en"
 ): string {
   const isCpcb = aqiData.activeStandard === "INDIA_CPCB";
@@ -125,7 +157,12 @@ function generateHeuristicAssistantResponse(
     return `### 🌿 वायु गुणवत्ता सारांश (${city}):\n\n* **AQI:** ${aqiDisplay} (${aqiData.indiaCategory}) | **PM2.5:** ${pm25} µg/m³\n* **तापमान व्युत्क्रमण:** ${aqiData.inversionRisk.level}\n* **सलाह:** सुबह 6 से 9:30 बजे बाहरी आवागमन सीमित रखें और N95 मास्क पहनें।`;
   }
 
-  if (lowerQ.includes("jog") || lowerQ.includes("run") || lowerQ.includes("exercise") || lowerQ.includes("walk")) {
+  if (
+    lowerQ.includes("jog") ||
+    lowerQ.includes("run") ||
+    lowerQ.includes("exercise") ||
+    lowerQ.includes("walk")
+  ) {
     return isElevated
       ? `### 🛑 Outdoor Exercise Directive for ${city}:\n\n* **AQI:** ${aqiDisplay} (${isCpcb ? aqiData.indiaCategory : aqiData.category}) | **PM2.5:** ${pm25} µg/m³\n* **Risk:** High breathing rate causes deep pulmonary particle deposition.\n* **Guidance:** Shift to indoor workout or wait until midday (12:00–3:00 PM) when solar convection clears surface smog.`
       : `### ✅ Favorable Outdoor Conditions for ${city}:\n\n* Current AQI is **${aqiDisplay}** (${isCpcb ? aqiData.indiaCategory : aqiData.category}). Moderate outdoor exercise is safe.`;
@@ -150,8 +187,7 @@ export interface StreamAirIntelligenceResult {
 }
 
 /**
- * Streaming chat assistant: Truncates history to last 2 messages & limits output to 350 tokens.
- * Explicitly identifies whether response is produced by Gemini API or deterministic heuristic fallback.
+ * Streaming chat assistant with deterministic heuristic fallback.
  */
 export async function streamAirIntelligence(
   messages: AssistantMessage[],
@@ -160,40 +196,26 @@ export async function streamAirIntelligence(
   lang: "en" | "hi" = "en"
 ): Promise<StreamAirIntelligenceResult> {
   const client = getGeminiClient();
+  const lastUserQuery = messages.filter((m) => m.role === "user").pop()?.content || "";
 
   if (!client) {
-    const lastUserQuery = messages.filter((m) => m.role === "user").pop()?.content || "";
-    const responseText = generateHeuristicAssistantResponse(lastUserQuery, aqiData, profile, lang);
-
+    const responseText = generateHeuristicAssistantResponse(lastUserQuery, aqiData, lang);
     return {
       engine: "deterministic-fallback",
-      stream: {
-        async *[Symbol.asyncIterator]() {
-          const words = responseText.split(" ");
-          for (let i = 0; i < words.length; i += 3) {
-            const chunk = words.slice(i, i + 3).join(" ") + " ";
-            yield { text: chunk };
-            await new Promise((r) => setTimeout(r, 15));
-          }
-        },
-      },
+      stream: createDeterministicTextStream(responseText, 15),
     };
   }
 
   const contextPrompt = constructIntelligenceContext(aqiData, profile, lang);
-  
-  // ULTRA-LEAN: Only pass the most recent 2 historical messages to save prompt tokens
   const trimmedHistory = messages.slice(-3, -1).map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content.slice(0, 300) }], // cap length
+    parts: [{ text: m.content.slice(0, 300) }],
   }));
 
   const lastUserMsg = messages[messages.length - 1]?.content || "What are today's smog risks?";
-  const userContent = `${contextPrompt}\nQUERY: ${lastUserMsg}`;
-
   const contents = [
     ...trimmedHistory,
-    { role: "user", parts: [{ text: userContent }] },
+    { role: "user", parts: [{ text: `${contextPrompt}\nQUERY: ${lastUserMsg}` }] },
   ];
 
   try {
@@ -203,36 +225,47 @@ export async function streamAirIntelligence(
       config: {
         systemInstruction: BREATHEWISE_SYSTEM_PROMPT,
         temperature: 0.3,
-        maxOutputTokens: 350, // ULTRA-LEAN: Cap generation at ~350 tokens
+        maxOutputTokens: 350,
       },
     });
 
-    return {
-      engine: "gemini-3.5-flash-lite",
-      stream: rawStream,
+    // Pull the first chunk eagerly so upstream 503/429 stream errors trigger clean heuristic fallback
+    const iterator = rawStream[Symbol.asyncIterator]();
+    const firstChunk = await iterator.next();
+
+    const resilientStream: AsyncIterable<{ text?: string }> = {
+      async *[Symbol.asyncIterator]() {
+        if (!firstChunk.done && firstChunk.value) {
+          yield firstChunk.value;
+        }
+        try {
+          while (true) {
+            const next = await iterator.next();
+            if (next.done) break;
+            yield next.value;
+          }
+        } catch (midStreamErr) {
+          logger.warn("GeminiMidStream", midStreamErr);
+        }
+      },
     };
-  } catch (error) {
-    console.warn("Gemini quota or stream error, falling back to heuristic engine:", error);
-    const responseText = generateHeuristicAssistantResponse(lastUserMsg, aqiData, profile, lang);
 
     return {
+      engine: "gemini-3.5-flash-lite",
+      stream: resilientStream,
+    };
+  } catch (error) {
+    logger.warn("GeminiStream", error);
+    const responseText = generateHeuristicAssistantResponse(lastUserMsg, aqiData, lang);
+    return {
       engine: "deterministic-fallback",
-      stream: {
-        async *[Symbol.asyncIterator]() {
-          const words = responseText.split(" ");
-          for (let i = 0; i < words.length; i += 3) {
-            const chunk = words.slice(i, i + 3).join(" ") + " ";
-            yield { text: chunk };
-            await new Promise((r) => setTimeout(r, 12));
-          }
-        },
-      },
+      stream: createDeterministicTextStream(responseText, 12),
     };
   }
 }
 
 /**
- * Structured Routine with 20-minute Cache
+ * Generates a structured 5-slot daily routine with 20-minute TTL caching.
  */
 export async function generateStructuredRoutineWithGemini(
   aqiData: AirQualityData,
@@ -240,50 +273,34 @@ export async function generateStructuredRoutineWithGemini(
   lang: "en" | "hi" = "en"
 ): Promise<RoutineActivity[]> {
   const cacheKey = `${aqiData.city.id}:${lang}:${profile?.sensitivity || "general"}`;
-  const cached = getCached(routineCache, cacheKey);
-  if (cached) {
-    return cached;
-  }
 
-  const client = getGeminiClient();
-  if (!client) {
-    const routine = generateDailyRoutine(aqiData, lang);
-    setCached(routineCache, cacheKey, routine);
-    return routine;
-  }
-
-  const context = constructIntelligenceContext(aqiData, profile, lang);
-  const prompt = `Generate 5 daily air hygiene slots based on: ${context}.
+  return resolveWithCache(
+    routineCache,
+    cacheKey,
+    () => generateDailyRoutine(aqiData, lang),
+    async (client) => {
+      const context = constructIntelligenceContext(aqiData, profile, lang);
+      const prompt = `Generate 5 daily air hygiene slots based on: ${context}.
 Output JSON array: [{"time":"06:00 AM","displayTime":"6 AM","activity":"string in ${lang === "hi" ? "Hindi" : "English"}","recommendation":"string","status":"safe"|"caution"|"avoid","reason":"string","language":"${lang}"}]`;
 
-  try {
-    const res = await client.models.generateContent({
-      model: "gemini-3.5-flash-lite",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.1,
-        maxOutputTokens: 500, // Lean output
-      },
-    });
+      const res = await client.models.generateContent({
+        model: "gemini-3.5-flash-lite",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.1,
+          maxOutputTokens: 500,
+        },
+      });
 
-    const text = res.text?.trim() || "";
-    const parsed = JSON.parse(text) as RoutineActivity[];
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      setCached(routineCache, cacheKey, parsed);
-      return parsed;
+      const parsed = JSON.parse(res.text?.trim() || "[]") as RoutineActivity[];
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
     }
-  } catch (err) {
-    console.warn("Gemini routine call failed or cached:", err);
-  }
-
-  const fallback = generateDailyRoutine(aqiData, lang);
-  setCached(routineCache, cacheKey, fallback);
-  return fallback;
+  );
 }
 
 /**
- * Indoor Advice with 20-minute Cache
+ * Generates indoor air optimization advice with 20-minute TTL caching.
  */
 export async function generateIndoorAdviceWithGemini(
   aqiData: AirQualityData,
@@ -291,50 +308,58 @@ export async function generateIndoorAdviceWithGemini(
   lang: "en" | "hi" = "en"
 ): Promise<IndoorRecommendation[]> {
   const cacheKey = `${aqiData.city.id}:${lang}:${home.windowsOpen}:${home.hasAirPurifier}:${home.isCooking}`;
-  const cached = getCached(indoorCache, cacheKey);
-  if (cached) {
-    return cached;
-  }
 
-  const client = getGeminiClient();
-  if (!client) {
-    const advice = assessIndoorAir(aqiData, home, lang);
-    setCached(indoorCache, cacheKey, advice);
-    return advice;
-  }
-
-  const pm25 = aqiData.pollutants.pm2_5?.value ?? aqiData.nowCastConcentration;
-  const prompt = `Outdoor PM2.5 is ${pm25}µg/m³. WindowsOpen: ${home.windowsOpen}, Purifier: ${home.hasAirPurifier}, Cooking: ${home.isCooking}. Lang: ${lang}.
+  return resolveWithCache(
+    indoorCache,
+    cacheKey,
+    () => assessIndoorAir(aqiData, home, lang),
+    async (client) => {
+      const pm25 = aqiData.pollutants.pm2_5?.value ?? aqiData.nowCastConcentration;
+      const prompt = `Outdoor PM2.5 is ${pm25}µg/m³. WindowsOpen: ${home.windowsOpen}, Purifier: ${home.hasAirPurifier}, Cooking: ${home.isCooking}. Lang: ${lang}.
 Output 3 JSON items: [{"action":"string","urgency":"LOW"|"MEDIUM"|"HIGH"|"CRITICAL","reason":"string","category":"ventilation"|"purification"|"source_control"}]`;
 
-  try {
-    const res = await client.models.generateContent({
-      model: "gemini-3.5-flash-lite",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.1,
-        maxOutputTokens: 350,
-      },
-    });
+      const res = await client.models.generateContent({
+        model: "gemini-3.5-flash-lite",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.1,
+          maxOutputTokens: 350,
+        },
+      });
 
-    const text = res.text?.trim() || "";
-    const parsed = JSON.parse(text) as IndoorRecommendation[];
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      setCached(indoorCache, cacheKey, parsed);
-      return parsed;
+      const parsed = JSON.parse(res.text?.trim() || "[]") as IndoorRecommendation[];
+      return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
     }
-  } catch (err) {
-    console.warn("Gemini indoor advice error:", err);
-  }
+  );
+}
 
-  const fallback = assessIndoorAir(aqiData, home, lang);
-  setCached(indoorCache, cacheKey, fallback);
-  return fallback;
+function buildImpactFallback(
+  stats: { co2Saved: number; exposureAvoided: number; distance: number; mode: string },
+  lang: "en" | "hi"
+): { explanation: string; tips: string[] } {
+  if (lang === "hi") {
+    return {
+      explanation: `आपने ${stats.distance} किमी की यात्रा में ${stats.mode} चुनकर ${stats.co2Saved} किग्रा CO₂ का उत्सर्जन कम किया।`,
+      tips: [
+        "रेड लाइट पर इंजन बंद रखें।",
+        "सुबह के पीक स्मॉग में मेट्रो चुनें।",
+        "HEPA प्यूरीफायर को साफ रखें।",
+      ],
+    };
+  }
+  return {
+    explanation: `Your clean transit choice mitigated ${stats.co2Saved} kg of CO₂ and averted ${stats.exposureAvoided} units of toxic particulate inhalation.`,
+    tips: [
+      "Cut engine idling during prolonged traffic stops.",
+      "Favor metro transit during morning inversion peaks.",
+      "Maintain clean HEPA filters to optimize airflow efficiency.",
+    ],
+  };
 }
 
 /**
- * Environmental Impact Explanation with 20-minute Cache
+ * Generates contextual explanation and tips for transportation impact savings.
  */
 export async function explainImpactWithGemini(
   stats: {
@@ -347,72 +372,39 @@ export async function explainImpactWithGemini(
   lang: "en" | "hi" = "en"
 ): Promise<{ explanation: string; tips: string[] }> {
   const cacheKey = `${stats.mode}:${stats.distance}:${lang}`;
-  const cached = getCached(impactCache, cacheKey);
-  if (cached) {
-    return cached;
-  }
 
-  const client = getGeminiClient();
-  if (!client) {
-    const fallback =
-      lang === "hi"
-        ? {
-            explanation: `आपने ${stats.distance} किमी की यात्रा में ${stats.mode} चुनकर ${stats.co2Saved} किग्रा CO₂ का उत्सर्जन कम किया।`,
-            tips: [
-              "रेड लाइट पर इंजन बंद रखें।",
-              "सुबह के पीक स्मॉग में मेट्रो चुनें।",
-              "HEPA प्यूरीफायर को साफ रखें।",
-            ],
-          }
-        : {
-            explanation: `Your clean transit choice mitigated ${stats.co2Saved} kg of CO₂ and averted ${stats.exposureAvoided} units of toxic particulate inhalation.`,
-            tips: [
-              "Cut engine idling during prolonged traffic stops.",
-              "Favor metro transit during morning inversion peaks.",
-              "Maintain clean HEPA filters to optimize airflow efficiency.",
-            ],
-          };
-    setCached(impactCache, cacheKey, fallback);
-    return fallback;
-  }
-
-  const prompt = `Distance: ${stats.distance}km, Mode: ${stats.mode}, CO2Saved: ${stats.co2Saved}kg, Lang: ${lang}.
+  return resolveWithCache(
+    impactCache,
+    cacheKey,
+    () => buildImpactFallback(stats, lang),
+    async (client) => {
+      const prompt = `Distance: ${stats.distance}km, Mode: ${stats.mode}, CO2Saved: ${stats.co2Saved}kg, Lang: ${lang}.
 Output JSON: {"explanation":"2 concise sentences in ${lang === "hi" ? "Hindi" : "English"}","tips":["tip1","tip2","tip3"]}`;
 
-  try {
-    const res = await client.models.generateContent({
-      model: "gemini-3.5-flash-lite",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.2,
-        maxOutputTokens: 250,
-      },
-    });
+      const res = await client.models.generateContent({
+        model: "gemini-3.5-flash-lite",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.2,
+          maxOutputTokens: 250,
+        },
+      });
 
-    const text = res.text?.trim() || "";
-    const parsed = JSON.parse(text);
-    setCached(impactCache, cacheKey, parsed);
-    return parsed;
-  } catch (err) {
-    console.warn("Gemini impact explanation error:", err);
-  }
-
-  const fallback = {
-    explanation: `Your clean transit choice mitigated ${stats.co2Saved} kg of CO₂ and averted ${stats.exposureAvoided} units of direct toxic particulate inhalation.`,
-    tips: [
-      "Cut engine idling during prolonged red lights.",
-      "Shift morning commutes to electric rail during inversion peaks.",
-      "Maintain clean HEPA filters to optimize purifier airflow.",
-    ],
-  };
-  setCached(impactCache, cacheKey, fallback);
-  return fallback;
+      const parsed = JSON.parse(res.text?.trim() || "{}") as {
+        explanation?: string;
+        tips?: string[];
+      };
+      return parsed.explanation && Array.isArray(parsed.tips)
+        ? { explanation: parsed.explanation, tips: parsed.tips }
+        : null;
+    }
+  );
 }
 
 /**
  * Verifies a user-submitted activity plan against diurnal inversion physics,
- * ambient air quality, and user cohort using Gemini, with a deterministic fallback.
+ * ambient air quality, and user cohort using Gemini, with deterministic fallback.
  */
 export async function verifyPlanWithGemini(
   plan: UserPlanInput,
@@ -420,22 +412,15 @@ export async function verifyPlanWithGemini(
   lang: "en" | "hi" = "en"
 ): Promise<PlanVerificationResult> {
   const cacheKey = `${aqiData.city.id}:${plan.activityName}:${plan.plannedTime}:${plan.durationMinutes}:${plan.environment}:${plan.intensity}:${plan.cohort}:${plan.hasN95Mask}:${lang}`;
-  const cached = getCached(planVerificationCache, cacheKey);
-  if (cached) {
-    return cached;
-  }
-
-  // Pre-calculate deterministic physical metrics
   const fallback = verifyPlanDeterministic(plan, aqiData, lang);
 
-  const client = getGeminiClient();
-  if (!client) {
-    setCached(planVerificationCache, cacheKey, fallback);
-    return fallback;
-  }
-
-  const context = constructIntelligenceContext(aqiData, undefined, lang);
-  const prompt = `You are BreatheWise AI's respiratory safety validator.
+  return resolveWithCache(
+    planVerificationCache,
+    cacheKey,
+    () => fallback,
+    async (client) => {
+      const context = constructIntelligenceContext(aqiData, undefined, lang);
+      const prompt = `You are BreatheWise AI's respiratory safety validator.
 Evaluate this user's custom planned activity:
 - Activity: "${plan.activityName}"
 - Planned Time: "${plan.plannedTime}"
@@ -462,22 +447,20 @@ Respond in valid JSON matching this schema:
   "protectiveMeasures": ["bullet 1", "bullet 2", "bullet 3"]
 }`;
 
-  try {
-    const res = await client.models.generateContent({
-      model: "gemini-3.5-flash-lite",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.2,
-        maxOutputTokens: 450,
-      },
-    });
+      const res = await client.models.generateContent({
+        model: "gemini-3.5-flash-lite",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.2,
+          maxOutputTokens: 450,
+        },
+      });
 
-    const text = res.text?.trim() || "";
-    const parsed = JSON.parse(text);
+      const parsed = JSON.parse(res.text?.trim() || "{}");
+      if (!parsed || typeof parsed !== "object") return null;
 
-    if (parsed && typeof parsed === "object") {
-      const merged: PlanVerificationResult = {
+      return {
         ...fallback,
         status: (["optimal", "safe", "caution", "avoid"].includes(parsed.status)
           ? parsed.status
@@ -491,21 +474,12 @@ Respond in valid JSON matching this schema:
         explanation: parsed.explanation || fallback.explanation,
         suggestedAlternativeTime:
           parsed.suggestedAlternativeTime || fallback.suggestedAlternativeTime,
-        recommendedAdjustment:
-          parsed.recommendedAdjustment || fallback.recommendedAdjustment,
+        recommendedAdjustment: parsed.recommendedAdjustment || fallback.recommendedAdjustment,
         protectiveMeasures:
           Array.isArray(parsed.protectiveMeasures) && parsed.protectiveMeasures.length > 0
             ? parsed.protectiveMeasures
             : fallback.protectiveMeasures,
       };
-
-      setCached(planVerificationCache, cacheKey, merged);
-      return merged;
     }
-  } catch (err) {
-    console.warn("Gemini plan verification error, using deterministic engine:", err);
-  }
-
-  setCached(planVerificationCache, cacheKey, fallback);
-  return fallback;
+  );
 }

@@ -305,5 +305,37 @@ export function assessIndoorAir(
     });
   }
 
+  // Always provide baseline indoor maintenance directives when conditions are otherwise controlled
+  if (recommendations.length === 0) {
+    recommendations.push(
+      {
+        action:
+          lang === "hi"
+            ? "सील्ड खिड़कियां व सक्रिय HEPA रीसर्क्युलेशन बनाए रखें"
+            : "Maintain Window Seal & Continuous HEPA Filtration",
+        urgency: isHighPollution ? "MEDIUM" : "LOW",
+        reason:
+          lang === "hi"
+            ? `बाहरी PM2.5 (${outdoorPm25} µg/m³) के दौरान निरंतर इनडोर रीसर्क्युलेशन इनडोर AQI को सुरक्षित रखता है।`
+            : `Outdoor PM2.5 (${outdoorPm25} µg/m³) warrants continuous sealed recirculation and checking filter CADR airflow.`,
+        category: "purification",
+        costTier: "free",
+      },
+      {
+        action:
+          lang === "hi"
+            ? "माइक्रोफाइबर गीले पोंछे का उपयोग करें"
+            : "Enforce Microfiber Damp-Mopping & Doorway Sweeps",
+        urgency: "LOW",
+        reason:
+          lang === "hi"
+            ? "सूखी झाड़ू से जमी हुई धूल फिर से हवा में फैलती है; गीला पोंछा कणों को बांधता है।"
+            : "Wet wiping binds settled coarse dust without resuspending particles into breathing zones.",
+        category: "source_control",
+        costTier: "free",
+      }
+    );
+  }
+
   return recommendations;
 }

@@ -4,17 +4,23 @@ import React, { useState } from "react";
 import { useAirQuality } from "@/context/AirQualityContext";
 import { MapPin, Navigation, X, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { readStorageString, writeStorageString } from "@/lib/storage";
 
 const DISMISS_KEY = "breathewise_location_banner_dismissed";
 
+/**
+ * Dismissible top-of-page geolocation permission prompt with toast feedback.
+ */
 export function LocationPermissionBanner() {
   const { selectedCity, requestLocationPermission, isLocating, locationError } =
     useAirQuality();
+
   const [isDismissed, setIsDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
-    const dismissed = localStorage.getItem(DISMISS_KEY) === "true";
-    const usingGps = localStorage.getItem("breathewise_use_gps") === "true";
-    return dismissed || usingGps;
+    return (
+      readStorageString(DISMISS_KEY) === "true" ||
+      readStorageString("breathewise_use_gps") === "true"
+    );
   });
   const [grantedToast, setGrantedToast] = useState(false);
 
@@ -29,9 +35,7 @@ export function LocationPermissionBanner() {
 
   const handleDismiss = () => {
     setIsDismissed(true);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(DISMISS_KEY, "true");
-    }
+    writeStorageString(DISMISS_KEY, "true");
   };
 
   return (
@@ -62,6 +66,7 @@ export function LocationPermissionBanner() {
 
               <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                 <button
+                  type="button"
                   onClick={handleAllowLocation}
                   disabled={isLocating}
                   className="px-3 py-1.5 rounded-xl bg-[#4DB8FF] text-[#0A1118] font-bold text-xs hover:bg-[#7CCBFF] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4DB8FF]"
@@ -80,6 +85,7 @@ export function LocationPermissionBanner() {
                 </button>
 
                 <button
+                  type="button"
                   onClick={handleDismiss}
                   className="p-1.5 rounded-xl text-[#8496A8] hover:text-[#F2F6FA] hover:bg-[rgba(255,255,255,0.06)] transition-colors cursor-pointer"
                   aria-label="Dismiss location prompt"
@@ -92,7 +98,6 @@ export function LocationPermissionBanner() {
         )}
       </AnimatePresence>
 
-      {/* Success feedback toast when location is acquired */}
       <AnimatePresence>
         {grantedToast && (
           <motion.div
@@ -107,7 +112,6 @@ export function LocationPermissionBanner() {
         )}
       </AnimatePresence>
 
-      {/* Error message toast if denied or failed */}
       <AnimatePresence>
         {locationError && (
           <motion.div

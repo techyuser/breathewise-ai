@@ -1,18 +1,15 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { AirQualityData, AqiStandard, CityLocation } from "@/types/air-quality";
+import { PRESET_CITIES } from "@/lib/constants/cities";
 import {
-  AirQualityData,
-  AqiStandard,
-  CityLocation,
-} from "@/types/air-quality";
-import { PRESET_CITIES } from "@/lib/open-meteo";
+  readStorageJson,
+  readStorageString,
+  writeStorageJson,
+  writeStorageString,
+} from "@/lib/storage";
+import { logger } from "@/lib/logger";
 
 interface AirQualityContextType {
   selectedCity: CityLocation;
@@ -32,7 +29,9 @@ interface AirQualityContextType {
 }
 
 const AirQualityContext = createContext<AirQualityContextType | undefined>(undefined);
-const LOCAL_STORAGE_KEY = "breathewise_last_air_data";
+const AIR_DATA_STORAGE_KEY = "breathewise_last_air_data";
+const SELECTED_CITY_KEY = "breathewise_selected_city";
+const SAVED_LOCATION_KEY = "breathewise_saved_location";
 
 function subscribeNetwork(callback: () => void) {
   window.addEventListener("online", callback);
@@ -51,36 +50,19 @@ function getNetworkServerSnapshot() {
   return false;
 }
 
-export function AirQualityProvider({ children }: { children: React.ReactNode }) {
-  const [selectedCity, setSelectedCityState] = useState<CityLocation>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const savedCity = localStorage.getItem("breathewise_selected_city");
-        if (savedCity) {
-          return JSON.parse(savedCity) as CityLocation;
-        }
-        const savedLoc = localStorage.getItem("breathewise_saved_location");
-        if (savedLoc) {
-          return JSON.parse(savedLoc) as CityLocation;
-        }
-      } catch (_err) {
-        // Safe fallback when localStorage is restricted or in private browsing
-      }
-    }
-    return PRESET_CITIES[0];
-  });
+function loadInitialCity(): CityLocation {
+  const fromCityKey = readStorageJson<CityLocation | null>(SELECTED_CITY_KEY, null);
+  if (fromCityKey) return fromCityKey;
+  const fromSavedKey = readStorageJson<CityLocation | null>(SAVED_LOCATION_KEY, null);
+  return fromSavedKey || PRESET_CITIES[0];
+}
 
-  const setSelectedCity = useCallback((city: CityLocation) => {
-    setSelectedCityState(city);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("breathewise_selected_city", JSON.stringify(city));
-        localStorage.setItem("breathewise_saved_location", JSON.stringify(city));
-      } catch (_err) {
-        // Safe fallback when localStorage is restricted or in private browsing
-      }
-    }
-  }, []);
+/**
+ * Global client provider synchronizing city telemetry, AQI standards, offline snapshots,
+ * and automatic browser geolocation with IP fallback.
+ */
+export function AirQualityProvider({ children }: { children: React.ReactNode }) {
+  const [selectedCity, setSelectedCityState] = useState<CityLocation>(loadInitialCity);
   const [airData, setAirData] = useState<AirQualityData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,23 +76,29 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
     getNetworkServerSnapshot
   );
 
+  const setSelectedCity = useCallback((city: CityLocation) => {
+    setSelectedCityState(city);
+    writeStorageJson(SELECTED_CITY_KEY, city);
+    writeStorageJson(SAVED_LOCATION_KEY, city);
+  }, []);
+
+  const restoreOfflineSnapshot = useCallback((offlineNotice: string): boolean => {
+    const cached = readStorageJson<AirQualityData | null>(AIR_DATA_STORAGE_KEY, null);
+    if (cached) {
+      setAirData(cached);
+      setError(null);
+      return true;
+    }
+    setError(offlineNotice);
+    return false;
+  }, []);
+
   const fetchAtmosphericData = useCallback(
     async (city: CityLocation, standard: AqiStandard, forceRefresh = false) => {
-      // If browser is offline, restore from cache
       if (typeof window !== "undefined" && !window.navigator.onLine) {
-        const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached) as AirQualityData;
-            setAirData(parsed);
-            setError(null);
-            setLoading(false);
-            return;
-          } catch (_err) {
-            // Ignore corrupted cached state and proceed to network sync
-          }
-        }
-        setError("You are currently offline and no local atmospheric cache is present.");
+        restoreOfflineSnapshot(
+          "You are currently offline and no local atmospheric cache is present."
+        );
         setLoading(false);
         return;
       }
@@ -126,50 +114,26 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
         });
 
         const res = await fetch(`/api/air-quality?${queryParams.toString()}`);
-        if (!res.ok) {
-          throw new Error(`Server returned HTTP ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Server returned HTTP ${res.status}`);
 
         const data: AirQualityData = await res.json();
         setAirData(data);
         setError(null);
-
-        if (typeof window !== "undefined") {
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-        }
+        writeStorageJson(AIR_DATA_STORAGE_KEY, data);
       } catch (err) {
-        console.warn("API fetch error, trying offline fallback:", err);
-        let restoredFromCache = false;
-        if (typeof window !== "undefined") {
-          const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
-          if (cached) {
-            try {
-              const parsed = JSON.parse(cached) as AirQualityData;
-              setAirData(parsed);
-              setError(null);
-              restoredFromCache = true;
-            } catch (_err) {
-              // Ignore corrupted cached state
-            }
-          }
-        }
-
-        if (!restoredFromCache) {
-          setError(
-            "Unable to sync live atmospheric data from Open-Meteo. Please check your network connection or try refreshing."
-          );
-        }
+        logger.warn("AirQualityContext", err);
+        restoreOfflineSnapshot(
+          "Unable to sync live atmospheric data from Open-Meteo. Please check your network connection or try refreshing."
+        );
       } finally {
         setLoading(false);
       }
     },
-    []
+    [restoreOfflineSnapshot]
   );
 
   const requestLocationPermission = useCallback(async (): Promise<boolean> => {
-    if (typeof window === "undefined") {
-      return false;
-    }
+    if (typeof window === "undefined") return false;
 
     setIsLocating(true);
     setLocationError(null);
@@ -178,18 +142,9 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
       setSelectedCity(loc);
       setIsLocating(false);
       setLocationError(null);
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("breathewise_use_gps", "true");
-          localStorage.setItem("breathewise_saved_location", JSON.stringify(loc));
-          localStorage.setItem("breathewise_selected_city", JSON.stringify(loc));
-        } catch (_err) {
-          // Ignore localStorage quota errors
-        }
-      }
+      writeStorageString("breathewise_use_gps", "true");
     };
 
-    // Helper: IP-based location detection fallback
     const tryIpFallback = async (): Promise<boolean> => {
       try {
         const ipRes = await fetch("/api/geocoding?ip=true");
@@ -201,20 +156,20 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
           }
         }
       } catch (err) {
-        console.warn("IP Geolocation fallback failed:", err);
+        logger.warn("IpGeolocation", err);
       }
       return false;
     };
 
-    // If browser doesn't support navigator.geolocation, use IP fallback immediately
     if (!navigator.geolocation) {
       const ipOk = await tryIpFallback();
       if (!ipOk) {
         setIsLocating(false);
-        setLocationError("Location detection is not supported. Please select your city from the location menu.");
-        return false;
+        setLocationError(
+          "Location detection is not supported. Please select your city from the location menu."
+        );
       }
-      return true;
+      return ipOk;
     }
 
     return new Promise<boolean>((resolve) => {
@@ -226,14 +181,14 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
         const ipSuccess = await tryIpFallback();
         if (ipSuccess) {
           resolve(true);
-        } else {
-          setIsLocating(false);
-          setLocationError(
-            errNotice ||
-            "Unable to retrieve coordinates. Please search for your city in the location menu."
-          );
-          resolve(false);
+          return;
         }
+        setIsLocating(false);
+        setLocationError(
+          errNotice ||
+            "Unable to retrieve coordinates. Please search for your city in the location menu."
+        );
+        resolve(false);
       };
 
       navigator.geolocation.getCurrentPosition(
@@ -254,10 +209,10 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
               }
             }
           } catch (_err) {
-            // Ignore reverse geocode failures and fallback to coordinate labels
+            // Fall through to coordinate-based label when reverse geocode is unavailable
           }
 
-          const userLoc: CityLocation = {
+          applyLocation({
             id: `gps-${lat}-${lon}`,
             name: `Local Area (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)`,
             region: "Detected Location",
@@ -265,20 +220,16 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
             lat,
             lon,
             isCustomGps: true,
-          };
-
-          applyLocation(userLoc);
+          });
           resolve(true);
         },
         async (err) => {
-          // If denied, unavailable, or timed out, seamlessly fall back to IP-based location
           const notice =
             err.code === err.PERMISSION_DENIED
               ? "Browser location permission denied. Switched to network location."
               : "GPS signal timed out. Switched to network location.";
           await fallbackToIp(notice);
         },
-        // enableHighAccuracy: false ensures instant resolution on laptops/Macs without GPS chipsets
         { timeout: 7000, enableHighAccuracy: false, maximumAge: 300000 }
       );
     });
@@ -286,19 +237,15 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
 
   const hasAutoRequestedRef = React.useRef(false);
 
-  // Automatically ask for location permission after the site is opened
   useEffect(() => {
     if (typeof window === "undefined" || hasAutoRequestedRef.current) return;
-
-    // Only trigger auto-prompt on the main site landing
     const isLanding = window.location.pathname === "/" || window.location.pathname === "/overview";
     if (!isLanding) return;
 
-    const autoPrompted = sessionStorage.getItem("breathewise_auto_location_prompted");
+    const autoPrompted = readStorageString("breathewise_auto_location_prompted", "session");
     if (!autoPrompted) {
       hasAutoRequestedRef.current = true;
-      sessionStorage.setItem("breathewise_auto_location_prompted", "true");
-      // Defer to asynchronous execution to avoid synchronous state updates in the effect body
+      writeStorageString("breathewise_auto_location_prompted", "true", "session");
       const timer = setTimeout(() => {
         requestLocationPermission();
       }, 300);
@@ -308,15 +255,12 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     let isCurrent = true;
-
     const run = async () => {
       if (isCurrent) {
         await fetchAtmosphericData(selectedCity, activeStandard, false);
       }
     };
-
     run();
-
     return () => {
       isCurrent = false;
     };
@@ -329,7 +273,7 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
 
   const setCustomCoordinates = useCallback(
     (lat: number, lon: number, name?: string) => {
-      const customLoc: CityLocation = {
+      setSelectedCity({
         id: `custom-coords-${lat.toFixed(2)}-${lon.toFixed(2)}`,
         name: name || `Coords (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)`,
         region: "Custom Coordinates",
@@ -337,8 +281,7 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
         lat,
         lon,
         isCustomCoordinates: true,
-      };
-      setSelectedCity(customLoc);
+      });
     },
     [setSelectedCity]
   );
@@ -371,6 +314,9 @@ export function AirQualityProvider({ children }: { children: React.ReactNode }) 
   );
 }
 
+/**
+ * Accessor hook for global air quality state and actions.
+ */
 export function useAirQuality() {
   const context = useContext(AirQualityContext);
   if (!context) {

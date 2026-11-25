@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchLiveAirQuality, PRESET_CITIES } from "@/lib/open-meteo";
-import { AirQualityData, AqiStandard, CityLocation } from "@/types/air-quality";
+import { fetchLiveAirQuality } from "@/lib/open-meteo";
+import { resolveTargetCity } from "@/lib/api-helpers";
+import { AirQualityData, AqiStandard } from "@/types/air-quality";
+import { logger } from "@/lib/logger";
 
 interface CacheEntry {
   data: AirQualityData;
   expiresAt: number;
 }
 
-// In-memory cache with 5-minute (300,000ms) TTL
 const memoryCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -25,42 +26,19 @@ export async function GET(req: NextRequest) {
     cleanExpiredCache();
 
     const searchParams = req.nextUrl.searchParams;
-    const cityId = searchParams.get("city") || "delhi";
-    const latParam = searchParams.get("lat");
-    const lonParam = searchParams.get("lon");
-    const nameParam = searchParams.get("name");
     const standardParam = searchParams.get("standard") as AqiStandard | null;
     const forceRefresh = searchParams.get("refresh") === "true";
 
-    let targetCity: CityLocation;
+    const cityResult = resolveTargetCity({
+      cityId: searchParams.get("city") || "delhi",
+      latParam: searchParams.get("lat"),
+      lonParam: searchParams.get("lon"),
+      nameParam: searchParams.get("name"),
+    });
+    if ("errorResponse" in cityResult) return cityResult.errorResponse;
 
-    if (latParam && lonParam) {
-      const lat = parseFloat(latParam);
-      const lon = parseFloat(lonParam);
-
-      if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-        return NextResponse.json(
-          { error: "Invalid latitude or longitude coordinates. Latitude must be between -90 and 90, Longitude between -180 and 180." },
-          { status: 400 }
-        );
-      }
-
-      targetCity = {
-        id: `coord-${lat.toFixed(3)}-${lon.toFixed(3)}`,
-        name: nameParam || `Coords (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)`,
-        region: "Custom Location",
-        country: "Coordinates",
-        lat,
-        lon,
-        isCustomCoordinates: true,
-      };
-    } else {
-      const foundCity = PRESET_CITIES.find((c) => c.id === cityId);
-      targetCity = foundCity || PRESET_CITIES[0];
-    }
-
-    const standardKey = standardParam || "AUTO";
-    const cacheKey = `${targetCity.id}:${targetCity.lat.toFixed(3)}:${targetCity.lon.toFixed(3)}:${standardKey}`;
+    const targetCity = cityResult.city;
+    const cacheKey = `${targetCity.id}:${targetCity.lat.toFixed(3)}:${targetCity.lon.toFixed(3)}:${standardParam || "AUTO"}`;
     const now = Date.now();
 
     if (!forceRefresh && memoryCache.has(cacheKey)) {
@@ -75,21 +53,12 @@ export async function GET(req: NextRequest) {
             },
           }
         );
-      } else {
-        memoryCache.delete(cacheKey);
       }
+      memoryCache.delete(cacheKey);
     }
 
-    const aqiData = await fetchLiveAirQuality(
-      targetCity,
-      standardParam || undefined
-    );
-
-    // Save to server-side cache
-    memoryCache.set(cacheKey, {
-      data: aqiData,
-      expiresAt: now + CACHE_TTL_MS,
-    });
+    const aqiData = await fetchLiveAirQuality(targetCity, standardParam || undefined);
+    memoryCache.set(cacheKey, { data: aqiData, expiresAt: now + CACHE_TTL_MS });
 
     return NextResponse.json(
       { ...aqiData, cacheStatus: "MISS" },
@@ -101,7 +70,7 @@ export async function GET(req: NextRequest) {
       }
     );
   } catch (error) {
-    console.error("Air Quality API Error:", error);
+    logger.error("AirQualityAPI", error);
     return NextResponse.json(
       {
         error: "Failed to fetch live atmospheric data from Open-Meteo",

@@ -1,20 +1,62 @@
-import {
+import type {
   AirQualityData,
+  AqiStandard,
   CityLocation,
   HourlyAQIPoint,
+  InversionRisk,
   PollutantDetail,
   WeatherCondition,
-  AqiStandard,
 } from "@/types/air-quality";
 import { getAQICategory, getHealthAdvisory, calculateNowCastAqi } from "./aqi-utils";
 import { calculateCpcbNaqi, getCpcbCategory, getCpcbHealthDirective } from "./cpcb-utils";
 import { parseWmoWeatherCode } from "./weather-codes";
+import { PRESET_CITIES, isLocationInIndia } from "./constants/cities";
+import { logger } from "./logger";
+
+export { PRESET_CITIES, isLocationInIndia };
+
+interface RawCurrentPollutants {
+  pm2_5?: number;
+  pm10?: number;
+  nitrogen_dioxide?: number;
+  ozone?: number;
+  carbon_monoxide?: number;
+  sulphur_dioxide?: number;
+  european_aqi?: number;
+  us_aqi?: number;
+  time?: string;
+}
+
+interface HourlyArrays {
+  times: string[];
+  pm25: number[];
+  pm10: number[];
+  no2: number[];
+  so2: number[];
+  ozone: number[];
+  co: number[];
+  usAqi: number[];
+  weatherTimeMap: Map<string, number>;
+  weatherTemp: number[];
+  weatherHumid: number[];
+}
+
+interface PollutantSpec {
+  code: PollutantDetail["code"];
+  name: string;
+  chemicalFormula: string;
+  rawValue: number | undefined;
+  fallback: number;
+  decimals: number;
+  whoLimit: number;
+  description: string;
+  getStatus: (value: number) => PollutantDetail["status"];
+}
 
 /**
  * Computes rolling average adhering to CPCB 2014 data sufficiency guidelines:
  * - 24-hour average requires at least 16 valid hourly observations (>= 67% data capture).
  * - 8-hour average requires at least 6 valid hourly observations (>= 75% data capture).
- * Returns undefined if valid hours < minimum required, never inventing concentrations.
  */
 function computeRollingAverage(
   arr: number[] | undefined,
@@ -25,109 +67,276 @@ function computeRollingAverage(
   if (!arr || arr.length === 0 || endIdx < 0) return undefined;
   const minHours = minRequiredHours ?? (hours >= 24 ? 16 : Math.ceil(hours * 0.75));
   const startIdx = Math.max(0, endIdx - hours + 1);
-  const slice = arr.slice(startIdx, endIdx + 1).filter((v) => v !== null && v !== undefined && !isNaN(v));
+  const slice = arr
+    .slice(startIdx, endIdx + 1)
+    .filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
   if (slice.length < minHours) return undefined;
   const sum = slice.reduce((a, b) => a + b, 0);
   return Number((sum / slice.length).toFixed(1));
 }
 
-export const PRESET_CITIES: CityLocation[] = [
-  {
-    id: "delhi",
-    name: "New Delhi",
-    region: "National Capital Region",
-    country: "India",
-    lat: 28.6139,
-    lon: 77.209,
-    isSmogHotspot: true,
-    isIndianCity: true,
-  },
-  {
-    id: "mumbai",
-    name: "Mumbai",
-    region: "Maharashtra",
-    country: "India",
-    lat: 19.076,
-    lon: 72.8777,
-    isIndianCity: true,
-  },
-  {
-    id: "bengaluru",
-    name: "Bengaluru",
-    region: "Karnataka",
-    country: "India",
-    lat: 12.9716,
-    lon: 77.5946,
-    isIndianCity: true,
-  },
-  {
-    id: "kolkata",
-    name: "Kolkata",
-    region: "West Bengal",
-    country: "India",
-    lat: 22.5726,
-    lon: 88.3639,
-    isSmogHotspot: true,
-    isIndianCity: true,
-  },
-  {
-    id: "lahore",
-    name: "Lahore",
-    region: "Punjab",
-    country: "Pakistan",
-    lat: 31.5497,
-    lon: 74.3436,
-    isSmogHotspot: true,
-  },
-  {
-    id: "beijing",
-    name: "Beijing",
-    region: "Jingjinji",
-    country: "China",
-    lat: 39.9042,
-    lon: 116.4074,
-    isSmogHotspot: true,
-  },
-  {
-    id: "milan",
-    name: "Milan",
-    region: "Po Valley",
-    country: "Italy",
-    lat: 45.4642,
-    lon: 9.19,
-    isSmogHotspot: true,
-  },
-  {
-    id: "london",
-    name: "London",
-    region: "Greater London",
-    country: "United Kingdom",
-    lat: 51.5074,
-    lon: -0.1278,
-  },
-  {
-    id: "new-york",
-    name: "New York",
-    region: "NY",
-    country: "United States",
-    lat: 40.7128,
-    lon: -74.006,
-  },
-  {
-    id: "tokyo",
-    name: "Tokyo",
-    region: "Kanto",
-    country: "Japan",
-    lat: 35.6762,
-    lon: 139.6503,
-  },
-];
+function findCurrentHourIndex(hourlyTimes: string[], currentTimeStr: string): number {
+  const exactIndex = hourlyTimes.findIndex((t) => t === currentTimeStr);
+  if (exactIndex !== -1 || hourlyTimes.length === 0) return exactIndex;
 
-export function isLocationInIndia(lat: number, lon: number, country?: string): boolean {
-  if (country && country.toLowerCase().includes("india")) return true;
-  return lat >= 8.0 && lat <= 37.5 && lon >= 68.0 && lon <= 97.5;
+  const nowMs = Date.now();
+  let bestDiff = Infinity;
+  let bestIdx = -1;
+  for (let i = 0; i < hourlyTimes.length; i++) {
+    const diff = Math.abs(new Date(hourlyTimes[i]).getTime() - nowMs);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestIdx = i;
+    }
+  }
+  return bestIdx;
 }
 
+function buildPollutantsMap(current: RawCurrentPollutants): Record<string, PollutantDetail> {
+  const specs: PollutantSpec[] = [
+    {
+      code: "pm2_5",
+      name: "Fine Particulate Matter",
+      chemicalFormula: "PM2.5",
+      rawValue: current.pm2_5,
+      fallback: 45.2,
+      decimals: 1,
+      whoLimit: 15,
+      description:
+        "Microscopic particles (≤2.5 µm) that penetrate deep into lung alveoli and bloodstream.",
+      getStatus: (v) =>
+        v > 75 ? "Severe" : v > 35 ? "High" : v > 15 ? "Elevated" : "Safe",
+    },
+    {
+      code: "pm10",
+      name: "Coarse Particulate Matter",
+      chemicalFormula: "PM10",
+      rawValue: current.pm10,
+      fallback: 78.4,
+      decimals: 1,
+      whoLimit: 45,
+      description:
+        "Inhalable dust, pollen, and debris irritating the upper bronchial airways.",
+      getStatus: (v) => (v > 150 ? "Severe" : v > 80 ? "High" : "Elevated"),
+    },
+    {
+      code: "nitrogen_dioxide",
+      name: "Nitrogen Dioxide",
+      chemicalFormula: "NO₂",
+      rawValue: current.nitrogen_dioxide,
+      fallback: 38.6,
+      decimals: 1,
+      whoLimit: 25,
+      description: "Combustion gas from vehicular exhausts and thermal power generation.",
+      getStatus: (v) => (v > 50 ? "High" : "Elevated"),
+    },
+    {
+      code: "ozone",
+      name: "Ground-Level Ozone",
+      chemicalFormula: "O₃",
+      rawValue: current.ozone,
+      fallback: 42.1,
+      decimals: 1,
+      whoLimit: 100,
+      description: "Secondary photochemical pollutant formed under sunlight interaction with VOCs.",
+      getStatus: (v) => (v > 100 ? "High" : "Safe"),
+    },
+    {
+      code: "carbon_monoxide",
+      name: "Carbon Monoxide",
+      chemicalFormula: "CO",
+      rawValue: current.carbon_monoxide,
+      fallback: 460,
+      decimals: 0,
+      whoLimit: 4000,
+      description: "Incomplete combustion gas binding to hemoglobin and lowering tissue oxygenation.",
+      getStatus: (v) => (v > 4000 ? "High" : "Safe"),
+    },
+    {
+      code: "sulphur_dioxide",
+      name: "Sulphur Dioxide",
+      chemicalFormula: "SO₂",
+      rawValue: current.sulphur_dioxide,
+      fallback: 12.3,
+      decimals: 1,
+      whoLimit: 40,
+      description: "Emissions from industrial coal burning, heavy fuel oil, and refining.",
+      getStatus: (v) => (v > 40 ? "High" : "Safe"),
+    },
+  ];
+
+  const pollutants: Record<string, PollutantDetail> = {};
+  for (const spec of specs) {
+    const val = spec.rawValue ?? spec.fallback;
+    pollutants[spec.code] = {
+      code: spec.code,
+      name: spec.name,
+      chemicalFormula: spec.chemicalFormula,
+      value: Number(val.toFixed(spec.decimals)),
+      unit: "µg/m³",
+      whoLimit: spec.whoLimit,
+      percentageOfLimit: Math.round((val / spec.whoLimit) * 100),
+      status: spec.getStatus(val),
+      description: spec.description,
+    };
+  }
+  return pollutants;
+}
+
+function buildHourlySeries(
+  arrays: HourlyArrays,
+  startIdx: number,
+  endIdxInclusive: number,
+  isHistorical: boolean,
+  fallbackUsAqi: number | null,
+  fallbackTemp: number,
+  fallbackHumidity: number
+): HourlyAQIPoint[] {
+  const points: HourlyAQIPoint[] = [];
+  const limit = Math.min(endIdxInclusive, arrays.times.length - 1);
+
+  for (let i = startIdx; i <= limit; i++) {
+    const time = arrays.times[i];
+    const displayTime = new Date(time).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      hour12: true,
+    });
+
+    const indiaCalc = calculateCpcbNaqi({
+      pm2_5: computeRollingAverage(arrays.pm25, i, 24, 16),
+      pm10: computeRollingAverage(arrays.pm10, i, 24, 16),
+      nitrogen_dioxide: computeRollingAverage(arrays.no2, i, 24, 16),
+      sulphur_dioxide: computeRollingAverage(arrays.so2, i, 24, 16),
+      ozone: computeRollingAverage(arrays.ozone, i, 8, 6),
+      carbon_monoxide: computeRollingAverage(arrays.co, i, 8, 6),
+    });
+
+    const weatherIdx = arrays.weatherTimeMap.get(time);
+    const rawUs = arrays.usAqi[i];
+    const pm25Val = arrays.pm25[i];
+    const pm10Val = arrays.pm10[i];
+
+    points.push({
+      time,
+      displayTime,
+      usAqi: typeof rawUs === "number" && Number.isFinite(rawUs) ? Math.round(rawUs) : fallbackUsAqi,
+      indiaAqi: indiaCalc.isDataSufficient ? indiaCalc.naqi : null,
+      pm2_5: typeof pm25Val === "number" && Number.isFinite(pm25Val) ? Math.round(pm25Val) : 0,
+      pm10: typeof pm10Val === "number" && Number.isFinite(pm10Val) ? Math.round(pm10Val) : 0,
+      nitrogen_dioxide: arrays.no2[i] ? Math.round(arrays.no2[i]) : undefined,
+      ozone: arrays.ozone[i] ? Math.round(arrays.ozone[i]) : undefined,
+      temperature:
+        weatherIdx !== undefined
+          ? Math.round(arrays.weatherTemp[weatherIdx] ?? fallbackTemp)
+          : fallbackTemp,
+      humidity:
+        weatherIdx !== undefined
+          ? Math.round(arrays.weatherHumid[weatherIdx] ?? fallbackHumidity)
+          : fallbackHumidity,
+      isHistorical,
+    });
+  }
+
+  return points;
+}
+
+function calculateInversionRisk(
+  windSpeed: number,
+  humidity: number,
+  temperature: number,
+  displayAqi: number | null
+): InversionRisk {
+  const isInversionProne = windSpeed < 9 && humidity > 55 && temperature < 22;
+  const aqiForInversion = displayAqi ?? 100;
+  const trappedSmogProbability = Math.min(
+    98,
+    Math.max(
+      10,
+      Math.round(
+        (10 - Math.min(windSpeed, 10)) * 4 +
+          (humidity / 100) * 35 +
+          (aqiForInversion > 150 ? 25 : 10)
+      )
+    )
+  );
+
+  const level: InversionRisk["level"] =
+    trappedSmogProbability > 75
+      ? "Extreme"
+      : trappedSmogProbability > 50
+      ? "High"
+      : trappedSmogProbability > 30
+      ? "Moderate"
+      : "Low";
+
+  return {
+    level,
+    description: isInversionProne
+      ? "Atmospheric temperature inversion active. Stagnant ground mist and low wind velocity trap surface smog."
+      : "Favorable wind dispersion with active convective vertical air mixing.",
+    tempInversion: isInversionProne,
+    windSpeed,
+    humidity,
+    trappedSmogProbability,
+  };
+}
+
+function getOutdoorGuidance(
+  isCpcbStandard: boolean,
+  finalIndiaAqi: number | null,
+  displayAqi: number | null
+): string {
+  if (isCpcbStandard) {
+    if (finalIndiaAqi === null) {
+      return "Insufficient pollutant observations to establish full CPCB NAQI advisory.";
+    }
+    if (finalIndiaAqi > 300) {
+      return "Hazardous air. Strictly avoid outdoor exercise and heavy physical exertion.";
+    }
+    if (finalIndiaAqi > 200) {
+      return "Poor air quality. Avoid prolonged outdoor morning and evening exertion.";
+    }
+    if (finalIndiaAqi > 100) {
+      return "Moderate air. Sensitive groups should take frequent breaks during outdoor activities.";
+    }
+    return "Air quality is favorable for all regular outdoor activities.";
+  }
+
+  if (displayAqi === null) return "Insufficient hourly data to establish NowCast advisory.";
+  if (displayAqi > 180) return "Avoid all strenuous outdoor exertion. Shift workouts indoors.";
+  if (displayAqi > 100) return "Limit morning and late evening outdoor runs.";
+  return "Outdoor conditions favorable for moderate exercise.";
+}
+
+function getVentilationGuidance(
+  isCpcbStandard: boolean,
+  finalIndiaAqi: number | null,
+  displayAqi: number | null
+): string {
+  if (isCpcbStandard) {
+    if (finalIndiaAqi === null) {
+      return "Keep windows closed during morning/evening inversion hours as a precaution.";
+    }
+    if (finalIndiaAqi > 200) {
+      return "Keep windows sealed. Use internal certified HEPA recirculating air filtration.";
+    }
+    if (finalIndiaAqi > 100) {
+      return "Keep windows latched during morning inversion; brief midday airing only if outdoor PM2.5 is low.";
+    }
+    return "Natural cross-ventilation permitted.";
+  }
+
+  if (displayAqi === null) return "Ventilate cautiously during midday only.";
+  if (displayAqi > 150) {
+    return "Keep windows sealed. Use internal certified HEPA recirculating air filtration.";
+  }
+  return "Brief midday window airing permitted when solar convection peaks.";
+}
+
+/**
+ * Fetches live atmospheric telemetry and weather data from Open-Meteo Copernicus CAMS
+ * and computes US EPA NowCast + India CPCB NAQI indices.
+ */
 export async function fetchLiveAirQuality(
   city: CityLocation = PRESET_CITIES[0],
   forcedStandard?: AqiStandard
@@ -153,98 +362,65 @@ export async function fetchLiveAirQuality(
 
     const aqiJson = await aqiRes.json();
     const weatherJson = weatherRes.ok ? await weatherRes.json() : null;
-
-    const current = aqiJson.current || {};
+    const current: RawCurrentPollutants = aqiJson.current || {};
     const weatherCurrent = weatherJson?.current || {};
 
     const hourlyTimes: string[] = aqiJson.hourly?.time || [];
-    const hourlyPm25: number[] = aqiJson.hourly?.pm2_5 || [];
-    const hourlyPm10: number[] = aqiJson.hourly?.pm10 || [];
-    const hourlyNo2: number[] = aqiJson.hourly?.nitrogen_dioxide || [];
-    const hourlyOzone: number[] = aqiJson.hourly?.ozone || [];
-    const hourlyUsAqi: number[] = aqiJson.hourly?.us_aqi || [];
-
-    const hourlySo2: number[] = aqiJson.hourly?.sulphur_dioxide || [];
-    const hourlyCo: number[] = aqiJson.hourly?.carbon_monoxide || [];
-
     const weatherHourlyTimes: string[] = weatherJson?.hourly?.time || [];
-    const weatherHourlyTemp: number[] = weatherJson?.hourly?.temperature_2m || [];
-    const weatherHourlyHumid: number[] = weatherJson?.hourly?.relative_humidity_2m || [];
+    const weatherTimeMap = new Map<string, number>();
+    weatherHourlyTimes.forEach((wt, idx) => weatherTimeMap.set(wt, idx));
 
-    const currentTimeStr: string = current.time || "";
-    let currentIndex = hourlyTimes.findIndex((t) => t === currentTimeStr);
-    if (currentIndex === -1 && hourlyTimes.length > 0) {
-      // Find closest time point
-      const nowMs = Date.now();
-      let bestDiff = Infinity;
-      hourlyTimes.forEach((t, i) => {
-        const diff = Math.abs(new Date(t).getTime() - nowMs);
-        if (diff < bestDiff) {
-          bestDiff = diff;
-          currentIndex = i;
-        }
-      });
-    }
+    const arrays: HourlyArrays = {
+      times: hourlyTimes,
+      pm25: aqiJson.hourly?.pm2_5 || [],
+      pm10: aqiJson.hourly?.pm10 || [],
+      no2: aqiJson.hourly?.nitrogen_dioxide || [],
+      so2: aqiJson.hourly?.sulphur_dioxide || [],
+      ozone: aqiJson.hourly?.ozone || [],
+      co: aqiJson.hourly?.carbon_monoxide || [],
+      usAqi: aqiJson.hourly?.us_aqi || [],
+      weatherTimeMap,
+      weatherTemp: weatherJson?.hourly?.temperature_2m || [],
+      weatherHumid: weatherJson?.hourly?.relative_humidity_2m || [],
+    };
 
-    // Calculate US EPA NowCast from live hourly PM2.5 readings
-    const isHourlyAvailable = hourlyPm25.length > 0;
+    const currentTimeStr = current.time || "";
+    const currentIndex = findCurrentHourIndex(hourlyTimes, currentTimeStr);
+    const isLive = Boolean(current.pm2_5 !== undefined && arrays.pm25.length > 0);
+
     const nowCastResult = calculateNowCastAqi(
-      hourlyPm25,
+      arrays.pm25,
       currentIndex >= 0 ? currentIndex : undefined
     );
-
-    const isLive = Boolean(current.pm2_5 !== undefined && isHourlyAvailable);
     const finalUsAqi = nowCastResult.isDataSufficient
       ? nowCastResult.aqi
       : typeof current.us_aqi === "number" && Number.isFinite(current.us_aqi)
       ? Math.round(current.us_aqi)
       : null;
-    const usCategory = getAQICategory(finalUsAqi);
-    const advisory = getHealthAdvisory(usCategory);
-
-    // Calculate India CPCB NAQI using true 24-hour and 8-hour averaging periods (CPCB 2014 mandate)
-    // Enforcing strict >= 16h requirement for 24h metrics and >= 6h for 8h metrics
-    // Never fall back to instantaneous concentrations: pass undefined when averaging requirements are unmet
-    const pm25_24h = computeRollingAverage(hourlyPm25, currentIndex, 24, 16);
-    const pm10_24h = computeRollingAverage(hourlyPm10, currentIndex, 24, 16);
-    const no2_24h = computeRollingAverage(hourlyNo2, currentIndex, 24, 16);
-    const so2_24h = computeRollingAverage(hourlySo2, currentIndex, 24, 16);
-    const ozone_8h = computeRollingAverage(hourlyOzone, currentIndex, 8, 6);
-    const co_8h = computeRollingAverage(hourlyCo, currentIndex, 8, 6);
 
     const cpcbResult = calculateCpcbNaqi({
-      pm2_5: pm25_24h,
-      pm10: pm10_24h,
-      nitrogen_dioxide: no2_24h,
-      sulphur_dioxide: so2_24h,
-      carbon_monoxide: co_8h,
-      ozone: ozone_8h,
+      pm2_5: computeRollingAverage(arrays.pm25, currentIndex, 24, 16),
+      pm10: computeRollingAverage(arrays.pm10, currentIndex, 24, 16),
+      nitrogen_dioxide: computeRollingAverage(arrays.no2, currentIndex, 24, 16),
+      sulphur_dioxide: computeRollingAverage(arrays.so2, currentIndex, 24, 16),
+      ozone: computeRollingAverage(arrays.ozone, currentIndex, 8, 6),
+      carbon_monoxide: computeRollingAverage(arrays.co, currentIndex, 8, 6),
     });
+
+    const usCategory = getAQICategory(finalUsAqi);
+    const advisory = getHealthAdvisory(usCategory);
     const finalIndiaAqi = cpcbResult.naqi;
     const indiaCategory = getCpcbCategory(finalIndiaAqi);
     const cpcbDirective = getCpcbHealthDirective(finalIndiaAqi);
 
     const inIndia = isLocationInIndia(city.lat, city.lon, city.country);
-    const activeStandard: AqiStandard =
-      forcedStandard || (inIndia ? "INDIA_CPCB" : "US_EPA");
-
+    const activeStandard: AqiStandard = forcedStandard || (inIndia ? "INDIA_CPCB" : "US_EPA");
     const isCpcbStandard = activeStandard === "INDIA_CPCB";
     const displayAqi = isCpcbStandard ? finalIndiaAqi : finalUsAqi;
-    const displayCategory = isCpcbStandard ? indiaCategory : usCategory;
 
-    // Active health directives and advisories strictly tied to selected standard
-    const activeHeadline = isCpcbStandard ? cpcbDirective.headline : advisory.headline;
-    const activeGeneral = isCpcbStandard ? cpcbDirective.generalPublic : advisory.general;
-    const activeSensitive = isCpcbStandard ? cpcbDirective.sensitiveGroups : advisory.sensitive;
-    const activeMaskRequired = isCpcbStandard ? cpcbDirective.maskRecommended : advisory.mask;
-
-    // Weather Metrics
     const temperature = Math.round(weatherCurrent.temperature_2m ?? 18);
-    const feelsLike = Math.round(weatherCurrent.apparent_temperature ?? temperature);
     const humidity = Math.round(weatherCurrent.relative_humidity_2m ?? 65);
     const windSpeed = Math.round(weatherCurrent.wind_speed_10m ?? 6);
-    const windDirection = Math.round(weatherCurrent.wind_direction_10m ?? 180);
-    const surfacePressure = Math.round(weatherCurrent.surface_pressure ?? 1013);
     const weatherCode = weatherCurrent.weather_code ?? 0;
     const weatherMeta = parseWmoWeatherCode(weatherCode);
 
@@ -253,232 +429,24 @@ export async function fetchLiveAirQuality(
       description: weatherMeta.description,
       iconName: weatherMeta.iconName,
       temperature,
-      feelsLike,
+      feelsLike: Math.round(weatherCurrent.apparent_temperature ?? temperature),
       humidity,
       windSpeed,
-      windDirection,
-      surfacePressure,
+      windDirection: Math.round(weatherCurrent.wind_direction_10m ?? 180),
+      surfacePressure: Math.round(weatherCurrent.surface_pressure ?? 1013),
     };
 
-    // Diurnal atmospheric inversion estimation
-    const isInversionProne = windSpeed < 9 && humidity > 55 && temperature < 22;
-    const aqiForInversion = displayAqi ?? 100;
-    const trappedSmogProbability = Math.min(
-      98,
-      Math.max(
-        10,
-        Math.round(
-          (10 - Math.min(windSpeed, 10)) * 4 +
-            (humidity / 100) * 35 +
-            (aqiForInversion > 150 ? 25 : 10)
-        )
-      )
-    );
-
-    const inversionLevel =
-      trappedSmogProbability > 75
-        ? "Extreme"
-        : trappedSmogProbability > 50
-        ? "High"
-        : trappedSmogProbability > 30
-        ? "Moderate"
-        : "Low";
-
-    const modelRunTimeFormatted = currentTimeStr
-      ? `${currentTimeStr.replace("T", " ")} (${aqiJson.timezone_abbreviation || "Local"})`
-      : "Latest Available Model Cycle";
-
-    const pollutants: Record<string, PollutantDetail> = {
-      pm2_5: {
-        code: "pm2_5",
-        name: "Fine Particulate Matter",
-        chemicalFormula: "PM2.5",
-        value: Number((current.pm2_5 ?? 45.2).toFixed(1)),
-        unit: "µg/m³",
-        whoLimit: 15,
-        percentageOfLimit: Math.round(((current.pm2_5 ?? 45.2) / 15) * 100),
-        status:
-          (current.pm2_5 ?? 45) > 75
-            ? "Severe"
-            : (current.pm2_5 ?? 45) > 35
-            ? "High"
-            : (current.pm2_5 ?? 45) > 15
-            ? "Elevated"
-            : "Safe",
-        description:
-          "Microscopic particles (≤2.5 µm) that penetrate deep into lung alveoli and bloodstream.",
-      },
-      pm10: {
-        code: "pm10",
-        name: "Coarse Particulate Matter",
-        chemicalFormula: "PM10",
-        value: Number((current.pm10 ?? 78.4).toFixed(1)),
-        unit: "µg/m³",
-        whoLimit: 45,
-        percentageOfLimit: Math.round(((current.pm10 ?? 78.4) / 45) * 100),
-        status:
-          (current.pm10 ?? 78) > 150
-            ? "Severe"
-            : (current.pm10 ?? 78) > 80
-            ? "High"
-            : "Elevated",
-        description:
-          "Inhalable dust, pollen, and debris irritating the upper bronchial airways.",
-      },
-      nitrogen_dioxide: {
-        code: "nitrogen_dioxide",
-        name: "Nitrogen Dioxide",
-        chemicalFormula: "NO₂",
-        value: Number((current.nitrogen_dioxide ?? 38.6).toFixed(1)),
-        unit: "µg/m³",
-        whoLimit: 25,
-        percentageOfLimit: Math.round(((current.nitrogen_dioxide ?? 38.6) / 25) * 100),
-        status: (current.nitrogen_dioxide ?? 38) > 50 ? "High" : "Elevated",
-        description:
-          "Combustion gas from vehicular exhausts and thermal power generation.",
-      },
-      ozone: {
-        code: "ozone",
-        name: "Ground-Level Ozone",
-        chemicalFormula: "O₃",
-        value: Number((current.ozone ?? 42.1).toFixed(1)),
-        unit: "µg/m³",
-        whoLimit: 100,
-        percentageOfLimit: Math.round(((current.ozone ?? 42.1) / 100) * 100),
-        status: (current.ozone ?? 42) > 100 ? "High" : "Safe",
-        description:
-          "Secondary photochemical pollutant formed under sunlight interaction with VOCs.",
-      },
-      carbon_monoxide: {
-        code: "carbon_monoxide",
-        name: "Carbon Monoxide",
-        chemicalFormula: "CO",
-        value: Number((current.carbon_monoxide ?? 460).toFixed(0)),
-        unit: "µg/m³",
-        whoLimit: 4000,
-        percentageOfLimit: Math.round(((current.carbon_monoxide ?? 460) / 4000) * 100),
-        status: (current.carbon_monoxide ?? 460) > 4000 ? "High" : "Safe",
-        description:
-          "Incomplete combustion gas binding to hemoglobin and lowering tissue oxygenation.",
-      },
-      sulphur_dioxide: {
-        code: "sulphur_dioxide",
-        name: "Sulphur Dioxide",
-        chemicalFormula: "SO₂",
-        value: Number((current.sulphur_dioxide ?? 12.3).toFixed(1)),
-        unit: "µg/m³",
-        whoLimit: 40,
-        percentageOfLimit: Math.round(((current.sulphur_dioxide ?? 12.3) / 40) * 100),
-        status: (current.sulphur_dioxide ?? 12) > 40 ? "High" : "Safe",
-        description:
-          "Emissions from industrial coal burning, heavy fuel oil, and refining.",
-      },
-    };
-
-    // Separate Historical (past 24 points) and Forecast (future points)
     const validCurrentIdx = currentIndex >= 0 ? currentIndex : 24;
-    
-    // Historical points: up to current index (usually 24 hours back)
     const histStart = Math.max(0, validCurrentIdx - 24);
-    const hourlyHistorical: HourlyAQIPoint[] = [];
-    for (let i = histStart; i <= validCurrentIdx && i < hourlyTimes.length; i++) {
-      const t = hourlyTimes[i];
-      const d = new Date(t);
-      const displayTime = d.toLocaleTimeString("en-US", { hour: "numeric", hour12: true });
-      const pm25Val = hourlyPm25[i];
-      const pm10Val = hourlyPm10[i];
-
-      const pm25_roll = computeRollingAverage(hourlyPm25, i, 24, 16);
-      const pm10_roll = computeRollingAverage(hourlyPm10, i, 24, 16);
-      const no2_roll = computeRollingAverage(hourlyNo2, i, 24, 16);
-      const so2_roll = computeRollingAverage(hourlySo2, i, 24, 16);
-      const o3_roll = computeRollingAverage(hourlyOzone, i, 8, 6);
-      const co_roll = computeRollingAverage(hourlyCo, i, 8, 6);
-
-      const indiaCalc = calculateCpcbNaqi({
-        pm2_5: pm25_roll,
-        pm10: pm10_roll,
-        nitrogen_dioxide: no2_roll,
-        sulphur_dioxide: so2_roll,
-        ozone: o3_roll,
-        carbon_monoxide: co_roll,
-      });
-
-      const weatherIdx = weatherHourlyTimes.findIndex((wt) => wt === t);
-      const pointUsAqi = typeof hourlyUsAqi[i] === "number" && Number.isFinite(hourlyUsAqi[i])
-        ? Math.round(hourlyUsAqi[i])
-        : finalUsAqi;
-
-      hourlyHistorical.push({
-        time: t,
-        displayTime,
-        usAqi: pointUsAqi,
-        indiaAqi: indiaCalc.isDataSufficient ? indiaCalc.naqi : null,
-        pm2_5: typeof pm25Val === "number" && Number.isFinite(pm25Val) ? Math.round(pm25Val) : 0,
-        pm10: typeof pm10Val === "number" && Number.isFinite(pm10Val) ? Math.round(pm10Val) : 0,
-        nitrogen_dioxide: hourlyNo2[i] ? Math.round(hourlyNo2[i]) : undefined,
-        ozone: hourlyOzone[i] ? Math.round(hourlyOzone[i]) : undefined,
-        temperature: weatherIdx >= 0 ? Math.round(weatherHourlyTemp[weatherIdx] ?? temperature) : temperature,
-        humidity: weatherIdx >= 0 ? Math.round(weatherHourlyHumid[weatherIdx] ?? humidity) : humidity,
-        isHistorical: true,
-      });
-    }
-
-    // Forecast points: next 48 points after current index
-    const forecastStart = validCurrentIdx;
-    const forecastEnd = Math.min(hourlyTimes.length, forecastStart + 48);
-    const hourlyForecast: HourlyAQIPoint[] = [];
-    for (let i = forecastStart; i < forecastEnd; i++) {
-      const t = hourlyTimes[i];
-      const d = new Date(t);
-      const displayTime = d.toLocaleTimeString("en-US", { hour: "numeric", hour12: true });
-      const pm25Val = hourlyPm25[i];
-      const pm10Val = hourlyPm10[i];
-
-      const pm25_roll = computeRollingAverage(hourlyPm25, i, 24, 16);
-      const pm10_roll = computeRollingAverage(hourlyPm10, i, 24, 16);
-      const no2_roll = computeRollingAverage(hourlyNo2, i, 24, 16);
-      const so2_roll = computeRollingAverage(hourlySo2, i, 24, 16);
-      const o3_roll = computeRollingAverage(hourlyOzone, i, 8, 6);
-      const co_roll = computeRollingAverage(hourlyCo, i, 8, 6);
-
-      const indiaCalc = calculateCpcbNaqi({
-        pm2_5: pm25_roll,
-        pm10: pm10_roll,
-        nitrogen_dioxide: no2_roll,
-        sulphur_dioxide: so2_roll,
-        ozone: o3_roll,
-        carbon_monoxide: co_roll,
-      });
-
-      const weatherIdx = weatherHourlyTimes.findIndex((wt) => wt === t);
-      const pointUsAqi = typeof hourlyUsAqi[i] === "number" && Number.isFinite(hourlyUsAqi[i])
-        ? Math.round(hourlyUsAqi[i])
-        : finalUsAqi;
-
-      hourlyForecast.push({
-        time: t,
-        displayTime,
-        usAqi: pointUsAqi,
-        indiaAqi: indiaCalc.isDataSufficient ? indiaCalc.naqi : null,
-        pm2_5: typeof pm25Val === "number" && Number.isFinite(pm25Val) ? Math.round(pm25Val) : 0,
-        pm10: typeof pm10Val === "number" && Number.isFinite(pm10Val) ? Math.round(pm10Val) : 0,
-        nitrogen_dioxide: hourlyNo2[i] ? Math.round(hourlyNo2[i]) : undefined,
-        ozone: hourlyOzone[i] ? Math.round(hourlyOzone[i]) : undefined,
-        temperature: weatherIdx >= 0 ? Math.round(weatherHourlyTemp[weatherIdx] ?? temperature) : temperature,
-        humidity: weatherIdx >= 0 ? Math.round(weatherHourlyHumid[weatherIdx] ?? humidity) : humidity,
-        isHistorical: false,
-      });
-    }
+    const forecastEnd = Math.min(hourlyTimes.length - 1, validCurrentIdx + 47);
 
     return {
-      city: {
-        ...city,
-        isIndianCity: inIndia,
-      },
+      city: { ...city, isIndianCity: inIndia },
       lastUpdated: clientFetchTimestamp,
       clientFetchTimestamp,
-      modelRunTimestamp: modelRunTimeFormatted,
+      modelRunTimestamp: currentTimeStr
+        ? `${currentTimeStr.replace("T", " ")} (${aqiJson.timezone_abbreviation || "Local"})`
+        : "Latest Available Model Cycle",
       camsSource: "Copernicus Atmosphere Monitoring Service (ECMWF CAMS ~45km Grid)",
       source: "Open-Meteo Copernicus CAMS Model Grid (~45km Spatial Resolution)",
       sourceType: "MODELLED_CAMS_GRID",
@@ -487,10 +455,9 @@ export async function fetchLiveAirQuality(
         ? "Model-derived CPCB-style estimate based on ECMWF Copernicus CAMS numerical atmospheric grid (~45km spatial resolution). Not an official physical CPCB ground monitoring station reading."
         : "Copernicus CAMS atmospheric numerical grid simulation (~45km resolution).",
       dataNature: isLive ? "Latest Modelled Air-Quality Data (CAMS Grid)" : "Demo Data",
-      calculationStandard:
-        activeStandard === "INDIA_CPCB"
-          ? "CPCB-Style NAQI Estimate (CAMS Grid Input)"
-          : "EPA-Style PM2.5 NowCast Estimate (CAMS Grid Input)",
+      calculationStandard: isCpcbStandard
+        ? "CPCB-Style NAQI Estimate (CAMS Grid Input)"
+        : "EPA-Style PM2.5 NowCast Estimate (CAMS Grid Input)",
       activeStandard,
       referenceBenchmark: "WHO 2021 24-Hour Guideline Limit (AQG)",
       usAqi: finalUsAqi,
@@ -501,68 +468,47 @@ export async function fetchLiveAirQuality(
       displayAqi,
       category: usCategory,
       indiaCategory,
-      displayCategory,
+      displayCategory: isCpcbStandard ? indiaCategory : usCategory,
       nowCastConcentration: nowCastResult.nowCastConcentration,
       isNowCastCalculated: isLive,
       isDemoData: !isLive,
       europeanAqi: Math.round(current.european_aqi ?? 50),
-      primaryPollutant: activeStandard === "INDIA_CPCB" ? cpcbResult.dominantPollutant : "PM2.5",
-      healthSummary: activeHeadline,
+      primaryPollutant: isCpcbStandard ? cpcbResult.dominantPollutant : "PM2.5",
+      healthSummary: isCpcbStandard ? cpcbDirective.headline : advisory.headline,
       temperature,
       humidity,
       windSpeed,
       weather: weatherCondition,
-      pollutants,
-      hourlyForecast,
-      hourlyHistorical,
-      inversionRisk: {
-        level: inversionLevel,
-        description: isInversionProne
-          ? "Atmospheric temperature inversion active. Stagnant ground mist and low wind velocity trap surface smog."
-          : "Favorable wind dispersion with active convective vertical air mixing.",
-        tempInversion: isInversionProne,
-        windSpeed,
-        humidity,
-        trappedSmogProbability,
-      },
+      pollutants: buildPollutantsMap(current),
+      hourlyHistorical: buildHourlySeries(
+        arrays,
+        histStart,
+        validCurrentIdx,
+        true,
+        finalUsAqi,
+        temperature,
+        humidity
+      ),
+      hourlyForecast: buildHourlySeries(
+        arrays,
+        validCurrentIdx,
+        forecastEnd,
+        false,
+        finalUsAqi,
+        temperature,
+        humidity
+      ),
+      inversionRisk: calculateInversionRisk(windSpeed, humidity, temperature, displayAqi),
       recommendations: {
-        general: activeGeneral,
-        vulnerable: activeSensitive,
-        outdoorActivity: isCpcbStandard
-          ? (finalIndiaAqi !== null && finalIndiaAqi > 300
-              ? "Hazardous air. Strictly avoid outdoor exercise and heavy physical exertion."
-              : finalIndiaAqi !== null && finalIndiaAqi > 200
-              ? "Poor air quality. Avoid prolonged outdoor morning and evening exertion."
-              : finalIndiaAqi !== null && finalIndiaAqi > 100
-              ? "Moderate air. Sensitive groups should take frequent breaks during outdoor activities."
-              : finalIndiaAqi !== null
-              ? "Air quality is favorable for all regular outdoor activities."
-              : "Insufficient pollutant observations to establish full CPCB NAQI advisory.")
-          : (displayAqi !== null && displayAqi > 180
-              ? "Avoid all strenuous outdoor exertion. Shift workouts indoors."
-              : displayAqi !== null && displayAqi > 100
-              ? "Limit morning and late evening outdoor runs."
-              : displayAqi !== null
-              ? "Outdoor conditions favorable for moderate exercise."
-              : "Insufficient hourly data to establish NowCast advisory."),
-        ventilation: isCpcbStandard
-          ? (finalIndiaAqi !== null && finalIndiaAqi > 200
-              ? "Keep windows sealed. Use internal certified HEPA recirculating air filtration."
-              : finalIndiaAqi !== null && finalIndiaAqi > 100
-              ? "Keep windows latched during morning inversion; brief midday airing only if outdoor PM2.5 is low."
-              : finalIndiaAqi !== null
-              ? "Natural cross-ventilation permitted."
-              : "Keep windows closed during morning/evening inversion hours as a precaution.")
-          : (displayAqi !== null && displayAqi > 150
-              ? "Keep windows sealed. Use internal certified HEPA recirculating air filtration."
-              : displayAqi !== null
-              ? "Brief midday window airing permitted when solar convection peaks."
-              : "Ventilate cautiously during midday only."),
-        maskRequired: activeMaskRequired,
+        general: isCpcbStandard ? cpcbDirective.generalPublic : advisory.general,
+        vulnerable: isCpcbStandard ? cpcbDirective.sensitiveGroups : advisory.sensitive,
+        outdoorActivity: getOutdoorGuidance(isCpcbStandard, finalIndiaAqi, displayAqi),
+        ventilation: getVentilationGuidance(isCpcbStandard, finalIndiaAqi, displayAqi),
+        maskRequired: isCpcbStandard ? cpcbDirective.maskRecommended : advisory.mask,
       },
     };
   } catch (err) {
-    console.error("Open-Meteo Air Quality fetch error:", err);
+    logger.error("OpenMeteo", err);
     throw err;
   }
 }

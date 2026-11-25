@@ -15,11 +15,21 @@ const eslintConfig = defineConfig([
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      eqeqeq: ["error", "always", { null: "ignore" }],
+      "no-alert": "error",
+      "no-var": "error",
+      "prefer-const": "error",
+      "no-console": "warn",
+    },
+  },
+  {
+    files: ["src/lib/logger.ts"],
+    rules: {
+      "no-console": "off",
     },
   },
   // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     ".vercel/**",
     "out/**",

@@ -2,192 +2,42 @@
 
 import React, { useState } from "react";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ReportPollutionModal } from "@/components/community/ReportPollutionModal";
-import { useAirQuality } from "@/context/AirQualityContext";
+import { AlertsFeedTab } from "@/components/community/AlertsFeedTab";
+import { RadarHotspotMap } from "@/components/community/RadarHotspotMap";
+import { ChallengesTab } from "@/components/community/ChallengesTab";
 import {
-  AlertTriangle,
-  MapPin,
-  Building,
-  PlusCircle,
-  Copy,
-  Check,
-  Users,
-  Compass,
-  Camera,
-  Award,
-  ThumbsUp,
-  Map,
-  Radio,
-} from "lucide-react";
+  CLEAN_AIR_REFUGES,
+  CleanAirRefuge,
+  CommunityAlert,
+  CommunityChallenge,
+  INITIAL_ALERTS,
+  INITIAL_CHALLENGES,
+} from "@/components/community/community-data";
+import { useAirQuality } from "@/context/AirQualityContext";
+import { readStorageJson, writeStorageJson } from "@/lib/storage";
+import { AlertTriangle, PlusCircle, Users, Award, Map } from "lucide-react";
 
-export interface CommunityAlert {
-  id: string;
-  type: "Biomass Burning" | "Construction Dust" | "Severe Smog Pocket" | "Industrial Smoke" | "Traffic Gridlock";
-  location: string;
-  description: string;
-  severity: "Moderate" | "High" | "Severe";
-  distance: string;
-  timeAgo: string;
-  verifications: number;
-  verifiedByUser?: boolean;
-  hasPhoto?: boolean;
-}
-
-export interface CommunityChallenge {
-  id: string;
-  title: string;
-  rewardPoints: number;
-  participants: number;
-  progressPercent: number;
-  joined: boolean;
-  completed: boolean;
-  description: string;
-}
-
-export interface CleanAirRefuge {
-  id: string;
-  name: string;
-  address: string;
-  facilityType: "Public Library" | "Underground Transit" | "Community Center";
-  indoorAqi: number;
-  openHours: string;
-}
-
-const INITIAL_ALERTS: CommunityAlert[] = [
-  {
-    id: "alert-1",
-    type: "Biomass Burning",
-    location: "East Ring Road near Sector 4 Outer Ring",
-    description: "Open leaves and municipal waste burning along highway service lane.",
-    severity: "Severe",
-    distance: "1.2 km away",
-    timeAgo: "15 mins ago",
-    verifications: 18,
-    verifiedByUser: false,
-    hasPhoto: true,
-  },
-  {
-    id: "alert-2",
-    type: "Construction Dust",
-    location: "Metro Station North Concourse",
-    description: "Uncovered fly ash transport and unpaved excavation without water sprinkling.",
-    severity: "High",
-    distance: "2.4 km away",
-    timeAgo: "45 mins ago",
-    verifications: 32,
-    verifiedByUser: false,
-    hasPhoto: false,
-  },
-  {
-    id: "alert-3",
-    type: "Severe Smog Pocket",
-    location: "Underpass Valley Ring Highway",
-    description: "Thermal inversion pooling heavy vehicular exhaust in depressed underpass.",
-    severity: "High",
-    distance: "3.1 km away",
-    timeAgo: "1 hour ago",
-    verifications: 47,
-    verifiedByUser: false,
-    hasPhoto: true,
-  },
-];
-
-const INITIAL_CHALLENGES: CommunityChallenge[] = [
-  {
-    id: "ch-1",
-    title: "Zero Engine Idling School Zone",
-    rewardPoints: 150,
-    participants: 412,
-    progressPercent: 70,
-    joined: true,
-    completed: false,
-    description: "Commit to switching off vehicle ignition while waiting outside schools or intersections.",
-  },
-  {
-    id: "ch-2",
-    title: "5-Day Clean Metro Commuter",
-    rewardPoints: 200,
-    participants: 890,
-    progressPercent: 100,
-    joined: true,
-    completed: true,
-    description: "Replace private car rides with electric rapid transit for 5 consecutive work days.",
-  },
-  {
-    id: "ch-3",
-    title: "Active Smoke Sentinel",
-    rewardPoints: 120,
-    participants: 284,
-    progressPercent: 40,
-    joined: false,
-    completed: false,
-    description: "Spot, photo-verify, and geo-tag an illegal open burning incident for municipal dispatch.",
-  },
-];
-
-const REFUGES: CleanAirRefuge[] = [
-  {
-    id: "ref-1",
-    name: "Central Civic Library (HEPA Verified)",
-    address: "Civic Plaza, Core Block 3",
-    facilityType: "Public Library",
-    indoorAqi: 24,
-    openHours: "08:00 AM - 08:00 PM",
-  },
-  {
-    id: "ref-2",
-    name: "Underground Metro Interconnect Concourse",
-    address: "Line 2 Central Interchange",
-    facilityType: "Underground Transit",
-    indoorAqi: 38,
-    openHours: "24/7 Access",
-  },
-  {
-    id: "ref-3",
-    name: "Community Health Wellness Centre",
-    address: "Sector 9 Park Road",
-    facilityType: "Community Center",
-    indoorAqi: 19,
-    openHours: "09:00 AM - 06:00 PM",
-  },
-];
+const ALERTS_STORAGE_KEY = "breathewise_community_alerts_v2";
+const CHALLENGES_STORAGE_KEY = "breathewise_community_challenges_v2";
 
 export default function CommunityPage() {
   const { selectedCity } = useAirQuality();
 
-  const [alerts, setAlerts] = useState<CommunityAlert[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const savedAlerts = localStorage.getItem("breathewise_community_alerts_v2");
-        if (savedAlerts) return JSON.parse(savedAlerts);
-      } catch (_err) {
-        // Safe fallback when localStorage is restricted or in private browsing
-      }
-    }
-    return INITIAL_ALERTS;
-  });
-
-  const [challenges, setChallenges] = useState<CommunityChallenge[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const savedChallenges = localStorage.getItem("breathewise_community_challenges_v2");
-        if (savedChallenges) return JSON.parse(savedChallenges);
-      } catch (_err) {
-        // Safe fallback when localStorage is restricted or in private browsing
-      }
-    }
-    return INITIAL_CHALLENGES;
-  });
+  const [alerts, setAlerts] = useState<CommunityAlert[]>(() =>
+    readStorageJson(ALERTS_STORAGE_KEY, INITIAL_ALERTS)
+  );
+  const [challenges, setChallenges] = useState<CommunityChallenge[]>(() =>
+    readStorageJson(CHALLENGES_STORAGE_KEY, INITIAL_CHALLENGES)
+  );
 
   const [filterType, setFilterType] = useState<string>("All");
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"alerts" | "map" | "challenges">("alerts");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Form State
   const [formLocation, setFormLocation] = useState("");
   const [formType, setFormType] = useState<CommunityAlert["type"]>("Biomass Burning");
   const [formSeverity, setFormSeverity] = useState<CommunityAlert["severity"]>("High");
@@ -196,45 +46,38 @@ export default function CommunityPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const saveAlerts = (newAlerts: CommunityAlert[]) => {
-    setAlerts(newAlerts);
-    try {
-      localStorage.setItem("breathewise_community_alerts_v2", JSON.stringify(newAlerts));
-    } catch (_err) {
-      // Ignore localStorage restrictions
-    }
+  const saveAlerts = (nextAlerts: CommunityAlert[]) => {
+    setAlerts(nextAlerts);
+    writeStorageJson(ALERTS_STORAGE_KEY, nextAlerts);
   };
 
   const handleVerify = (id: string) => {
-    const updated = alerts.map((a) => {
-      if (a.id === id) {
-        const isVerified = a.verifiedByUser;
-        return {
-          ...a,
-          verifiedByUser: !isVerified,
-          verifications: isVerified ? a.verifications - 1 : a.verifications + 1,
-        };
-      }
-      return a;
-    });
+    const updated = alerts.map((a) =>
+      a.id === id
+        ? {
+            ...a,
+            verifiedByUser: !a.verifiedByUser,
+            verifications: a.verifiedByUser ? a.verifications - 1 : a.verifications + 1,
+          }
+        : a
+    );
     saveAlerts(updated);
   };
 
   const handleDetectGps = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setFormLocation(
-            `Sector near ${selectedCity.name} (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`
-          );
-        },
-        () => {
-          setFormLocation(`${selectedCity.name} Urban Perimeter`);
-        }
-      );
-    } else {
-      setFormLocation(`${selectedCity.name} Urban Perimeter`);
+    const fallback = `${selectedCity.name} Urban Perimeter`;
+    if (!navigator.geolocation) {
+      setFormLocation(fallback);
+      return;
     }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFormLocation(
+          `Sector near ${selectedCity.name} (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`
+        );
+      },
+      () => setFormLocation(fallback)
+    );
   };
 
   const handleSubmitReport = (e: React.FormEvent) => {
@@ -253,11 +96,10 @@ export default function CommunityPage() {
         timeAgo: "Just now",
         verifications: 1,
         verifiedByUser: true,
-        hasPhoto: !!formPhoto,
+        hasPhoto: Boolean(formPhoto),
       };
 
-      const updated = [newAlert, ...alerts];
-      saveAlerts(updated);
+      saveAlerts([newAlert, ...alerts]);
       setIsSubmitting(false);
       setSubmitSuccess(true);
 
@@ -273,22 +115,16 @@ export default function CommunityPage() {
 
   const toggleChallengeJoin = (id: string) => {
     setChallenges((prev) => {
-      const updated = prev.map((ch) => {
-        if (ch.id === id) {
-          const nextJoined = !ch.joined;
-          return {
-            ...ch,
-            joined: nextJoined,
-            participants: nextJoined ? ch.participants + 1 : ch.participants - 1,
-          };
-        }
-        return ch;
-      });
-      try {
-        localStorage.setItem("breathewise_community_challenges_v2", JSON.stringify(updated));
-      } catch (_err) {
-        // Safe fallback when localStorage is restricted or in private browsing
-      }
+      const updated = prev.map((ch) =>
+        ch.id === id
+          ? {
+              ...ch,
+              joined: !ch.joined,
+              participants: ch.joined ? ch.participants - 1 : ch.participants + 1,
+            }
+          : ch
+      );
+      writeStorageJson(CHALLENGES_STORAGE_KEY, updated);
       return updated;
     });
   };
@@ -296,21 +132,11 @@ export default function CommunityPage() {
   const markChallengeMilestone = (id: string) => {
     setChallenges((prev) => {
       const updated = prev.map((ch) => {
-        if (ch.id === id) {
-          const nextProgress = ch.progressPercent >= 100 ? 100 : ch.progressPercent + 30;
-          return {
-            ...ch,
-            progressPercent: nextProgress,
-            completed: nextProgress >= 100,
-          };
-        }
-        return ch;
+        if (ch.id !== id) return ch;
+        const nextProgress = Math.min(100, ch.progressPercent + 30);
+        return { ...ch, progressPercent: nextProgress, completed: nextProgress >= 100 };
       });
-      try {
-        localStorage.setItem("breathewise_community_challenges_v2", JSON.stringify(updated));
-      } catch (_err) {
-        // Safe fallback when localStorage is restricted or in private browsing
-      }
+      writeStorageJson(CHALLENGES_STORAGE_KEY, updated);
       return updated;
     });
   };
@@ -321,13 +147,11 @@ export default function CommunityPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const filteredAlerts = alerts.filter((a) =>
-    filterType === "All" ? true : a.type === filterType
-  );
+  const filteredAlerts =
+    filterType === "All" ? alerts : alerts.filter((a) => a.type === filterType);
 
   return (
     <PageTransition className="space-y-6 pb-12">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(77,184,255,0.08)] border border-[rgba(77,184,255,0.2)] text-xs font-semibold text-[#4DB8FF] mb-1.5">
@@ -357,7 +181,6 @@ export default function CommunityPage() {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-[rgba(255,255,255,0.08)] pb-3">
         {[
           { id: "alerts", label: "Citizen Smoke Feed", icon: <AlertTriangle className="w-3.5 h-3.5" /> },
@@ -366,6 +189,7 @@ export default function CommunityPage() {
         ].map((tab) => (
           <button
             key={tab.id}
+            type="button"
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               activeTab === tab.id
@@ -379,335 +203,29 @@ export default function CommunityPage() {
         ))}
       </div>
 
-      {/* TAB 1: CITIZEN SMOKE FEED */}
       {activeTab === "alerts" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left 2 Cols: Alerts Feed */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <h3 className="text-xs font-semibold tracking-wider text-[#A3B3C2] uppercase flex items-center gap-2">
-                <Radio className="w-3.5 h-3.5 text-[#FACC15] animate-pulse" />
-                Live Incident Stream ({filteredAlerts.length})
-              </h3>
-
-              {/* Filter pills */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {["All", "Biomass Burning", "Construction Dust", "Severe Smog Pocket"].map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setFilterType(cat)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                      filterType === cat
-                        ? "bg-[rgba(77,184,255,0.2)] text-[#4DB8FF] border border-[rgba(77,184,255,0.35)] font-semibold"
-                        : "bg-[rgba(14,23,34,0.5)] text-[#A3B3C2] hover:text-[#F2F6FA] border border-[rgba(255,255,255,0.06)]"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {filteredAlerts.map((alert) => (
-                <Card
-                  key={alert.id}
-                  elevated
-                  className="p-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(9,18,14,0.7)] space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge
-                          variant={
-                            alert.severity === "Severe"
-                              ? "danger"
-                              : alert.severity === "High"
-                              ? "warning"
-                              : "subtle"
-                          }
-                          size="sm"
-                          className="text-xs"
-                        >
-                          {alert.type}
-                        </Badge>
-                        <span className="text-xs text-[#8496A8]">•</span>
-                        <span className="text-xs text-[#A3B3C2]">{alert.timeAgo}</span>
-                        <span className="text-xs text-[#8496A8]">•</span>
-                        <span className="text-xs text-[#4DB8FF]">{alert.distance}</span>
-                      </div>
-                      <h4 className="text-sm font-bold text-[#F2F6FA] flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-[#F87171] shrink-0" />
-                        {alert.location}
-                      </h4>
-                    </div>
-
-                    {/* Upvote / Verification Button */}
-                    <button
-                      onClick={() => handleVerify(alert.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer shrink-0 ${
-                        alert.verifiedByUser
-                          ? "bg-[rgba(77,184,255,0.2)] border-[#4DB8FF] text-[#4DB8FF]"
-                          : "bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.08)] text-[#A3B3C2] hover:text-[#F2F6FA] hover:bg-[rgba(255,255,255,0.08)]"
-                      }`}
-                      title="Verify this observation"
-                    >
-                      <ThumbsUp className="w-3.5 h-3.5" />
-                      <span>{alert.verifications}</span>
-                    </button>
-                  </div>
-
-                  <p className="text-xs text-[#A3B3C2] leading-relaxed">
-                    {alert.description}
-                  </p>
-
-                  {alert.hasPhoto && (
-                    <div className="p-2 rounded-xl bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] flex items-center gap-2 text-xs text-[#8496A8]">
-                      <Camera className="w-3.5 h-3.5 text-[#38BDF8]" />
-                      <span>Citizen attached photo verification telemetry</span>
-                    </div>
-                  )}
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Col: Clean Refuges */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold tracking-wider text-[#A3B3C2] uppercase flex items-center gap-2">
-                <Building className="w-3.5 h-3.5 text-[#4DB8FF]" />
-                Verified Clean Air Refuges
-              </h3>
-              <Badge variant="accent" size="sm">
-                HEPA Safe
-              </Badge>
-            </div>
-
-            <div className="space-y-3">
-              {REFUGES.map((refuge) => (
-                <Card
-                  key={refuge.id}
-                  elevated
-                  className="p-4 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(9,18,14,0.7)] space-y-2.5"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h4 className="text-xs font-bold text-[#F2F6FA]">
-                        {refuge.name}
-                      </h4>
-                      <p className="text-xs text-[#A3B3C2] mt-0.5">
-                        {refuge.address}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-base font-extrabold text-[#4DB8FF]">
-                        {refuge.indoorAqi}
-                      </div>
-                      <div className="text-xs uppercase tracking-wider text-[#8496A8]">
-                        Indoor AQI
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 border-t border-[rgba(255,255,255,0.06)] text-xs">
-                    <span className="text-[#8496A8]">{refuge.openHours}</span>
-                    <button
-                      onClick={() => handleCopyShelter(refuge)}
-                      className="text-xs font-semibold text-[#4DB8FF] hover:text-[#7CCBFF] flex items-center gap-1 cursor-pointer"
-                    >
-                      {copiedId === refuge.id ? (
-                        <>
-                          <Check className="w-3 h-3 text-[#4DB8FF]" />
-                          <span>Copied</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3 h-3" />
-                          <span>Copy Address</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </div>
+        <AlertsFeedTab
+          alerts={alerts}
+          filteredAlerts={filteredAlerts}
+          filterType={filterType}
+          copiedId={copiedId}
+          refuges={CLEAN_AIR_REFUGES}
+          onFilterChange={setFilterType}
+          onVerifyAlert={handleVerify}
+          onCopyRefuge={handleCopyShelter}
+        />
       )}
 
-      {/* TAB 2: RADAR HOTSPOT MAP */}
-      {activeTab === "map" && (
-        <Card elevated className="p-5 md:p-6 rounded-3xl space-y-4 border border-[rgba(77,184,255,0.2)] bg-[rgba(9,18,14,0.8)]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-base font-bold text-[#F2F6FA] flex items-center gap-2">
-                <Compass className="w-4 h-4 text-[#4DB8FF]" />
-                Micro-Climate Hotspot Radar: {selectedCity.name}
-              </h3>
-              <p className="text-xs text-[#A3B3C2] mt-0.5">
-                Spatial distribution of citizen-reported plumes and sensor cross-correlations
-              </p>
-            </div>
-            <Badge variant="subtle" size="sm">
-              Coordinates: {selectedCity.lat.toFixed(2)}°N, {selectedCity.lon.toFixed(2)}°E
-            </Badge>
-          </div>
+      {activeTab === "map" && <RadarHotspotMap selectedCity={selectedCity} alerts={alerts} />}
 
-          {/* Interactive Radar Visual Canvas */}
-          <div className="relative w-full h-80 rounded-2xl bg-[rgba(10,17,24,0.95)] border border-[rgba(255,255,255,0.08)] overflow-hidden flex items-center justify-center">
-            {/* Concentric Radar Rings */}
-            <div className="absolute w-72 h-72 rounded-full border border-[rgba(77,184,255,0.15)] pointer-events-none" />
-            <div className="absolute w-48 h-48 rounded-full border border-[rgba(77,184,255,0.2)] pointer-events-none" />
-            <div className="absolute w-24 h-24 rounded-full border border-[rgba(77,184,255,0.3)] pointer-events-none" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(77,184,255,0.06)_0%,transparent_75%)] pointer-events-none" />
-
-            {/* Crosshairs */}
-            <div className="absolute w-full h-px bg-[rgba(255,255,255,0.08)] pointer-events-none" />
-            <div className="absolute h-full w-px bg-[rgba(255,255,255,0.08)] pointer-events-none" />
-
-            {/* Center Pin: Current User */}
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="w-4 h-4 rounded-full bg-[#4DB8FF] border-2 border-white shadow-[0_0_16px_#4DB8FF] animate-ping" />
-              <span className="text-xs font-bold text-[#F2F6FA] bg-[rgba(0,0,0,0.7)] px-2 py-0.5 rounded-full mt-1 border border-[rgba(255,255,255,0.1)]">
-                You ({selectedCity.name})
-              </span>
-            </div>
-
-            {/* Hotspot Pins */}
-            {alerts.map((item, idx) => {
-              const offsets = [
-                { top: "25%", left: "68%" },
-                { top: "65%", left: "32%" },
-                { top: "35%", left: "28%" },
-                { top: "72%", left: "75%" },
-              ];
-              const pos = offsets[idx % offsets.length];
-              return (
-                <div
-                  key={item.id}
-                  className="absolute cursor-pointer group z-20"
-                  style={{ top: pos.top, left: pos.left }}
-                  onClick={() =>
-                    window.alert(
-                      `Selected hotspot: ${item.location}\nType: ${item.type}\nSeverity: ${item.severity}`
-                    )
-                  }
-                >
-                  <div
-                    className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-transform group-hover:scale-125 ${
-                      item.severity === "Severe"
-                        ? "bg-[#F87171] border-white shadow-[0_0_12px_#F87171]"
-                        : "bg-[#FACC15] border-white shadow-[0_0_12px_#FACC15]"
-                    }`}
-                  />
-                  <div className="hidden group-hover:block absolute bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[rgba(10,22,17,0.95)] border border-[rgba(255,255,255,0.2)] rounded-xl px-2.5 py-1 text-xs text-[#F2F6FA] shadow-xl z-30">
-                    <span className="font-bold">{item.type}</span>: {item.location}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-[#A3B3C2] pt-1">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#F87171]" />
-                <span>Severe Smog / Fire</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#FACC15]" />
-                <span>Construction Dust</span>
-              </span>
-            </div>
-            <span>Click any marker to inspect incident metadata</span>
-          </div>
-        </Card>
-      )}
-
-      {/* TAB 3: COMMUNITY CHALLENGES */}
       {activeTab === "challenges" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-bold text-[#F2F6FA] flex items-center gap-2">
-                <Award className="w-4 h-4 text-[#FACC15]" />
-                Clean Air Community Awareness Challenges
-              </h3>
-              <p className="text-xs text-[#A3B3C2] mt-0.5">
-                Join collective citizen initiatives to reduce neighborhood smog plumes and earn Clean Air Points.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {challenges.map((ch) => (
-              <Card
-                key={ch.id}
-                elevated
-                className="p-5 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(9,18,14,0.7)] flex flex-col justify-between space-y-4"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge variant={ch.completed ? "accent" : ch.joined ? "subtle" : "outline"} size="sm">
-                      {ch.completed ? "Completed" : ch.joined ? "Active" : "Open"}
-                    </Badge>
-                    <span className="text-xs font-bold text-[#4DB8FF]">
-                      +{ch.rewardPoints} Pts
-                    </span>
-                  </div>
-
-                  <h4 className="text-sm font-bold text-[#F2F6FA] leading-snug">
-                    {ch.title}
-                  </h4>
-                  <p className="text-xs text-[#A3B3C2] leading-relaxed">
-                    {ch.description}
-                  </p>
-                </div>
-
-                <div className="space-y-3 pt-2 border-t border-[rgba(255,255,255,0.06)]">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs text-[#A3B3C2]">
-                      <span>{ch.participants} Citizens Joined</span>
-                      <span className="font-semibold text-[#F2F6FA]">{ch.progressPercent}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-[rgba(255,255,255,0.08)] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#4DB8FF] rounded-full transition-all"
-                        style={{ width: `${ch.progressPercent}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={ch.joined ? "outline" : "primary"}
-                      size="sm"
-                      className="w-full text-xs"
-                      onClick={() => toggleChallengeJoin(ch.id)}
-                    >
-                      {ch.joined ? "Leave" : "Join Challenge"}
-                    </Button>
-                    {ch.joined && !ch.completed && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="text-xs shrink-0"
-                        onClick={() => markChallengeMilestone(ch.id)}
-                        title="Mark progress milestone"
-                      >
-                        +30%
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
+        <ChallengesTab
+          challenges={challenges}
+          onToggleJoin={toggleChallengeJoin}
+          onMarkMilestone={markChallengeMilestone}
+        />
       )}
 
-      {/* Report Pollution Modal Form */}
       <ReportPollutionModal
         isOpen={reportModalOpen}
         onClose={() => setReportModalOpen(false)}

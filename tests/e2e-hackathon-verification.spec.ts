@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("BreatheWise AI - Senior QA Hackathon Test Suite", () => {
-  const BASE_URL = "http://localhost:3000";
+  const BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || process.env.BASE_URL || "http://localhost:3005";
 
   // Test 1: Desktop Responsiveness & Overview
   test("1. Desktop View - Overview page fits above fold and loads real telemetry", async ({ page }) => {

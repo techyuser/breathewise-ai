@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { AlertTriangle, X, MapPin, Camera, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -51,10 +51,24 @@ export function ReportPollutionModal({
   submitSuccess,
   isSubmitting,
 }: ReportPollutionModalProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   return (
     <AnimatePresence>
       {isOpen && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="report-pollution-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl"
           onClick={onClose}
         >
@@ -68,7 +82,7 @@ export function ReportPollutionModal({
             <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-3">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-[#FACC15]" />
-                <h3 className="text-base font-bold text-[#F2F6FA]">
+                <h3 id="report-pollution-title" className="text-base font-bold text-[#F2F6FA]">
                   Report Environmental Pollution Incident
                 </h3>
               </div>

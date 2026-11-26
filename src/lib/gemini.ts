@@ -267,6 +267,39 @@ export async function streamAirIntelligence(
 /**
  * Generates a structured 5-slot daily routine with 20-minute TTL caching.
  */
+function isPlanStatus(val: unknown): val is PlanVerificationResult["status"] {
+  return val === "optimal" || val === "safe" || val === "caution" || val === "avoid";
+}
+
+function parseRoutineActivityArray(raw: unknown): RoutineActivity[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const valid = raw.filter((item): item is RoutineActivity => {
+    if (!item || typeof item !== "object") return false;
+    const r = item as Record<string, unknown>;
+    return (
+      typeof r.time === "string" &&
+      typeof r.activity === "string" &&
+      typeof r.recommendation === "string" &&
+      (r.status === "safe" || r.status === "caution" || r.status === "avoid" || r.status === "optimal")
+    );
+  });
+  return valid.length > 0 ? valid : null;
+}
+
+function parseIndoorRecommendationArray(raw: unknown): IndoorRecommendation[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const valid = raw.filter((item): item is IndoorRecommendation => {
+    if (!item || typeof item !== "object") return false;
+    const r = item as Record<string, unknown>;
+    return (
+      typeof r.action === "string" &&
+      typeof r.reason === "string" &&
+      (r.urgency === "LOW" || r.urgency === "MEDIUM" || r.urgency === "HIGH" || r.urgency === "CRITICAL")
+    );
+  });
+  return valid.length > 0 ? valid : null;
+}
+
 export async function generateStructuredRoutineWithGemini(
   aqiData: AirQualityData,
   profile?: UserProfileContext,
@@ -293,8 +326,8 @@ Output JSON array: [{"time":"06:00 AM","displayTime":"6 AM","activity":"string i
         },
       });
 
-      const parsed = JSON.parse(res.text?.trim() || "[]") as RoutineActivity[];
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+      const parsed = JSON.parse(res.text?.trim() || "[]");
+      return parseRoutineActivityArray(parsed);
     }
   );
 }
@@ -328,8 +361,8 @@ Output 3 JSON items: [{"action":"string","urgency":"LOW"|"MEDIUM"|"HIGH"|"CRITIC
         },
       });
 
-      const parsed = JSON.parse(res.text?.trim() || "[]") as IndoorRecommendation[];
-      return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+      const parsed = JSON.parse(res.text?.trim() || "[]");
+      return parseIndoorRecommendationArray(parsed);
     }
   );
 }
@@ -391,13 +424,19 @@ Output JSON: {"explanation":"2 concise sentences in ${lang === "hi" ? "Hindi" : 
         },
       });
 
-      const parsed = JSON.parse(res.text?.trim() || "{}") as {
-        explanation?: string;
-        tips?: string[];
-      };
-      return parsed.explanation && Array.isArray(parsed.tips)
-        ? { explanation: parsed.explanation, tips: parsed.tips }
-        : null;
+      const parsed = JSON.parse(res.text?.trim() || "{}");
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        typeof parsed.explanation === "string" &&
+        Array.isArray(parsed.tips)
+      ) {
+        return {
+          explanation: parsed.explanation,
+          tips: parsed.tips.filter((t: unknown): t is string => typeof t === "string"),
+        };
+      }
+      return null;
     }
   );
 }
@@ -462,9 +501,7 @@ Respond in valid JSON matching this schema:
 
       return {
         ...fallback,
-        status: (["optimal", "safe", "caution", "avoid"].includes(parsed.status)
-          ? parsed.status
-          : fallback.status) as PlanVerificationResult["status"],
+        status: isPlanStatus(parsed.status) ? parsed.status : fallback.status,
         safetyScore:
           typeof parsed.safetyScore === "number"
             ? Math.min(99, Math.max(10, parsed.safetyScore))

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { ShieldCheck, X } from "lucide-react";
@@ -24,12 +24,26 @@ export function EmergencyShieldModal({
   isHighSmog,
   mounted,
 }: EmergencyShieldModalProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!mounted) return null;
 
   return createPortal(
     <AnimatePresence>
       {isOpen && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="emergency-shield-title"
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl"
           onClick={onClose}
         >
@@ -47,7 +61,7 @@ export function EmergencyShieldModal({
             <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] pb-3">
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className="w-5 h-5 text-[#4DB8FF]" />
-                <h3 className="text-base font-bold text-[#F2F6FA]">
+                <h3 id="emergency-shield-title" className="text-base font-bold text-[#F2F6FA]">
                   Active Protection Protocol
                 </h3>
               </div>

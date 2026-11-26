@@ -261,6 +261,28 @@ export function TrendChart({
             />
           </AreaChart>
         </ResponsiveContainer>
+        <div className="sr-only" aria-live="polite">
+          <p>
+            {getMetricLabel()} trends for {horizon} horizon. Total {formattedData.length} data points available.
+          </p>
+          <table>
+            <caption>Hourly {getMetricLabel()} values</caption>
+            <thead>
+              <tr>
+                <th scope="col">Time</th>
+                <th scope="col">{getMetricLabel()}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {formattedData.slice(0, 12).map((point, idx) => (
+                <tr key={idx}>
+                  <td>{point.displayTime}</td>
+                  <td>{point[metric] ?? "N/A"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </Card>
   );

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchLiveAirQuality } from "@/lib/open-meteo";
-import { resolveTargetCity } from "@/lib/api-helpers";
-import { AirQualityData, AqiStandard } from "@/types/air-quality";
+import { parseAqiStandard, resolveTargetCity } from "@/lib/api-helpers";
+import { AirQualityData } from "@/types/air-quality";
 import { logger } from "@/lib/logger";
 
 interface CacheEntry {
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
     cleanExpiredCache();
 
     const searchParams = req.nextUrl.searchParams;
-    const standardParam = searchParams.get("standard") as AqiStandard | null;
+    const standardParam = parseAqiStandard(searchParams.get("standard"));
     const forceRefresh = searchParams.get("refresh") === "true";
 
     const cityResult = resolveTargetCity({
@@ -41,23 +41,25 @@ export async function GET(req: NextRequest) {
     const cacheKey = `${targetCity.id}:${targetCity.lat.toFixed(3)}:${targetCity.lon.toFixed(3)}:${standardParam || "AUTO"}`;
     const now = Date.now();
 
-    if (!forceRefresh && memoryCache.has(cacheKey)) {
-      const entry = memoryCache.get(cacheKey)!;
-      if (entry.expiresAt > now) {
-        return NextResponse.json(
-          { ...entry.data, cacheStatus: "HIT" },
-          {
-            headers: {
-              "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
-              "X-Cache-Status": "HIT",
-            },
-          }
-        );
+    if (!forceRefresh) {
+      const entry = memoryCache.get(cacheKey);
+      if (entry) {
+        if (entry.expiresAt > now) {
+          return NextResponse.json(
+            { ...entry.data, cacheStatus: "HIT" },
+            {
+              headers: {
+                "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",
+                "X-Cache-Status": "HIT",
+              },
+            }
+          );
+        }
+        memoryCache.delete(cacheKey);
       }
-      memoryCache.delete(cacheKey);
     }
 
-    const aqiData = await fetchLiveAirQuality(targetCity, standardParam || undefined);
+    const aqiData = await fetchLiveAirQuality(targetCity, standardParam);
     memoryCache.set(cacheKey, { data: aqiData, expiresAt: now + CACHE_TTL_MS });
 
     return NextResponse.json(

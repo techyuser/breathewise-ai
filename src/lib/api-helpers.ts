@@ -27,6 +27,66 @@ const VALID_COHORTS = new Set<UserPlanInput["cohort"]>([
   "athlete",
 ]);
 
+export function isValidAqiStandard(val: unknown): val is AqiStandard {
+  return val === "INDIA_CPCB" || val === "US_EPA";
+}
+
+export function parseAqiStandard(val: unknown): AqiStandard | undefined {
+  if (typeof val === "string") {
+    const upper = val.trim().toUpperCase();
+    if (upper === "INDIA_CPCB" || upper === "IN_NAQI" || upper === "CPCB") return "INDIA_CPCB";
+    if (upper === "US_EPA" || upper === "US_AQI" || upper === "EPA") return "US_EPA";
+  }
+  return undefined;
+}
+
+export function parseNumberWithFallback(
+  val: unknown,
+  fallback: number,
+  min = -Infinity,
+  max = Infinity
+): number {
+  if (typeof val === "number" && Number.isFinite(val)) {
+    return Math.max(min, Math.min(max, val));
+  }
+  if (typeof val === "string") {
+    const parsed = parseFloat(val);
+    if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+      return Math.max(min, Math.min(max, parsed));
+    }
+  }
+  return fallback;
+}
+
+export function parseBooleanWithFallback(val: unknown, fallback: boolean): boolean {
+  if (typeof val === "boolean") return val;
+  if (typeof val === "string") {
+    const lower = val.trim().toLowerCase();
+    if (lower === "true" || lower === "1" || lower === "yes") return true;
+    if (lower === "false" || lower === "0" || lower === "no") return false;
+  }
+  return fallback;
+}
+
+export function parseStringWithFallback(val: unknown, fallback: string, maxLength = 250): string {
+  if (typeof val === "string") {
+    return val.trim().slice(0, maxLength);
+  }
+  return fallback;
+}
+
+export function isValidCohort(val: unknown): val is UserPlanInput["cohort"] {
+  return typeof val === "string" && VALID_COHORTS.has(val as UserPlanInput["cohort"]);
+}
+
+export function isValidEnvironment(val: unknown): val is UserPlanInput["environment"] {
+  return typeof val === "string" && VALID_ENVIRONMENTS.has(val as UserPlanInput["environment"]);
+}
+
+export function isValidIntensity(val: unknown): val is UserPlanInput["intensity"] {
+  return typeof val === "string" && VALID_INTENSITIES.has(val as UserPlanInput["intensity"]);
+}
+
 export interface RateLimitGuardResult {
   allowed: boolean;
   remaining: number;
@@ -167,18 +227,18 @@ export async function resolveRouteAirQuality(options: {
  * Normalizes and sanitizes untrusted custom activity plan payloads.
  */
 export function sanitizePlanInput(rawPlan: Record<string, unknown>): UserPlanInput {
-  const env = rawPlan.environment as UserPlanInput["environment"];
-  const intensity = rawPlan.intensity as UserPlanInput["intensity"];
-  const cohort = rawPlan.cohort as UserPlanInput["cohort"];
+  const env = rawPlan.environment;
+  const intensity = rawPlan.intensity;
+  const cohort = rawPlan.cohort;
 
   return {
-    activityName: String(rawPlan.activityName || "Outdoor Activity").slice(0, 120),
-    plannedTime: String(rawPlan.plannedTime || "08:00 AM"),
-    durationMinutes: Number(rawPlan.durationMinutes) || 30,
-    environment: VALID_ENVIRONMENTS.has(env) ? env : "outdoor",
-    intensity: VALID_INTENSITIES.has(intensity) ? intensity : "moderate",
-    cohort: VALID_COHORTS.has(cohort) ? cohort : "general",
-    hasN95Mask: Boolean(rawPlan.hasN95Mask),
+    activityName: parseStringWithFallback(rawPlan.activityName, "Outdoor Activity", 120),
+    plannedTime: parseStringWithFallback(rawPlan.plannedTime, "08:00 AM", 20),
+    durationMinutes: parseNumberWithFallback(rawPlan.durationMinutes, 30, 5, 360),
+    environment: isValidEnvironment(env) ? env : "outdoor",
+    intensity: isValidIntensity(intensity) ? intensity : "moderate",
+    cohort: isValidCohort(cohort) ? cohort : "general",
+    hasN95Mask: parseBooleanWithFallback(rawPlan.hasN95Mask, false),
   };
 }
 

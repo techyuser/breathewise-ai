@@ -165,11 +165,12 @@ export function ActivitySafetyVerifier({
       {/* Primary Inputs Row */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 text-xs">
         <div className="md:col-span-5 space-y-1.5">
-          <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
+          <label htmlFor="activity-name-input" className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5 text-[#4DB8FF]" />
             {lang === "hi" ? "गतिविधि का नाम" : "Planned Activity"}
           </label>
           <input
+            id="activity-name-input"
             type="text"
             value={planInput.activityName}
             aria-label={lang === "hi" ? "गतिविधि का नाम" : "Planned Activity Name"}
@@ -184,11 +185,12 @@ export function ActivitySafetyVerifier({
         </div>
 
         <div className="md:col-span-2 space-y-1.5">
-          <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
+          <label htmlFor="planned-time-select" className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-[#38BDF8]" />
             {lang === "hi" ? "समय" : "Time"}
           </label>
           <select
+            id="planned-time-select"
             value={planInput.plannedTime}
             onChange={(e) => setPlanInput({ ...planInput, plannedTime: e.target.value })}
             className="w-full bg-[rgba(10,17,24,0.7)] border border-[rgba(255,255,255,0.1)] focus:border-[#4DB8FF] rounded-2xl px-3 py-2.5 text-xs text-[#F2F6FA] focus:outline-none"
@@ -205,11 +207,12 @@ export function ActivitySafetyVerifier({
         </div>
 
         <div className="md:col-span-2 space-y-1.5">
-          <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
+          <label htmlFor="duration-minutes-select" className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
             <Layers className="w-3.5 h-3.5 text-[#A78BFA]" />
             {lang === "hi" ? "अवधि" : "Duration"}
           </label>
           <select
+            id="duration-minutes-select"
             value={planInput.durationMinutes}
             onChange={(e) => setPlanInput({ ...planInput, durationMinutes: Number(e.target.value) })}
             className="w-full bg-[rgba(10,17,24,0.7)] border border-[rgba(255,255,255,0.1)] focus:border-[#4DB8FF] rounded-2xl px-3 py-2.5 text-xs text-[#F2F6FA] focus:outline-none"
@@ -224,11 +227,12 @@ export function ActivitySafetyVerifier({
         </div>
 
         <div className="md:col-span-3 space-y-1.5">
-          <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
+          <label htmlFor="environment-select" className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
             <Wind className="w-3.5 h-3.5 text-[#34D399]" />
             {lang === "hi" ? "स्थान / वातावरण" : "Environment"}
           </label>
           <select
+            id="environment-select"
             value={planInput.environment}
             onChange={(e) =>
               setPlanInput({
@@ -249,11 +253,12 @@ export function ActivitySafetyVerifier({
       {/* Secondary Inputs & Submit */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center text-xs pt-1">
         <div className="md:col-span-4 space-y-1.5">
-          <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
+          <label htmlFor="exertion-intensity-select" className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
             <HeartPulse className="w-3.5 h-3.5 text-[#F43F5E]" />
             {lang === "hi" ? "व्यायाम की तीव्रता" : "Exertion Intensity"}
           </label>
           <select
+            id="exertion-intensity-select"
             value={planInput.intensity}
             onChange={(e) =>
               setPlanInput({
@@ -270,11 +275,12 @@ export function ActivitySafetyVerifier({
         </div>
 
         <div className="md:col-span-3 space-y-1.5">
-          <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
+          <label htmlFor="participant-cohort-select" className="text-xs font-bold text-[#8496A8] uppercase tracking-wider flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-[#38BDF8]" />
             {lang === "hi" ? "प्रतिभागी समूह" : "Participant Cohort"}
           </label>
           <select
+            id="participant-cohort-select"
             value={planInput.cohort}
             onChange={(e) =>
               setPlanInput({

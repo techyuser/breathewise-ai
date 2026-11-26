@@ -16,6 +16,12 @@ import {
   getDiurnalMultiplier,
   UserPlanInput,
 } from "../src/lib/intelligence/plan-verifier";
+import {
+  assessIndoorAir,
+  identifyIndoorSources,
+  getBudgetRecommendations,
+  HomeConfig,
+} from "../src/lib/intelligence/indoor-assessment";
 import { AirQualityData, PollutantDetail } from "../src/types/air-quality";
 
 test.describe("Scientific Calculations - CPCB NAQI & EPA NowCast Validation", () => {
@@ -371,5 +377,148 @@ test.describe("Scientific Calculations - CPCB NAQI & EPA NowCast Validation", ()
     expect(result.status).toBe("optimal");
     expect(result.safetyScore).toBeGreaterThanOrEqual(90);
     expect(result.estimatedInhaledDoseUg).toBeLessThan(15);
+  });
+
+  // =========================================================================
+  // 5. INVARIANT PROPERTIES & SCIENTIFIC LAWS VERIFICATION
+  // =========================================================================
+  test("5.1 Particulate Inhaled Dose Monotonicity & Linearity Invariants", () => {
+    const mockAqi = {
+      pollutants: {
+        pm2_5: { value: 100 } as PollutantDetail,
+      },
+      nowCastConcentration: 100,
+    } as unknown as AirQualityData;
+
+    const basePlan: UserPlanInput = {
+      activityName: "Exercise",
+      plannedTime: "01:30 PM",
+      durationMinutes: 30,
+      environment: "outdoor",
+      intensity: "light",
+      cohort: "general",
+      hasN95Mask: false,
+    };
+
+    const lightRes = verifyPlanDeterministic({ ...basePlan, intensity: "light" }, mockAqi, "en");
+    const modRes = verifyPlanDeterministic({ ...basePlan, intensity: "moderate" }, mockAqi, "en");
+    const vigRes = verifyPlanDeterministic({ ...basePlan, intensity: "vigorous" }, mockAqi, "en");
+
+    // Invariant 1: Inhaled dose strictly increases with minute ventilation
+    expect(lightRes.estimatedInhaledDoseUg).toBeLessThan(modRes.estimatedInhaledDoseUg);
+    expect(modRes.estimatedInhaledDoseUg).toBeLessThan(vigRes.estimatedInhaledDoseUg);
+
+    // Invariant 2: Inhaled dose is strictly non-negative
+    expect(lightRes.estimatedInhaledDoseUg).toBeGreaterThanOrEqual(0);
+
+    // Invariant 3: Dose scales linearly with duration
+    const doubleDurationRes = verifyPlanDeterministic({ ...basePlan, durationMinutes: 60 }, mockAqi, "en");
+    expect(doubleDurationRes.estimatedInhaledDoseUg).toBeCloseTo(lightRes.estimatedInhaledDoseUg * 2, 1);
+  });
+
+  test("5.2 N95 Respirator Filtration Efficacy Invariant (>= 80% Exposure Reduction)", () => {
+    const mockAqi = {
+      pollutants: {
+        pm2_5: { value: 45 } as PollutantDetail,
+      },
+      nowCastConcentration: 45,
+    } as unknown as AirQualityData;
+
+    const unmasked = verifyPlanDeterministic(
+      {
+        activityName: "Brisk Walk",
+        plannedTime: "01:30 PM",
+        durationMinutes: 30,
+        environment: "outdoor",
+        intensity: "moderate",
+        cohort: "general",
+        hasN95Mask: false,
+      },
+      mockAqi,
+      "en"
+    );
+
+    const masked = verifyPlanDeterministic(
+      {
+        activityName: "Brisk Walk",
+        plannedTime: "01:30 PM",
+        durationMinutes: 30,
+        environment: "outdoor",
+        intensity: "moderate",
+        cohort: "general",
+        hasN95Mask: true,
+      },
+      mockAqi,
+      "en"
+    );
+
+    // Invariant: N95 respirator reduces inhaled particulate dose by 85% (0.15 penetration factor)
+    expect(masked.estimatedInhaledDoseUg).toBeLessThanOrEqual(unmasked.estimatedInhaledDoseUg * 0.20);
+    expect(masked.safetyScore).toBeGreaterThanOrEqual(unmasked.safetyScore);
+  });
+
+  test("5.3 Diurnal Planetary Boundary Layer Convection Invariant", () => {
+    const morningMultiplier = getDiurnalMultiplier(7); // 7 AM (Dawn surface inversion)
+    const middayMultiplier = getDiurnalMultiplier(14); // 2 PM (Solar thermal convection)
+
+    // Scientific law: Surface cooling traps nocturnal emissions into a shallow boundary layer,
+    // whereas afternoon solar heating drives vertical mixing and pollutant dilution.
+    expect(morningMultiplier).toBeGreaterThan(middayMultiplier);
+    expect(morningMultiplier).toBe(1.5);
+    expect(middayMultiplier).toBe(0.65);
+  });
+
+  test("5.4 CPCB Sub-Index Monotonicity & Clamping Across PM2.5 Range", () => {
+    let previousSubIndex = 0;
+    // Step through concentrations 0 to 600 µg/m³
+    for (let pm = 0; pm <= 600; pm += 15) {
+      const subIndex = calculateCpcbSubIndex(pm, CPCB_BREAKPOINTS.pm2_5);
+      expect(subIndex).toBeGreaterThanOrEqual(previousSubIndex);
+      expect(subIndex).toBeGreaterThanOrEqual(0);
+      expect(subIndex).toBeLessThanOrEqual(500); // CPCB cap
+      previousSubIndex = subIndex;
+    }
+  });
+
+  test("5.5 Indoor Assessment Invariants: Severe Smog Escalation & Tier Completeness", () => {
+    const mockAqiSevere = {
+      pollutants: {
+        pm2_5: { value: 220 } as PollutantDetail,
+      },
+      nowCastConcentration: 220,
+    } as unknown as AirQualityData;
+
+    const leakyHome: HomeConfig = {
+      hasAirPurifier: false,
+      windowsOpen: true,
+      cookingType: "chulha",
+      dustingMethod: "dry_broom",
+    };
+
+    const recs = assessIndoorAir(mockAqiSevere, leakyHome, "en");
+    const sources = identifyIndoorSources(mockAqiSevere, leakyHome);
+    const budgets = getBudgetRecommendations(mockAqiSevere, leakyHome);
+
+    // Invariant 1: Open windows during severe smog must trigger an immediate HIGH urgency recommendation
+    const windowRec = recs.find((r) => r.category === "ventilation");
+    expect(windowRec).toBeDefined();
+    expect(windowRec?.urgency).toBe("HIGH");
+
+    // Invariant 2: Lack of purifier in severe smog must trigger CRITICAL purification urgency
+    const purifierRec = recs.find((r) => r.category === "purification");
+    expect(purifierRec).toBeDefined();
+    expect(purifierRec?.urgency).toBe("CRITICAL");
+
+    // Invariant 3: Chulha or unvented combustion must identify a CRITICAL indoor emission source
+    const chulhaSource = sources.find((s) => s.id === "src-cooking");
+    expect(chulhaSource).toBeDefined();
+    expect(chulhaSource?.severity).toBe("CRITICAL");
+
+    // Invariant 4: Budget recommendations must provide solutions spanning all 4 cost tiers
+    const tiers = new Set(budgets.map((b) => b.tier));
+    expect(tiers.has("free")).toBe(true);
+    expect(tiers.has("under_500")).toBe(true);
+    expect(tiers.has("500_3000")).toBe(true);
+    expect(tiers.has("above_3000")).toBe(true);
   });
 });

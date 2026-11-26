@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -18,10 +18,24 @@ export function DiyPurifierModal({
   activeDiyModal,
   onClose,
 }: DiyPurifierModalProps) {
+  useEffect(() => {
+    if (!activeDiyModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeDiyModal, onClose]);
+
   return (
     <AnimatePresence>
       {activeDiyModal && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="diy-purifier-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl"
           onClick={onClose}
         >
@@ -37,7 +51,7 @@ export function DiyPurifierModal({
                 <Badge variant="accent" size="sm" className="mb-1 text-xs">
                   {activeDiyModal.costLabel}
                 </Badge>
-                <h3 className="text-base font-bold text-[#F2F6FA]">
+                <h3 id="diy-purifier-title" className="text-base font-bold text-[#F2F6FA]">
                   {activeDiyModal.title}
                 </h3>
               </div>

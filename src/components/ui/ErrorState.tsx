@@ -18,6 +18,8 @@ export function ErrorState({
 }: ErrorStateProps) {
   return (
     <div
+      role="alert"
+      aria-live="assertive"
       className={cn(
         "glass-panel rounded-2xl p-8 border-[rgba(255,92,92,0.25)] flex flex-col items-center text-center max-w-md mx-auto my-6 space-y-4",
         className

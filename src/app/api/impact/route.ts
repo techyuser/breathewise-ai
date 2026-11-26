@@ -5,7 +5,13 @@ import {
   calculateEnergySaved,
 } from "@/lib/intelligence/impact-formulas";
 import { explainImpactWithGemini } from "@/lib/gemini";
-import { guardRateLimit, jsonApiResponse } from "@/lib/api-helpers";
+import {
+  guardRateLimit,
+  jsonApiResponse,
+  parseBooleanWithFallback,
+  parseNumberWithFallback,
+  parseStringWithFallback,
+} from "@/lib/api-helpers";
 import { logger } from "@/lib/logger";
 
 async function processImpactRequest(
@@ -16,20 +22,48 @@ async function processImpactRequest(
   const rateLimit = guardRateLimit(req, 40);
   if (!rateLimit.allowed && rateLimit.response) return rateLimit.response;
 
-  const distance = parseFloat(String(bodyData?.distance ?? searchParams.get("distance") ?? "0"));
-  const mode = String(
-    bodyData?.mode ?? searchParams.get("mode") ?? "transit"
-  ) as "transit" | "cycling" | "ev";
-  const outdoorAqi = parseFloat(
-    String(bodyData?.outdoorAqi ?? searchParams.get("outdoorAqi") ?? "100")
+  const distance = parseNumberWithFallback(
+    bodyData?.distance ?? searchParams.get("distance"),
+    0,
+    0,
+    1000
   );
-  const duration = parseFloat(String(bodyData?.duration ?? searchParams.get("duration") ?? "1"));
-  const isProtected =
-    (bodyData?.protected as boolean) ?? searchParams.get("protected") === "true";
-  const hoursSealed = parseFloat(
-    String(bodyData?.hoursSealed ?? searchParams.get("hoursSealed") ?? "0")
+  const rawMode = parseStringWithFallback(
+    bodyData?.mode ?? searchParams.get("mode"),
+    "transit",
+    20
   );
-  const lang = String(bodyData?.lang ?? searchParams.get("lang") ?? "en") === "hi" ? "hi" : "en";
+  const mode: "transit" | "cycling" | "ev" =
+    rawMode === "cycling" || rawMode === "ev" ? rawMode : "transit";
+
+  const outdoorAqi = parseNumberWithFallback(
+    bodyData?.outdoorAqi ?? searchParams.get("outdoorAqi"),
+    100,
+    0,
+    1000
+  );
+  const duration = parseNumberWithFallback(
+    bodyData?.duration ?? searchParams.get("duration"),
+    1,
+    0,
+    24
+  );
+  const isProtected = parseBooleanWithFallback(
+    bodyData?.protected ?? searchParams.get("protected"),
+    false
+  );
+  const hoursSealed = parseNumberWithFallback(
+    bodyData?.hoursSealed ?? searchParams.get("hoursSealed"),
+    0,
+    0,
+    24
+  );
+  const langRaw = parseStringWithFallback(
+    bodyData?.lang ?? searchParams.get("lang"),
+    "en",
+    10
+  );
+  const lang: "en" | "hi" = langRaw === "hi" ? "hi" : "en";
 
   const co2Saved = calculateCarbonSavings(distance, mode);
   const exposureAvoided = calculateExposureAvoided(outdoorAqi, duration, isProtected);

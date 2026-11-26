@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateIndoorAdviceWithGemini } from "@/lib/gemini";
 import { HomeConfig } from "@/lib/intelligence/indoor-assessment";
-import { AqiStandard } from "@/types/air-quality";
 import {
   guardRateLimit,
   jsonApiResponse,
+  parseAqiStandard,
+  parseBooleanWithFallback,
+  parseStringWithFallback,
   resolveRouteAirQuality,
 } from "@/lib/api-helpers";
 import { logger } from "@/lib/logger";
@@ -17,29 +19,32 @@ async function processIndoorRequest(
   const rateLimit = guardRateLimit(req, 40);
   if (!rateLimit.allowed && rateLimit.response) return rateLimit.response;
 
-  const lang = ((bodyData?.lang as string) || searchParams.get("lang")) === "hi" ? "hi" : "en";
-  const standard = ((bodyData?.standard as string) || searchParams.get("standard")) as AqiStandard | null;
+  const langRaw = parseStringWithFallback(bodyData?.lang ?? searchParams.get("lang"), "en", 10);
+  const lang: "en" | "hi" = langRaw === "hi" ? "hi" : "en";
+  const standard = parseAqiStandard(bodyData?.standard ?? searchParams.get("standard"));
 
   const homeConfig: HomeConfig = {
-    hasAirPurifier:
-      (bodyData?.hasAirPurifier as boolean) ??
-      (bodyData?.purifier as boolean) ??
-      searchParams.get("purifier") === "true",
-    windowsOpen:
-      (bodyData?.windowsOpen as boolean) ?? searchParams.get("windowsOpen") === "true",
-    isCooking:
-      (bodyData?.isCooking as boolean) ??
-      (bodyData?.cooking as boolean) ??
-      searchParams.get("cooking") === "true",
-    hasInfiltration:
-      (bodyData?.hasInfiltration as boolean) ??
-      (bodyData?.infiltration as boolean) ??
-      searchParams.get("infiltration") === "true",
+    hasAirPurifier: parseBooleanWithFallback(
+      bodyData?.hasAirPurifier ?? bodyData?.purifier ?? searchParams.get("purifier"),
+      false
+    ),
+    windowsOpen: parseBooleanWithFallback(
+      bodyData?.windowsOpen ?? searchParams.get("windowsOpen"),
+      false
+    ),
+    isCooking: parseBooleanWithFallback(
+      bodyData?.isCooking ?? bodyData?.cooking ?? searchParams.get("cooking"),
+      false
+    ),
+    hasInfiltration: parseBooleanWithFallback(
+      bodyData?.hasInfiltration ?? bodyData?.infiltration ?? searchParams.get("infiltration"),
+      false
+    ),
   };
 
   const resolved = await resolveRouteAirQuality({
     providedAqiData: bodyData?.aqiData,
-    cityId: (bodyData?.cityId as string) || searchParams.get("city") || "delhi",
+    cityId: parseStringWithFallback(bodyData?.cityId ?? searchParams.get("city"), "delhi", 60),
     latParam: bodyData?.lat ?? searchParams.get("lat"),
     lonParam: bodyData?.lon ?? searchParams.get("lon"),
     standard,

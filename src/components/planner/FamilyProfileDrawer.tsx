@@ -50,10 +50,11 @@ export function FamilyProfileDrawer({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               {/* Cohort Selector */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
+                <label htmlFor="household-cohort-select" className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
                   Primary Household Cohort
                 </label>
                 <select
+                  id="household-cohort-select"
                   value={profile.cohort}
                   onChange={(e) => {
                     const updated = {
@@ -77,10 +78,11 @@ export function FamilyProfileDrawer({
 
               {/* Commute Mode */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
+                <label htmlFor="commute-mode-select" className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
                   Commute Transportation Mode
                 </label>
                 <select
+                  id="commute-mode-select"
                   value={profile.commuteMode}
                   onChange={(e) => {
                     const updated = {
@@ -102,10 +104,11 @@ export function FamilyProfileDrawer({
               {/* Commute Times */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
+                  <label htmlFor="morning-departure-time" className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
                     Morning Leave
                   </label>
                   <input
+                    id="morning-departure-time"
                     type="text"
                     value={profile.morningDeparture || "08:00 AM"}
                     aria-label="Morning departure time"
@@ -117,10 +120,11 @@ export function FamilyProfileDrawer({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
+                  <label htmlFor="evening-return-time" className="text-xs font-bold text-[#8496A8] uppercase tracking-wider">
                     Evening Return
                   </label>
                   <input
+                    id="evening-return-time"
                     type="text"
                     value={profile.eveningReturn || "06:30 PM"}
                     aria-label="Evening return time"

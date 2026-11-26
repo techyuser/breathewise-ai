@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPlanWithGemini } from "@/lib/gemini";
-import { AqiStandard } from "@/types/air-quality";
 import {
   guardRateLimit,
   jsonApiResponse,
+  parseAqiStandard,
+  parseStringWithFallback,
   resolveRouteAirQuality,
   sanitizePlanInput,
 } from "@/lib/api-helpers";
@@ -22,28 +23,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { plan, cityId = "delhi", lat, lon, standard, lang = "en", aqiData } = body;
-    if (!plan || typeof plan !== "object" || !plan.activityName) {
+    const { plan, cityId, lat, lon, standard, lang, aqiData } = body;
+    if (!plan || typeof plan !== "object" || !("activityName" in plan) || !plan.activityName) {
       return NextResponse.json(
         { error: "Missing required plan fields (e.g. activityName, plannedTime)." },
         { status: 400 }
       );
     }
 
+    const safeCityId = parseStringWithFallback(cityId, "delhi", 60);
+    const safeLang: "en" | "hi" = parseStringWithFallback(lang, "en", 10) === "hi" ? "hi" : "en";
+    const safeStandard = parseAqiStandard(standard);
+
     const resolved = await resolveRouteAirQuality({
       providedAqiData: aqiData,
-      cityId,
+      cityId: safeCityId,
       latParam: lat,
       lonParam: lon,
-      standard: standard as AqiStandard | undefined,
+      standard: safeStandard,
     });
     if ("errorResponse" in resolved) return resolved.errorResponse;
 
-    const result = await verifyPlanWithGemini(
-      sanitizePlanInput(plan as Record<string, unknown>),
-      resolved.aqiData,
-      lang === "hi" ? "hi" : "en"
-    );
+    const safePlan = sanitizePlanInput(plan as Record<string, unknown>);
+    const result = await verifyPlanWithGemini(safePlan, resolved.aqiData, safeLang);
 
     return jsonApiResponse(result, 120, rateLimit.remaining);
   } catch (error) {

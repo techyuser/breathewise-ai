@@ -4,10 +4,12 @@ import {
   verifyPlanWithGemini,
   UserProfileContext,
 } from "@/lib/gemini";
-import { AqiStandard } from "@/types/air-quality";
 import {
   guardRateLimit,
   jsonApiResponse,
+  parseAqiStandard,
+  parseBooleanWithFallback,
+  parseStringWithFallback,
   resolveRouteAirQuality,
   sanitizePlanInput,
 } from "@/lib/api-helpers";
@@ -21,27 +23,47 @@ async function processRoutineRequest(
   const rateLimit = guardRateLimit(req, 40);
   if (!rateLimit.allowed && rateLimit.response) return rateLimit.response;
 
-  const lang = (bodyData?.lang as string) || searchParams.get("lang") || "en";
-  const targetLang: "en" | "hi" = lang === "hi" ? "hi" : "en";
-  const standard = ((bodyData?.standard as string) || searchParams.get("standard")) as AqiStandard | null;
+  const langRaw = parseStringWithFallback(bodyData?.lang ?? searchParams.get("lang"), "en", 10);
+  const targetLang: "en" | "hi" = langRaw === "hi" ? "hi" : "en";
+  const standard = parseAqiStandard(bodyData?.standard ?? searchParams.get("standard"));
+
+  const rawSensitivity = parseStringWithFallback(
+    bodyData?.sensitivity ?? searchParams.get("sensitivity"),
+    "general",
+    30
+  );
+  const validSensitivity: UserProfileContext["sensitivity"] =
+    rawSensitivity === "infant" ||
+    rawSensitivity === "respiratory" ||
+    rawSensitivity === "elderly" ||
+    rawSensitivity === "athlete" ||
+    rawSensitivity === "pregnant"
+      ? rawSensitivity
+      : "general";
+
+  const rawVentilation = parseStringWithFallback(
+    bodyData?.homeVentilation ?? searchParams.get("homeVentilation"),
+    "sealed",
+    10
+  );
+  const homeVentilation: "open" | "sealed" = rawVentilation === "open" ? "open" : "sealed";
 
   const profile: UserProfileContext = {
-    sensitivity:
-      (bodyData?.sensitivity as UserProfileContext["sensitivity"]) ||
-      (searchParams.get("sensitivity") as UserProfileContext["sensitivity"]) ||
-      "general",
-    hasAirPurifier:
-      (bodyData?.hasAirPurifier as boolean) ?? searchParams.get("hasAirPurifier") === "true",
-    hasN95Mask: (bodyData?.hasN95Mask as boolean) ?? searchParams.get("hasN95Mask") === "true",
-    homeVentilation:
-      (bodyData?.homeVentilation as "open" | "sealed") ||
-      (searchParams.get("homeVentilation") as "open" | "sealed") ||
-      "sealed",
+    sensitivity: validSensitivity,
+    hasAirPurifier: parseBooleanWithFallback(
+      bodyData?.hasAirPurifier ?? searchParams.get("hasAirPurifier"),
+      false
+    ),
+    hasN95Mask: parseBooleanWithFallback(
+      bodyData?.hasN95Mask ?? searchParams.get("hasN95Mask"),
+      false
+    ),
+    homeVentilation,
   };
 
   const resolved = await resolveRouteAirQuality({
     providedAqiData: bodyData?.aqiData,
-    cityId: (bodyData?.cityId as string) || searchParams.get("city") || "delhi",
+    cityId: parseStringWithFallback(bodyData?.cityId ?? searchParams.get("city"), "delhi", 60),
     latParam: bodyData?.lat ?? searchParams.get("lat"),
     lonParam: bodyData?.lon ?? searchParams.get("lon"),
     standard,
@@ -49,7 +71,9 @@ async function processRoutineRequest(
   if ("errorResponse" in resolved) return resolved.errorResponse;
 
   if (bodyData?.plan || bodyData?.action === "verify_plan") {
-    const rawPlan = (bodyData.plan || bodyData) as Record<string, unknown>;
+    const rawPlan = (bodyData.plan && typeof bodyData.plan === "object"
+      ? bodyData.plan
+      : bodyData) as Record<string, unknown>;
     const verified = await verifyPlanWithGemini(
       sanitizePlanInput(rawPlan),
       resolved.aqiData,

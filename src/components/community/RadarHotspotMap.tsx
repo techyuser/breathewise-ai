@@ -120,6 +120,17 @@ export function RadarHotspotMap({ selectedCity, alerts }: RadarHotspotMapProps) 
         </div>
         <span>Click any marker to inspect incident metadata</span>
       </div>
+
+      <div className="sr-only">
+        <h4>Citizen Reported Hotspots near {selectedCity.name}</h4>
+        <ul>
+          {alerts.map((alert) => (
+            <li key={alert.id}>
+              {alert.type} ({alert.severity}) at {alert.location}: {alert.description}
+            </li>
+          ))}
+        </ul>
+      </div>
     </Card>
   );
 }

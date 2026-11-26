@@ -14,6 +14,8 @@ export function LoadingState({
 }: LoadingStateProps) {
   return (
     <div
+      role="status"
+      aria-live="polite"
       className={cn(
         "glass-panel rounded-2xl p-12 flex flex-col items-center justify-center text-center space-y-4 min-h-[300px]",
         className
